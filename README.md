@@ -1,3 +1,5 @@
+<img src="assets/brand/hero/ferrumweave-readme-cover.png" alt="FerrumWeave — Bringing Rust into the .NET ecosystem" width="100%" />
+
 # FerrumWeave
 
 **Bringing Rust into the .NET language ecosystem.**
