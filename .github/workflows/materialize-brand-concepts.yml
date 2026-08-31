@@ -1,0 +1,60 @@
+name: Materialize brand concept boards
+
+on:
+  push:
+    branches:
+      - design/brand-foundation
+    paths:
+      - '.github/brand-staging/**'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: design/brand-foundation
+          fetch-depth: 0
+
+      - name: Wait for complete staging set
+        id: ready
+        shell: bash
+        run: |
+          if [[ -f .github/brand-staging/READY ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decode concept boards
+        if: steps.ready.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/brand/concepts
+          for stem in \
+            01-ferrum-ox-woven-ring \
+            02-ferrum-ox-brand-guide \
+            03-ferrumweave-icon-exploration \
+            04-ferrumweave-merch-exploration
+          do
+            cat .github/brand-staging/${stem}.b64.part* \
+              | base64 --decode \
+              > assets/brand/concepts/${stem}.webp
+          done
+
+      - name: Commit archived boards and remove temporary staging
+        if: steps.ready.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/brand/concepts/*.webp
+          git rm -r .github/brand-staging
+          git rm .github/workflows/materialize-brand-concepts.yml
+          git commit -m "brand: preserve FerrumWeave concept boards"
+          git push origin HEAD:design/brand-foundation
