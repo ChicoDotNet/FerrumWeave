@@ -52,11 +52,23 @@ fn write_char(value: u16) {
 }
 
 fn main() {
-    for value in [
-        'H', 'e', 'l', 'l', 'o', ' ', 'F', 'e', 'r', 'r', 'u', 'm', 'W', 'e', 'a', 'v', 'e',
-    ] {
-        write_char(value as u16);
-    }
+    write_char('H' as u16);
+    write_char('e' as u16);
+    write_char('l' as u16);
+    write_char('l' as u16);
+    write_char('o' as u16);
+    write_char(' ' as u16);
+    write_char('F' as u16);
+    write_char('e' as u16);
+    write_char('r' as u16);
+    write_char('r' as u16);
+    write_char('u' as u16);
+    write_char('m' as u16);
+    write_char('W' as u16);
+    write_char('e' as u16);
+    write_char('a' as u16);
+    write_char('v' as u16);
+    write_char('e' as u16);
 
     rustc_clr_interop_managed_call0_::<
         "System.Console",
