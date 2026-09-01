@@ -1,0 +1,32 @@
+schema_version = 1
+minimum_percent = 100.0
+
+[[contracts]]
+id = "FW-R02-CLR-001"
+description = "A real Rust source program compiles through rustc and rustc_codegen_clr into a managed PE/CLI assembly."
+implemented = true
+test = "r02_real_rust_to_managed_assembly"
+
+[[contracts]]
+id = "FW-R02-CLR-002"
+description = "A deliberately invalid Rust borrow is rejected by rustc before CLR code generation can succeed."
+implemented = true
+test = "r02_borrow_checker_rejects_invalid_source"
+
+[[contracts]]
+id = "FW-R02-CLR-003"
+description = "The generated managed Rust program executes successfully on Linux and prints Hello FerrumWeave."
+implemented = true
+test = "r02_managed_program_runs_on_linux"
+
+[[contracts]]
+id = "FW-R02-CLR-004"
+description = "The generated managed Rust program executes successfully on Windows and prints Hello FerrumWeave."
+implemented = true
+test = "r02_managed_program_runs_on_windows"
+
+[[contracts]]
+id = "FW-R02-CLR-005"
+description = "The R02 path compiles Rust directly and does not substitute C#, VB, F#, or a native Rust launcher for the managed implementation."
+implemented = true
+test = "r02_has_no_source_language_substitution"

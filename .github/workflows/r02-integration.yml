@@ -1,0 +1,109 @@
+name: R02 Rust to CLR
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - ".github/workflows/r02-integration.yml"
+      - "eng/r02/**"
+      - "tests/fixtures/r02/**"
+      - "tests/r02/**"
+      - "docs/upstream/rustc_codegen_clr.md"
+      - "docs/compatibility/README.md"
+      - "docs/roadmap/README.md"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - ".github/workflows/r02-integration.yml"
+      - "eng/r02/**"
+      - "tests/fixtures/r02/**"
+      - "tests/r02/**"
+      - "docs/upstream/rustc_codegen_clr.md"
+      - "docs/compatibility/README.md"
+      - "docs/roadmap/README.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r02-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-to-clr:
+    name: real Rust → CLR (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            backend: librustc_codegen_clr.so
+            linker: linker
+          - os: windows-latest
+            backend: rustc_codegen_clr.dll
+            linker: linker.exe
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned rustc_codegen_clr upstream
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: FractalFir/rustc_codegen_clr
+          ref: a9aa553b136fce00eceb41fba30758830500a63f
+          path: .r02/rustc_codegen_clr
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install pinned upstream Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2025-10-14 \
+            --profile minimal \
+            --component rust-src,rustc-dev,llvm-tools-preview
+          rustc +nightly-2025-10-14 --version --verbose
+
+      - name: Install IL assembler on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
+          ilasm --help >/dev/null || true
+
+      - name: Build pinned upstream backend and linker
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +nightly-2025-10-14 build \
+            --release \
+            --manifest-path .r02/rustc_codegen_clr/Cargo.toml \
+            --lib
+          cargo +nightly-2025-10-14 build \
+            --release \
+            --manifest-path .r02/rustc_codegen_clr/cilly/Cargo.toml \
+            --bin linker
+
+      - name: Certify R02 contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          upstream="$GITHUB_WORKSPACE/.r02/rustc_codegen_clr"
+          python eng/r02/verify.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$upstream/target/release/${{ matrix.backend }}" \
+            --linker "$upstream/target/release/${{ matrix.linker }}"
