@@ -27,7 +27,7 @@ KNOWN_CONTRACTS = {
     "FW-R03-NEG-001",
 }
 EXPECTED_OUTPUTS = {
-    "semantics_s01.rs": "42\n30\n1\n42\n7\n42\n",
+    "semantics_s01.rs": "42\n30\n1\n42\n7\n42\n42\n",
 }
 
 
