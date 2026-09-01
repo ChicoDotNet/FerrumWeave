@@ -9,7 +9,6 @@ import struct
 import subprocess
 import sys
 import tempfile
-import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -131,10 +130,69 @@ def inspect_managed_pe(path: Path) -> None:
         fail("R02 CLR metadata root signature is missing")
 
 
+def parse_ledger_scalar(value: str) -> object:
+    value = value.strip()
+    if value == "true":
+        return True
+    if value == "false":
+        return False
+    if value.startswith('"') and value.endswith('"'):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError as error:
+            fail(f"invalid quoted value in R02 contract ledger: {error}")
+    try:
+        return float(value) if "." in value else int(value)
+    except ValueError:
+        fail(f"unsupported value in R02 contract ledger: {value!r}")
+    return value
+
+
+def load_contract_ledger(path: Path) -> dict[str, object]:
+    """Parse only the tiny TOML subset owned by the R02 contract ledger.
+
+    Keeping this parser deliberately scoped avoids requiring Python 3.11's
+    tomllib on GitHub-hosted runners while refusing unsupported TOML syntax.
+    """
+
+    data: dict[str, object] = {"contracts": []}
+    contracts = data["contracts"]
+    assert isinstance(contracts, list)
+    current: dict[str, object] | None = None
+
+    for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line == "[[contracts]]":
+            current = {}
+            contracts.append(current)
+            continue
+
+        key, separator, raw_value = line.partition("=")
+        if not separator:
+            fail(f"unsupported R02 ledger syntax on line {line_number}: {raw_line!r}")
+        key = key.strip()
+        if not key:
+            fail(f"empty key in R02 contract ledger on line {line_number}")
+
+        target = current if current is not None else data
+        if key in target:
+            fail(f"duplicate key {key!r} in R02 contract ledger on line {line_number}")
+        target[key] = parse_ledger_scalar(raw_value)
+
+    return data
+
+
 def verify_ledger() -> None:
-    data = tomllib.loads(LEDGER.read_text(encoding="utf-8"))
+    data = load_contract_ledger(LEDGER)
     contracts = data.get("contracts", [])
-    found = {contract["id"]: contract for contract in contracts}
+    if not isinstance(contracts, list):
+        fail("R02 contract ledger contracts collection is invalid")
+
+    found = {contract["id"]: contract for contract in contracts if isinstance(contract, dict)}
+    if len(found) != len(contracts):
+        fail("R02 contract ledger contains a malformed contract entry")
     if set(found) != set(EXPECTED_CONTRACTS):
         fail(f"R02 contract ledger mismatch: {sorted(found)}")
     if float(data.get("minimum_percent", 0.0)) != 100.0:
