@@ -42,7 +42,9 @@ jobs:
     name: fmt + clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Toolchain
         run: rustup show
       - name: Formatting
@@ -60,7 +62,9 @@ jobs:
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Toolchain
         run: rustup show
       - name: Build
@@ -74,7 +78,9 @@ jobs:
     name: code coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Toolchain
         run: rustup show
       - name: Install pinned cargo-llvm-cov
@@ -105,7 +111,9 @@ jobs:
     name: functional coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - name: Toolchain
         run: rustup show
       - name: Enforce functional contract coverage
