@@ -1,0 +1,36 @@
+name: Website CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+    paths:
+      - 'docs/site/**'
+      - 'assets/brand/**'
+      - '.github/workflows/site-ci.yml'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs/site
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: docs/site/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build website
+        run: npm run build

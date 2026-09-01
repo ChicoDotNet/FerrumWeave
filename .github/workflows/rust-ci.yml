@@ -1,0 +1,112 @@
+name: Rust CI
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "src/**"
+      - "tests/**"
+      - "tools/quality/**"
+      - "docs/quality/**"
+      - ".github/workflows/rust-ci.yml"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "src/**"
+      - "tests/**"
+      - "tools/quality/**"
+      - "docs/quality/**"
+      - ".github/workflows/rust-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: fmt + clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: rustup show
+      - name: Formatting
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+  test:
+    name: build + test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: rustup show
+      - name: Build
+        run: cargo build --workspace --all-targets --locked
+      - name: Unit tests
+        run: cargo test --workspace --lib --locked
+      - name: Functional tests
+        run: cargo test --workspace --test functional --locked
+
+  code-coverage:
+    name: code coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: rustup show
+      - name: Install pinned cargo-llvm-cov
+        shell: bash
+        run: cargo install --locked --force --version 0.8.7 cargo-llvm-cov
+      - name: Measure line coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p target/coverage
+          cargo llvm-cov \
+            --workspace \
+            --all-targets \
+            --locked \
+            --json \
+            --ignore-filename-regex '(^|/)tests/' \
+            --output-path target/coverage/coverage.json
+          python3 tools/quality/check_code_coverage.py \
+            target/coverage/coverage.json \
+            --minimum 80 \
+            --preferred-maximum 96
+          cargo llvm-cov report \
+            --lcov \
+            --ignore-filename-regex '(^|/)tests/' \
+            --output-path target/coverage/lcov.info
+
+  functional-coverage:
+    name: functional coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: rustup show
+      - name: Enforce functional contract coverage
+        run: python3 tools/quality/check_functional_coverage.py

@@ -1,0 +1,78 @@
+name: Bug report
+description: Report a reproducible problem in FerrumWeave, its documentation, website, tooling, or future implementation.
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping FerrumWeave improve. The project is currently pre-alpha, so please distinguish an implemented regression from a feature that does not exist yet.
+
+        **Do not report security vulnerabilities with sensitive or weaponizable details here. See `SECURITY.md`.**
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Documentation / website
+        - Repository / CI
+        - Compiler / code generation
+        - CLR projection / metadata
+        - SDK / MSBuild / dotnet CLI
+        - Tooling / editor integration
+        - Interoperability
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: perspective
+    attributes:
+      label: Primary ecosystem perspective
+      description: This helps reviewers understand the assumptions behind the report. There is no preferred answer.
+      options:
+        - Rust
+        - .NET / CLR
+        - Both
+        - Ecosystem-neutral
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest useful reproduction, commands, or steps. If no implementation exists for this scenario yet, explain that instead.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Rust toolchain, .NET SDK/runtime, branch/commit, and other relevant versions.
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs, diagnostics, emitted metadata/CIL, screenshots, or comparisons with expected Rust/.NET behavior.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I removed secrets, credentials, and private data from the report.
+          required: true
+        - label: I understand that pre-alpha design goals are not yet implemented-product promises.
+          required: true

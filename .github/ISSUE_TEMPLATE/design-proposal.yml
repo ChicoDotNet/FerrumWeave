@@ -1,0 +1,78 @@
+name: Design proposal
+description: Propose a cross-cutting technical capability, interoperability contract, or project-system behavior before investing in a large implementation.
+title: "design: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        FerrumWeave prefers **discussion before large implementation** for cross-cutting changes.
+
+        A good proposal explains both the Rust-facing and .NET-facing consequences instead of assuming one ecosystem's model is the default.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / capability
+      description: What concrete capability or contract is missing?
+    validations:
+      required: true
+
+  - type: textarea
+    id: rust
+    attributes:
+      label: Rust-facing semantics
+      description: How should this behave from Rust? Mention ownership, lifetimes, traits, Result, async, Cargo, or other relevant concepts.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dotnet
+    attributes:
+      label: .NET / CLR-facing semantics
+      description: How should this appear to the CLR and other .NET languages? Mention CTS, metadata, GC, exceptions, Task, MSBuild/NuGet, reflection, etc. where relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed contract
+      description: Describe the smallest useful behavior you propose committing to.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include simpler options and explain why they are insufficient.
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence / prior art
+      description: Link or describe relevant Rust, .NET, compiler, CLI, or ecosystem behavior. Prefer executable experiments where possible.
+
+  - type: textarea
+    id: upstream
+    attributes:
+      label: Upstream impact
+      description: Does this require or benefit from changes to rustc, rust-analyzer, rustc_codegen_clr, dotnet/sdk, or another upstream?
+
+  - type: textarea
+    id: slice
+    attributes:
+      label: Smallest vertical slice
+      description: What is the smallest end-to-end experiment that could validate the proposal before broad implementation?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: culture
+    attributes:
+      label: Cross-ecosystem check
+      options:
+        - label: I described trade-offs without treating either Rust or .NET as a second-class ecosystem.
+          required: true
+        - label: I separated desired behavior from functionality FerrumWeave already implements.
+          required: true
