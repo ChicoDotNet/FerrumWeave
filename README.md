@@ -4,6 +4,8 @@
 
 **Bringing Rust into the .NET language ecosystem.**
 
+**Project resources:** [Repository layout](docs/architecture/repository-layout.md) · [Project website](https://chicodotnet.github.io/FerrumWeave/)
+
 FerrumWeave is an experimental open-source effort to make Rust a first-class language for the .NET platform: compiling Rust source code into .NET assemblies, participating in the Common Type System, consuming existing .NET libraries, and interoperating naturally with languages such as C#, F#, Visual Basic, and others built around the CLR.
 
 The long-term developer experience should feel unsurprising:
@@ -611,6 +613,8 @@ FerrumWeave
     └── templates, testing, publishing and packaging
 ```
 
+The target repository layout and its materialization rules are documented in [Repository layout](docs/architecture/repository-layout.md).
+
 This architecture is intentionally provisional.
 
 Executable evidence will outrank diagrams.
@@ -752,13 +756,14 @@ If FerrumWeave claims that a .NET behavior works, that behavior should be protec
 
 FerrumWeave is intended to be developed openly.
 
-The current licensing direction is a permissive dual-license model:
+FerrumWeave is dual-licensed under either:
 
-```text
-MIT OR Apache-2.0
-```
+- the [MIT License](LICENSE-MIT); or
+- the [Apache License, Version 2.0](LICENSE-APACHE),
 
-allowing broad use in open-source and commercial environments while aligning naturally with much of the Rust ecosystem.
+at your option.
+
+This permissive model allows broad use in open-source and commercial environments while aligning naturally with much of the Rust ecosystem.
 
 Software produced using FerrumWeave should remain under the license chosen by its own authors.
 
