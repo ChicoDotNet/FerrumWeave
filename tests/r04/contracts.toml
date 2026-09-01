@@ -58,8 +58,8 @@ proof = "ferrumweave-projection-types SZARRAY signature and owned value round-tr
 [[contracts]]
 id = "FW-R04-CTS-009"
 family = "public-boundary nullability policy"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "ferrumweave-projection-types public-boundary nullability integration tests"
 
 [[contracts]]
 id = "FW-R04-CTS-010"
