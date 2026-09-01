@@ -11,10 +11,10 @@ Bootstrap provides grid and spacing utilities. Fluent UI 2 provides interactive 
 
 ## Local development
 
-From `docs/site`:
+From `docs/site`, install exactly the dependency graph committed in `package-lock.json`:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -23,6 +23,8 @@ Production validation:
 ```bash
 npm run build
 ```
+
+Use `npm install` only when intentionally changing website dependencies and updating `package-lock.json` in the same contribution.
 
 The site consumes the repository's existing `assets/brand/` directory as Vite's public directory. Brand artwork therefore remains single-source rather than being copied into the website.
 
