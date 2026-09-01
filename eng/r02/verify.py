@@ -233,8 +233,8 @@ def write_runtime_config(assembly: Path) -> None:
     config = assembly.with_suffix(".runtimeconfig.json")
     payload = {
         "runtimeOptions": {
-            "tfm": "net8.0",
-            "framework": {"name": "Microsoft.NETCore.App", "version": "8.0.0"},
+            "tfm": "net10.0",
+            "framework": {"name": "Microsoft.NETCore.App", "version": "10.0.0"},
         }
     }
     config.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
