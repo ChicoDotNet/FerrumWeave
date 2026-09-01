@@ -141,6 +141,33 @@ impl<T> ProjectedClrArray<T> {
     }
 }
 
+/// The CLR representation category relevant to public-boundary nullability.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PublicBoundaryRepresentation {
+    ValueType,
+    ManagedReference,
+}
+
+/// Whether the Rust-facing boundary requires a value or permits absence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RustBoundaryPresence {
+    Required,
+    Optional,
+}
+
+/// The nullability shape FerrumWeave can currently express without changing CTS representation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PublicBoundaryNullability {
+    NonNullable,
+    NullableReference,
+}
+
+/// A requested nullable boundary that needs a richer CTS projection than R04 currently provides.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UnsupportedNullability {
+    pub reason: &'static str,
+}
+
 /// Return FerrumWeave's centralized direct Rust -> CTS scalar policy.
 ///
 /// `Err` is intentional: not every Rust scalar has a lossless ECMA-335
@@ -268,6 +295,28 @@ pub fn rust_vec_to_clr_array<T>(values: Vec<T>) -> ProjectedClrArray<T> {
 #[must_use]
 pub fn clr_array_to_rust_vec<T>(array: ProjectedClrArray<T>) -> Vec<T> {
     array.values
+}
+
+/// Resolve nullability for a supported public boundary without silently changing its CTS shape.
+///
+/// Required values and references are non-null. Optional managed references can use CLR null
+/// directly. Optional value types require an explicit `System.Nullable<T>` projection and are
+/// therefore rejected until that richer representation is implemented.
+pub const fn public_boundary_nullability(
+    representation: PublicBoundaryRepresentation,
+    presence: RustBoundaryPresence,
+) -> Result<PublicBoundaryNullability, UnsupportedNullability> {
+    match (representation, presence) {
+        (_, RustBoundaryPresence::Required) => Ok(PublicBoundaryNullability::NonNullable),
+        (PublicBoundaryRepresentation::ManagedReference, RustBoundaryPresence::Optional) => {
+            Ok(PublicBoundaryNullability::NullableReference)
+        }
+        (PublicBoundaryRepresentation::ValueType, RustBoundaryPresence::Optional) => {
+            Err(UnsupportedNullability {
+                reason: "optional CLR value types require an explicit System.Nullable<T> projection",
+            })
+        }
+    }
 }
 
 #[cfg(test)]
