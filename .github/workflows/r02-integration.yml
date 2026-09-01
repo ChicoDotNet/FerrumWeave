@@ -65,7 +65,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6.0.0
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "10.0.400"
 
       - name: Install pinned upstream Rust toolchain
         shell: bash
