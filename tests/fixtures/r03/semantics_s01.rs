@@ -9,7 +9,7 @@
 
 use core::hint::black_box;
 
-// R03 cumulative semantic fixture (S01 + S02).
+// R03 cumulative semantic fixture (S01 + S02 + S03).
 //
 // The computation below is ordinary safe Rust. Only the observation function
 // differs by backend: native Rust prints with std, while the CLR build uses the
@@ -114,10 +114,25 @@ fn loop_semantics() -> i32 {
     total
 }
 
+struct AnswerPair {
+    left: i32,
+    right: i32,
+}
+
+#[inline(never)]
+fn tuples_and_structs() -> i32 {
+    let tuple: (i32, i32) = (black_box(19), black_box(23));
+    let (left, right) = tuple;
+    let pair = AnswerPair { left, right };
+    let AnswerPair { left, right } = pair;
+    left + right
+}
+
 fn main() {
     observe(primitives_and_locals());
     observe(assignment());
     observe(arithmetic_and_comparison());
     observe(function_call());
     observe(conditional(loop_semantics()));
+    observe(tuples_and_structs());
 }
