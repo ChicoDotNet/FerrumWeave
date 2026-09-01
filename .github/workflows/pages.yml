@@ -12,8 +12,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -27,12 +25,16 @@ jobs:
         working-directory: docs/site
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: docs/site/package-lock.json
       - uses: actions/configure-pages@v5
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
       - name: Build website
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
@@ -45,6 +47,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
