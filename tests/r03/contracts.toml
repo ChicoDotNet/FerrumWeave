@@ -1,5 +1,5 @@
 milestone = "R03"
-status = "in_progress"
+status = "done"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -70,5 +70,5 @@ fixture = "semantics_s01.rs"
 [[contracts]]
 id = "FW-R03-NEG-001"
 family = "negative safe-Rust semantic rejection"
-implemented = false
-fixture = ""
+implemented = true
+fixture = "borrow_invalid.rs"
