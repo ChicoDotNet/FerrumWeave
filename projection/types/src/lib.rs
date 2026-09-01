@@ -51,6 +51,21 @@ pub struct DirectCtsMapping {
     pub system_type: &'static str,
 }
 
+/// A Rust scalar represented by a named CTS value type instead of a primitive ELEMENT_TYPE.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NamedCtsValueTypeMapping {
+    pub rust: RustScalar,
+    pub namespace: &'static str,
+    pub name: &'static str,
+}
+
+impl NamedCtsValueTypeMapping {
+    #[must_use]
+    pub fn full_name(self) -> String {
+        format!("{}.{}", self.namespace, self.name)
+    }
+}
+
 /// Why a Rust scalar cannot be represented as a direct CLI scalar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoDirectCliMapping {
@@ -95,6 +110,24 @@ pub const fn direct_cts_mapping(rust: RustScalar) -> Result<DirectCtsMapping, No
         element_type,
         system_type,
     })
+}
+
+/// Return a named CTS value-type mapping when the Rust scalar has no direct CLI primitive.
+#[must_use]
+pub const fn named_cts_value_type_mapping(rust: RustScalar) -> Option<NamedCtsValueTypeMapping> {
+    match rust {
+        RustScalar::I128 => Some(NamedCtsValueTypeMapping {
+            rust,
+            namespace: "System",
+            name: "Int128",
+        }),
+        RustScalar::U128 => Some(NamedCtsValueTypeMapping {
+            rust,
+            namespace: "System",
+            name: "UInt128",
+        }),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -191,6 +224,35 @@ mod tests {
                     .reason
                     .contains("no direct 128-bit integer element type")
             );
+        }
+    }
+
+    #[test]
+    fn i128_and_u128_map_to_named_system_value_types() {
+        let cases = [
+            (RustScalar::I128, "System.Int128"),
+            (RustScalar::U128, "System.UInt128"),
+        ];
+
+        for (rust, expected) in cases {
+            let mapping = named_cts_value_type_mapping(rust)
+                .expect("128-bit integer must have named CTS mapping");
+            assert_eq!(mapping.rust, rust);
+            assert_eq!(mapping.full_name(), expected);
+        }
+    }
+
+    #[test]
+    fn direct_cli_scalars_do_not_gain_named_value_type_aliases() {
+        for rust in [
+            RustScalar::Bool,
+            RustScalar::I32,
+            RustScalar::U64,
+            RustScalar::Isize,
+            RustScalar::Usize,
+            RustScalar::Char,
+        ] {
+            assert_eq!(named_cts_value_type_mapping(rust), None);
         }
     }
 }
