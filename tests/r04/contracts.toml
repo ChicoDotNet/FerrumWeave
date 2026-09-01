@@ -1,0 +1,74 @@
+milestone = "R04"
+status = "in_progress"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R04 declares its known CTS denominator before broadening the projection layer.
+# During development the ledger reports real progress. The milestone cannot move
+# to done until the final verifier enforces the transversal functional gate.
+
+[[contracts]]
+id = "FW-R04-CTS-001"
+family = "fixed-width Rust integer to direct CTS scalar mappings"
+implemented = true
+proof = "ferrumweave-projection-types unit tests"
+
+[[contracts]]
+id = "FW-R04-CTS-002"
+family = "isize and usize to native CTS integer mappings"
+implemented = true
+proof = "ferrumweave-projection-types unit tests"
+
+[[contracts]]
+id = "FW-R04-CTS-003"
+family = "Rust bool to System.Boolean mapping"
+implemented = true
+proof = "ferrumweave-projection-types unit tests"
+
+[[contracts]]
+id = "FW-R04-CTS-004"
+family = "Rust char versus System.Char non-equivalence is explicit"
+implemented = true
+proof = "ferrumweave-projection-types unit tests"
+
+[[contracts]]
+id = "FW-R04-CTS-005"
+family = "i128 and u128 named CTS value-type mappings"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R04-CTS-006"
+family = "managed reference and object identity mapping"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R04-CTS-007"
+family = "System.String projection and round-trip"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R04-CTS-008"
+family = "array projection and round-trip"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R04-CTS-009"
+family = "public-boundary nullability policy"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R04-CTS-010"
+family = "emitted signatures match CTS mappings under independent CLR reflection"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R04-CTS-011"
+family = "unsupported direct mappings fail explicitly instead of narrowing silently"
+implemented = true
+proof = "char and 128-bit direct-mapping rejection unit tests"

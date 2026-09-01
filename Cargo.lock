@@ -12,3 +12,7 @@ dependencies = [
 [[package]]
 name = "ferrumweave-cil"
 version = "0.0.1"
+
+[[package]]
+name = "ferrumweave-projection-types"
+version = "0.0.1"

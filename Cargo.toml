@@ -10,7 +10,7 @@ publish = false
 
 [workspace]
 resolver = "3"
-members = [".", "compiler/cil"]
+members = [".", "compiler/cil", "projection/types"]
 
 [dev-dependencies]
 ferrumweave-cil = { path = "compiler/cil" }
