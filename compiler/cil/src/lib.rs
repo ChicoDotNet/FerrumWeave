@@ -122,6 +122,11 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let system_namespace = push_string(&mut strings, "System");
     let module_type_name = push_string(&mut strings, "<Module>");
     let main_name = push_string(&mut strings, "Main");
+    let probe_i32_name = push_string(&mut strings, "ProbeI32");
+    let probe_boolean_name = push_string(&mut strings, "ProbeBoolean");
+    let probe_string_name = push_string(&mut strings, "ProbeString");
+    let probe_object_name = push_string(&mut strings, "ProbeObject");
+    let probe_i32_array_name = push_string(&mut strings, "ProbeI32Array");
     let writeline_name = push_string(&mut strings, "WriteLine");
     let assembly_name = push_string(&mut strings, PROBE_ASSEMBLY_NAME);
     let system_console_assembly_name = push_string(&mut strings, "System.Console");
@@ -140,6 +145,11 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
 
     let mut blobs = vec![0_u8];
     let main_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x01]);
+    let probe_i32_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x08]);
+    let probe_boolean_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x02]);
+    let probe_string_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
+    let probe_object_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x1C]);
+    let probe_i32_array_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x1D, 0x08]);
     let writeline_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
     let system_public_key_token = push_blob(
         &mut blobs,
@@ -162,8 +172,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u64(&mut tables, 0); // Sorted mask.
 
     // Row counts, in table-id order for every set bit in the valid mask.
-    for _ in 0..7 {
-        push_u32(&mut tables, 1);
+    for count in [1_u32, 1, 1, 6, 1, 1, 1] {
+        push_u32(&mut tables, count);
     }
 
     // Module (0x00).
@@ -194,6 +204,23 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, main_name);
     push_u16(&mut tables, main_signature);
     push_u16(&mut tables, 1); // First parameter (one-past-empty table).
+
+    for (name, signature) in [
+        (probe_i32_name, probe_i32_signature),
+        (probe_boolean_name, probe_boolean_signature),
+        (probe_string_name, probe_string_signature),
+        (probe_object_name, probe_object_signature),
+        (probe_i32_array_name, probe_i32_array_signature),
+    ] {
+        // Representative R04 CTS probes deliberately share the tiny method body.
+        // They are reflection contracts, not executable product entry points.
+        push_u32(&mut tables, method_rva);
+        push_u16(&mut tables, 0);
+        push_u16(&mut tables, 0x0096);
+        push_u16(&mut tables, name);
+        push_u16(&mut tables, signature);
+        push_u16(&mut tables, 1);
+    }
 
     // MemberRef (0x0A): System.Console.WriteLine(string).
     // MemberRefParent tag 1 is TypeRef; row 1 => (1 << 3) | 1 = 9.
