@@ -18,11 +18,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
             backend: librustc_codegen_clr.so
             linker: linker
           - os: windows-latest
-            target: x86_64-pc-windows-msvc
             backend: rustc_codegen_clr.dll
             linker: linker.exe
     runs-on: ${{ matrix.os }}
@@ -57,25 +55,42 @@ jobs:
           set -euo pipefail
           cargo +nightly-2025-10-14 build --release --manifest-path .r02/rustc_codegen_clr/Cargo.toml --lib
           cargo +nightly-2025-10-14 build --release --manifest-path .r02/rustc_codegen_clr/cilly/Cargo.toml --bin linker
-      - name: Create minimal Rust source
+      - name: Create minimal real Rust source
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .r02/hello/src
-          cat > .r02/hello/Cargo.toml <<'EOF'
-          [package]
-          name = "ferrumweave-r02-probe"
-          version = "0.0.0"
-          edition = "2021"
+          mkdir -p .r02/out
+          cat > .r02/r02.rs <<'EOF'
+          #![feature(adt_const_params, core_intrinsics, unsized_const_params)]
+          #![allow(incomplete_features, internal_features)]
 
-          [workspace]
-          EOF
-          cat > .r02/hello/src/main.rs <<'EOF'
+          #[inline(never)]
+          fn rustc_clr_interop_managed_call1_<
+              const ASSEMBLY: &'static str,
+              const CLASS_PATH: &'static str,
+              const IS_VALUETYPE: bool,
+              const METHOD: &'static str,
+              const IS_STATIC: bool,
+              Ret,
+              Arg1,
+          >(arg1: Arg1) -> Ret {
+              let _ = arg1;
+              core::intrinsics::abort();
+          }
+
           fn main() {
-              println!("Hello FerrumWeave");
+              rustc_clr_interop_managed_call1_::<
+                  "System.Console",
+                  "System.Console",
+                  false,
+                  "WriteLine",
+                  true,
+                  (),
+                  i32,
+              >(202);
           }
           EOF
-      - name: Compile and execute real Rust through CLR backend
+      - name: Compile real Rust through rustc and CLR backend
         shell: bash
         run: |
           set -euo pipefail
@@ -84,8 +99,30 @@ jobs:
           linker="$upstream/target/release/${{ matrix.linker }}"
           test -f "$backend"
           test -f "$linker"
-          export RUSTFLAGS="-Z codegen-backend=$backend -C linker=$linker -C link-args=--cargo-support"
-          cargo +nightly-2025-10-14 run \
-            --manifest-path .r02/hello/Cargo.toml \
-            -Z build-std=core,alloc,std,panic_abort \
-            --target ${{ matrix.target }}
+          rustc +nightly-2025-10-14 \
+            -O \
+            -Z "codegen-backend=$backend" \
+            -C "linker=$linker" \
+            --edition 2021 \
+            -Ctarget-feature=+x87+sse \
+            .r02/r02.rs \
+            -o .r02/out/FerrumWeave.R02.exe
+          test -f .r02/out/FerrumWeave.R02.exe
+      - name: Execute managed artifact on CoreCLR
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > .r02/out/FerrumWeave.R02.runtimeconfig.json <<'EOF'
+          {
+            "runtimeOptions": {
+              "tfm": "net8.0",
+              "framework": {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.0"
+              }
+            }
+          }
+          EOF
+          output="$(dotnet .r02/out/FerrumWeave.R02.exe)"
+          printf '%s\n' "$output"
+          test "$output" = "202"
