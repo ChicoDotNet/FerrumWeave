@@ -52,8 +52,8 @@ fixture = "semantics_s01.rs"
 [[contracts]]
 id = "FW-R03-SEM-008"
 family = "field reads and writes"
-implemented = false
-fixture = ""
+implemented = true
+fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-009"
