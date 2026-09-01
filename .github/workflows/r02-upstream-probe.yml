@@ -67,6 +67,8 @@ jobs:
           name = "ferrumweave-r02-probe"
           version = "0.0.0"
           edition = "2021"
+
+          [workspace]
           EOF
           cat > .r02/hello/src/main.rs <<'EOF'
           fn main() {
