@@ -34,8 +34,8 @@ proof = "ferrumweave-projection-types unit tests"
 [[contracts]]
 id = "FW-R04-CTS-005"
 family = "i128 and u128 named CTS value-type mappings"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "ferrumweave-projection-types named CTS value-type mapping unit tests"
 
 [[contracts]]
 id = "FW-R04-CTS-006"
