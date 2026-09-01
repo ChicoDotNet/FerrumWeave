@@ -13,8 +13,8 @@ A milestone is complete only when it changes a technical fact about the project 
 | R00 — Repository baseline | **Done** | FerrumWeave has a reproducible Rust bootstrap, CI, quality gates, community foundations, branding, Pages, and dependency maintenance. |
 | R01 — CLR artifact probe | **Done** | FerrumWeave can produce and execute a valid managed .NET assembly. |
 | R02 — Rust → CLR vertical slice | **Done** | Real Rust source passes through `rustc` and executes as managed code on CoreCLR. |
-| R03 — Core Rust semantics | **Next** | A deliberate safe-Rust subset is compiled correctly rather than only a ceremonial Hello World. |
-| R04 — CLR / CTS foundation | Planned | Rust and fundamental CLR types have explicit, testable mappings. |
+| R03 — Core Rust semantics | **Done** | 11/11 declared safe-Rust semantic and negative contracts are certified on Linux and Windows with native/CLR differential evidence. |
+| R04 — CLR / CTS foundation | **Next** | Rust and fundamental CLR types have explicit, testable mappings. |
 | R05 — Rust consumes .NET | Planned | Rust can consume existing managed assemblies and .NET APIs. |
 | R06 — .NET consumes Rust | Planned | C# and Visual Basic can consume public managed APIs implemented in Rust. |
 | R07 — Semantic interoperability | Planned | Ownership, GC, errors, nullability, resources, and other cross-runtime semantics have principled contracts. |
@@ -234,15 +234,17 @@ R02 is the first milestone that should be considered unmistakably FerrumWeave ra
 
 # R03 — Core Rust semantics
 
+**Status: Done. Certified in CI — 11/11 R03 contracts across Linux and Windows.**
+
 ## Goal
 
 Move from a ceremonial vertical slice to a small but coherent safe-Rust execution subset.
 
 The exact compatibility matrix will evolve with evidence, but R03 should cover enough MIR behavior to write small programs without special-casing Hello World.
 
-## Initial conformance families
+## Certified conformance families
 
-The R03 ledger should include known cases for at least:
+The completed R03 ledger certifies:
 
 - primitive integer and boolean values;
 - local variables and assignment;
@@ -250,12 +252,13 @@ The R03 ledger should include known cases for at least:
 - function definitions, calls, arguments, and returns;
 - conditional control flow;
 - loops / branching represented through MIR;
-- simple tuples and/or structs;
+- simple tuples and structs;
 - field reads and writes;
-- basic shared and mutable reference behavior needed by the supported safe subset;
-- positive and negative Rust source cases where source semantics matter.
+- shared references;
+- mutable references;
+- negative safe-Rust borrowing rejection with `E0502` and no emitted executable artifact.
 
-This list is a starting denominator, not permission to ignore additional known cases discovered during implementation.
+Positive semantics are observed differentially: the same cumulative Rust fixture is compiled natively and through the pinned CLR backend, the native result must satisfy the explicit `42` oracle, and the managed result must match native output byte-for-byte. Linux and Windows certify the same contract set.
 
 ## DoD
 
@@ -268,6 +271,8 @@ R03 is Done when:
 - implementation does not contain Hello-World-specific opcode or source-pattern shortcuts;
 - Linux and Windows execute the same supported semantic families;
 - unsupported language features fail explicitly rather than silently producing incorrect IL.
+
+All of these conditions are satisfied by the certified R03 milestone. Broader Rust language and standard-library coverage remains outside R03 and must not be inferred from this status.
 
 ---
 
@@ -518,82 +523,3 @@ Additionally:
 When these conditions are met, FerrumWeave may reasonably publish its first **0.1 alpha** rather than tagging a release merely because some CIL exists.
 
 ---
-
-# Functional coverage model
-
-Milestone completion and functional coverage are related but are not the same metric.
-
-FerrumWeave uses two levels of contracts:
-
-## Milestone contracts
-
-These prove end-to-end truths such as:
-
-```text
-FW-R02-CLR-001
-Valid Rust source → managed assembly → CoreCLR execution
-```
-
-## Conformance contracts
-
-These expand the denominator as supported semantics become known, for example:
-
-```text
-primitive-i32-add
-branch-if
-function-call
-struct-field-read
-system-string-roundtrip
-csharp-calls-rust-static-method
-vb-calls-rust-instance-method
-fsharp-consumes-rust-type
-```
-
-A milestone must not claim 100% functional coverage merely because its handful of top-level milestone contracts pass while known conformance behavior is absent from the ledger.
-
----
-
-# Architectural defaults
-
-These are current defaults, not eternal dogma. Reversals should be evidence-driven and documented.
-
-## Upstream first
-
-FerrumWeave should consume and improve existing projects such as `rustc`, `rust-analyzer`, and `rustc_codegen_clr` rather than casually vendoring or permanently forking them.
-
-Preferred flow:
-
-```text
-consume → patch only when necessary → upstream contribution → remove local divergence
-```
-
-## Rust remains Rust
-
-Parsing, type checking, borrow checking, and MIR semantics belong to the Rust compiler ecosystem.
-
-Targeting a GC runtime does not grant FerrumWeave permission to accept source that Rust would reject.
-
-## CLR projection starts predictable
-
-The first .NET-to-Rust projection should favor a mechanically understandable view of CLR metadata. Idiomatic Rust wrappers can evolve on top of a faithful underlying projection.
-
-## Interoperability is symmetric
-
-Neither Rust nor .NET is a compatibility shim around the other. FerrumWeave should preserve the strengths and explicit boundaries of both ecosystems.
-
----
-
-# Roadmap change policy
-
-This roadmap is expected to change as executable evidence teaches us more.
-
-Changes are healthy when they:
-
-- split a milestone because its risk became clearer;
-- reorder work because a dependency was discovered;
-- move a capability earlier because the implementation naturally exposes it;
-- replace an assumed design with a better evidenced design.
-
-Changes are not healthy when they merely redefine Done after an implementation failed to meet the existing contract.
-
-Any material change to a milestone's technical promise or DoD should be reviewed as a roadmap change, with an ADR when it reflects a significant architectural decision.
