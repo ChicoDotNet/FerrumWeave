@@ -47,7 +47,7 @@ R02 proves the first real Rust-language path into the CLR:
 | Substitute C#/VB/F#/C/C++ implementation | No | No | Fixture and verifier explicitly reject source-language substitution |
 | Native Rust launcher as implementation | No | No | Managed artifact is executed directly by CoreCLR |
 
-The R02 compatibility lane pins `FractalFir/rustc_codegen_clr@a9aa553b136fce00eceb41fba30758830500a63f` and `nightly-2025-10-14`. FerrumWeave's normal repository toolchain remains stable; nightly compiler internals are isolated to this compatibility lane.
+The R02 compatibility lane pins `FractalFir/rustc_codegen_clr@a9aa553b136fce00eceb41fba30758830500a63f` and `nightly-2025-10-14`. FerrumWeave's normal repository toolchain remains stable; nightly compiler internals are isolated to this compatibility lane. CLR execution for R02 is certified against .NET 10 LTS using SDK `10.0.400` and a `net10.0` runtime configuration.
 
 R02 is deliberately a **vertical slice**, not broad Rust support. The certified positive program is intentionally tiny so the milestone proves the compiler/runtime path without pretending R03 semantics already exist.
 
