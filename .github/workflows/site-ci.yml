@@ -23,10 +23,14 @@ jobs:
         working-directory: docs/site
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+          cache: npm
+          cache-dependency-path: docs/site/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
       - name: Build website
         run: npm run build
