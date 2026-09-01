@@ -1,0 +1,12 @@
+[package]
+name = "ferrumweave-cil"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.98"
+description = "FerrumWeave CIL and CLR artifact emission primitives"
+repository = "https://github.com/ChicoDotNet/FerrumWeave"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lints.rust]
+unsafe_code = "forbid"

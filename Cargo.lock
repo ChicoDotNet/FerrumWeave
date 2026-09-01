@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "ferrumweave"
 version = "0.0.1"
+dependencies = [
+ "ferrumweave-cil",
+]
+
+[[package]]
+name = "ferrumweave-cil"
+version = "0.0.1"

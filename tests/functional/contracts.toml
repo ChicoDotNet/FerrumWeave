@@ -6,3 +6,27 @@ id = "FW-R00-HELLO-001"
 description = "Running the FerrumWeave binary succeeds and writes Hello FerrumWeave to stdout."
 implemented = true
 test = "hello_ferrumweave_cli_contract"
+
+[[contracts]]
+id = "FW-R01-CLR-001"
+description = "FerrumWeave emits a valid managed PE/CLI assembly with CLR metadata and a managed MethodDef entry point."
+implemented = true
+test = "r01_probe_is_managed_assembly"
+
+[[contracts]]
+id = "FW-R01-CLR-002"
+description = "The generated R01 managed assembly executes with dotnet and prints Hello FerrumWeave."
+implemented = true
+test = "r01_probe_executes_on_coreclr"
+
+[[contracts]]
+id = "FW-R01-CLR-003"
+description = "The same IL-only managed artifact executes under the Windows and Linux CI matrix without a platform-specific rebuild."
+implemented = true
+test = "r01_probe_is_portable_il_only_artifact"
+
+[[contracts]]
+id = "FW-R01-CLR-004"
+description = "The R01 proof contains no native entry point, native import bootstrap, P/Invoke implementation, generated C#, or subprocess-backed behavior."
+implemented = true
+test = "r01_probe_has_no_native_implementation"
