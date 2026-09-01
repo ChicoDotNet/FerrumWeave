@@ -1,0 +1,16 @@
+[package]
+name = "ferrumweave"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.98"
+description = "Experimental Rust language implementation for the .NET ecosystem"
+repository = "https://github.com/ChicoDotNet/FerrumWeave"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[workspace]
+resolver = "3"
+members = ["."]
+
+[lints.rust]
+unsafe_code = "forbid"
