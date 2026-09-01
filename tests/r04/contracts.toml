@@ -46,8 +46,8 @@ proof = "ferrumweave-projection-types managed object identity and borrow-boundar
 [[contracts]]
 id = "FW-R04-CTS-007"
 family = "System.String projection and round-trip"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "ferrumweave-projection-types System.String UTF-16 projection and round-trip unit tests"
 
 [[contracts]]
 id = "FW-R04-CTS-008"
