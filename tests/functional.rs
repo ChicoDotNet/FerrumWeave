@@ -32,15 +32,35 @@ fn r01_probe_is_managed_assembly() {
     assert_eq!(layout.optional_magic, 0x010B, "R01 emits a PE32 CLI image");
     assert_ne!(layout.cli_rva, 0, "CLI data directory must be present");
     assert_eq!(layout.cli_header_size, 0x48);
-    assert_eq!(layout.cor_flags & 0x1, 0x1, "COMIMAGE_FLAGS_ILONLY must be set");
+    assert_eq!(
+        layout.cor_flags & 0x1,
+        0x1,
+        "COMIMAGE_FLAGS_ILONLY must be set"
+    );
     assert_eq!(layout.entry_point_token, 0x0600_0001);
     assert_eq!(read_u32(&image, layout.metadata_offset), 0x424A_5342);
 
     let tables = metadata_stream(&image, layout.metadata_offset, "#~");
-    assert_eq!(table_row_count(tables, 0x06), 1, "one MethodDef is expected");
-    assert_eq!(table_row_count(tables, 0x0A), 1, "one MemberRef is expected");
-    assert_eq!(table_row_count(tables, 0x20), 1, "one Assembly row is expected");
-    assert_eq!(table_row_count(tables, 0x23), 1, "one AssemblyRef is expected");
+    assert_eq!(
+        table_row_count(tables, 0x06),
+        1,
+        "one MethodDef is expected"
+    );
+    assert_eq!(
+        table_row_count(tables, 0x0A),
+        1,
+        "one MemberRef is expected"
+    );
+    assert_eq!(
+        table_row_count(tables, 0x20),
+        1,
+        "one Assembly row is expected"
+    );
+    assert_eq!(
+        table_row_count(tables, 0x23),
+        1,
+        "one AssemblyRef is expected"
+    );
 
     let strings = metadata_stream(&image, layout.metadata_offset, "#Strings");
     assert!(contains_ascii(strings, PROBE_ASSEMBLY_NAME));
@@ -61,7 +81,10 @@ fn r01_probe_is_portable_il_only_artifact() {
     let image = emit_probe_assembly();
     let layout = inspect_probe(&image);
 
-    assert_eq!(layout.machine, 0x014C, "AnyCPU managed PE convention should be I386");
+    assert_eq!(
+        layout.machine, 0x014C,
+        "AnyCPU managed PE convention should be I386"
+    );
     assert_eq!(layout.cor_flags & 0x1, 0x1, "artifact must be IL-only");
     assert_eq!(layout.cor_flags & 0x2, 0, "32BITREQUIRED must remain clear");
 
@@ -76,11 +99,25 @@ fn r01_probe_has_no_native_implementation() {
     let image = emit_probe_assembly();
     let layout = inspect_probe(&image);
 
-    assert_eq!(layout.native_entry_point_rva, 0, "PE native entry point must be empty");
-    assert_eq!(layout.import_directory_rva, 0, "R01 must not import a native bootstrap");
+    assert_eq!(
+        layout.native_entry_point_rva, 0,
+        "PE native entry point must be empty"
+    );
+    assert_eq!(
+        layout.import_directory_rva, 0,
+        "R01 must not import a native bootstrap"
+    );
     assert_eq!(layout.import_directory_size, 0);
-    assert_eq!(layout.cor_flags & 0x10, 0, "NATIVE_ENTRYPOINT flag must be clear");
-    assert_eq!(layout.entry_point_token >> 24, 0x06, "entry point must be a MethodDef token");
+    assert_eq!(
+        layout.cor_flags & 0x10,
+        0,
+        "NATIVE_ENTRYPOINT flag must be clear"
+    );
+    assert_eq!(
+        layout.entry_point_token >> 24,
+        0x06,
+        "entry point must be a MethodDef token"
+    );
 }
 
 fn with_probe(test: impl FnOnce(&ProbePaths)) {
@@ -238,7 +275,10 @@ fn contains_ascii(haystack: &[u8], needle: &str) -> bool {
 }
 
 fn rva_to_offset(rva: u32, section_rva: u32, section_raw: u32) -> usize {
-    assert!(rva >= section_rva, "RVA must reside in the R01 .text section");
+    assert!(
+        rva >= section_rva,
+        "RVA must reside in the R01 .text section"
+    );
     to_usize(section_raw + (rva - section_rva))
 }
 

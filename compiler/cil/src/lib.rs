@@ -134,8 +134,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
 
     // A deterministic MVID keeps the R01 probe reproducible byte-for-byte.
     let guid = vec![
-        0x46, 0x57, 0x52, 0x30, 0x31, 0x43, 0x49, 0x4C, 0x50, 0x52, 0x4F, 0x42, 0x45, 0x30,
-        0x30, 0x31,
+        0x46, 0x57, 0x52, 0x30, 0x31, 0x43, 0x49, 0x4C, 0x50, 0x52, 0x4F, 0x42, 0x45, 0x30, 0x30,
+        0x31,
     ];
 
     let mut blobs = vec![0_u8];
@@ -255,7 +255,10 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u32(&mut metadata, to_u32(version.len()));
     metadata.extend_from_slice(version);
     push_u16(&mut metadata, 0); // Flags.
-    push_u16(&mut metadata, u16::try_from(streams.len()).expect("stream count fits u16"));
+    push_u16(
+        &mut metadata,
+        u16::try_from(streams.len()).expect("stream count fits u16"),
+    );
 
     for ((name, data), offset) in streams.iter().zip(offsets.iter()) {
         push_u32(&mut metadata, to_u32(*offset));
