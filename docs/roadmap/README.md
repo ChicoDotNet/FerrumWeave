@@ -12,8 +12,8 @@ A milestone is complete only when it changes a technical fact about the project 
 | --- | --- | --- |
 | R00 — Repository baseline | **Done** | FerrumWeave has a reproducible Rust bootstrap, CI, quality gates, community foundations, branding, Pages, and dependency maintenance. |
 | R01 — CLR artifact probe | **Done** | FerrumWeave can produce and execute a valid managed .NET assembly. |
-| R02 — Rust → CLR vertical slice | **Next** | Real Rust source passes through `rustc` and executes as managed code on CoreCLR. |
-| R03 — Core Rust semantics | Planned | A deliberate safe-Rust subset is compiled correctly rather than only a ceremonial Hello World. |
+| R02 — Rust → CLR vertical slice | **Done** | Real Rust source passes through `rustc` and executes as managed code on CoreCLR. |
+| R03 — Core Rust semantics | **Next** | A deliberate safe-Rust subset is compiled correctly rather than only a ceremonial Hello World. |
 | R04 — CLR / CTS foundation | Planned | Rust and fundamental CLR types have explicit, testable mappings. |
 | R05 — Rust consumes .NET | Planned | Rust can consume existing managed assemblies and .NET APIs. |
 | R06 — .NET consumes Rust | Planned | C# and Visual Basic can consume public managed APIs implemented in Rust. |
@@ -165,6 +165,8 @@ R01 is Done when:
 ---
 
 # R02 — Rust → CLR vertical slice
+
+**Status: Done. Certified in CI — 5/5 R02 contracts across Linux and Windows.**
 
 ## Goal
 
