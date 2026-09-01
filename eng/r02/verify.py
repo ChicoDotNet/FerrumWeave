@@ -274,7 +274,7 @@ def main() -> int:
 
         result = run(compiler_command(args.toolchain, backend, linker, VALID_SOURCE, assembly), ROOT)
         if result.returncode != 0:
-            fail(f"real Rust → CLR compilation failed:\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}")
+            fail(f"real Rust -> CLR compilation failed:\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}")
         if not assembly.is_file():
             fail("rustc/codegen backend reported success without producing the R02 artifact")
 
@@ -286,7 +286,7 @@ def main() -> int:
     print("COVERED   FW-R02-CLR-001: real Rust compiled to managed PE/CLI")
     print("COVERED   FW-R02-CLR-002: rustc rejected invalid borrow with E0502")
     print(f"COVERED   {platform_contract}: managed Rust executed on this CI platform")
-    print("COVERED   FW-R02-CLR-005: direct .rs → rustc path; no source-language substitute")
+    print("COVERED   FW-R02-CLR-005: direct .rs -> rustc path; no source-language substitute")
     print("R02 matrix contract target: 5/5 = 100.00% when Linux and Windows jobs both pass")
     return 0
 
