@@ -9,7 +9,7 @@
 
 use core::hint::black_box;
 
-// R03 cumulative semantic fixture (S01 + S02 + S03 + S04 + S05).
+// R03 cumulative semantic fixture (S01 + S02 + S03 + S04 + S05 + S06).
 //
 // The computation below is ordinary safe Rust. Only the observation function
 // differs by backend: native Rust prints with std, while the CLR build uses the
@@ -150,6 +150,30 @@ fn shared_references() -> i32 {
     black_box(first.left) + black_box(second.right)
 }
 
+#[inline(never)]
+fn mutable_references() -> i32 {
+    let mut pair = AnswerPair {
+        left: black_box(18),
+        right: black_box(23),
+    };
+    {
+        let borrowed: &mut AnswerPair = &mut pair;
+        borrowed.left += black_box(1);
+    }
+    black_box(pair.left) + black_box(pair.right)
+}
+
+#[inline(never)]
+fn reference_semantics() -> i32 {
+    let shared = shared_references();
+    let mutable = mutable_references();
+    if shared == black_box(42) && mutable == black_box(42) {
+        42
+    } else {
+        0
+    }
+}
+
 fn main() {
     observe(primitives_and_locals());
     observe(assignment());
@@ -158,5 +182,5 @@ fn main() {
     observe(conditional(loop_semantics()));
     observe(tuples_and_structs());
     observe(field_reads_and_writes());
-    observe(shared_references());
+    observe(reference_semantics());
 }

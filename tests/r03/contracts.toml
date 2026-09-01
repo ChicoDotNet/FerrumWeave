@@ -64,8 +64,8 @@ fixture = "semantics_s01.rs"
 [[contracts]]
 id = "FW-R03-SEM-010"
 family = "mutable references"
-implemented = false
-fixture = ""
+implemented = true
+fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-NEG-001"
