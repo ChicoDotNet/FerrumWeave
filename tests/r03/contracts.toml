@@ -1,0 +1,74 @@
+milestone = "R03"
+status = "done"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R03 declares its known semantic denominator up front. During development the
+# workflow reports real progress without pretending the unfinished milestone is
+# at 100%. When status becomes "done", the verifier enforces the DoD minimum.
+
+[[contracts]]
+id = "FW-R03-SEM-001"
+family = "primitive integer and boolean values"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-002"
+family = "local variables and assignment"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-003"
+family = "arithmetic and comparison"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-004"
+family = "function definitions, calls, arguments, and returns"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-005"
+family = "conditional control flow"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-006"
+family = "loops and MIR branching"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-007"
+family = "tuples and structs"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-008"
+family = "field reads and writes"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-009"
+family = "shared references"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-SEM-010"
+family = "mutable references"
+implemented = true
+fixture = "semantics_s01.rs"
+
+[[contracts]]
+id = "FW-R03-NEG-001"
+family = "negative safe-Rust semantic rejection"
+implemented = true
+fixture = "borrow_invalid.rs"
