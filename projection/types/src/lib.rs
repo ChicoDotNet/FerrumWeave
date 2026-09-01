@@ -36,6 +36,7 @@ pub enum CliElementType {
     NativeInt = 0x18,
     NativeUInt = 0x19,
     Object = 0x1C,
+    SzArray = 0x1D,
 }
 
 impl CliElementType {
@@ -110,6 +111,34 @@ pub struct SystemStringProjection {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidClrString {
     pub reason: &'static str,
+}
+
+/// A single-dimensional, zero-based CLR array projection for a directly mapped Rust scalar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SzArrayProjection {
+    pub element_type: CliElementType,
+    pub item: DirectCtsMapping,
+}
+
+/// Owned CLR-array boundary payload used before the emitted/reflected CLR verification layer exists.
+///
+/// This type deliberately does not pretend to be `System.Array`; it only captures the value-preserving
+/// ownership transfer required by the R04 projection contract. CLR emission/reflection remains CTS-010.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectedClrArray<T> {
+    values: Vec<T>,
+}
+
+impl<T> ProjectedClrArray<T> {
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
 }
 
 /// Return FerrumWeave's centralized direct Rust -> CTS scalar policy.
@@ -218,6 +247,29 @@ pub fn utf16_to_rust_string(value: &[u16]) -> Result<String, InvalidClrString> {
     })
 }
 
+/// Project a directly mapped Rust scalar as an ECMA-335 SZARRAY signature.
+pub const fn szarray_projection(rust: RustScalar) -> Result<SzArrayProjection, NoDirectCliMapping> {
+    match direct_cts_mapping(rust) {
+        Ok(item) => Ok(SzArrayProjection {
+            element_type: CliElementType::SzArray,
+            item,
+        }),
+        Err(error) => Err(error),
+    }
+}
+
+/// Transfer owned Rust array values into the CLR projection boundary without changing order or values.
+#[must_use]
+pub fn rust_vec_to_clr_array<T>(values: Vec<T>) -> ProjectedClrArray<T> {
+    ProjectedClrArray { values }
+}
+
+/// Recover owned Rust array values from the CLR projection boundary.
+#[must_use]
+pub fn clr_array_to_rust_vec<T>(array: ProjectedClrArray<T>) -> Vec<T> {
+    array.values
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -294,6 +346,7 @@ mod tests {
         assert_eq!(CliElementType::NativeInt.code(), 0x18);
         assert_eq!(CliElementType::NativeUInt.code(), 0x19);
         assert_eq!(CliElementType::Object.code(), 0x1C);
+        assert_eq!(CliElementType::SzArray.code(), 0x1D);
     }
 
     #[test]
@@ -389,5 +442,36 @@ mod tests {
         let error = utf16_to_rust_string(&[0xD800])
             .expect_err("unpaired CLR surrogate must not be silently replaced");
         assert!(error.reason.contains("unpaired UTF-16 surrogate"));
+    }
+
+    #[test]
+    fn direct_scalar_arrays_use_szarray_and_preserve_element_mapping() {
+        let projection = szarray_projection(RustScalar::I32)
+            .expect("directly mapped scalar should support SZARRAY projection");
+        assert_eq!(projection.element_type, CliElementType::SzArray);
+        assert_eq!(projection.item.element_type, CliElementType::I4);
+        assert_eq!(projection.item.system_type, "System.Int32");
+    }
+
+    #[test]
+    fn array_values_round_trip_without_reordering_or_narrowing() {
+        let original = vec![i32::MIN, -1, 0, 42, i32::MAX];
+        let projected = rust_vec_to_clr_array(original.clone());
+        assert_eq!(projected.len(), original.len());
+        assert!(!projected.is_empty());
+        assert_eq!(clr_array_to_rust_vec(projected), original);
+
+        let empty: Vec<i32> = Vec::new();
+        let projected = rust_vec_to_clr_array(empty.clone());
+        assert!(projected.is_empty());
+        assert_eq!(clr_array_to_rust_vec(projected), empty);
+    }
+
+    #[test]
+    fn arrays_do_not_bypass_unsupported_direct_element_mappings() {
+        let error = szarray_projection(RustScalar::Char)
+            .expect_err("array projection must preserve direct element mapping policy");
+        assert_eq!(error.rust, RustScalar::Char);
+        assert!(error.reason.contains("direct mapping would be lossy"));
     }
 }
