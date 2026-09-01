@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security policy
+    url: https://github.com/ChicoDotNet/FerrumWeave/security/policy
+    about: Read private-reporting guidance before disclosing a security vulnerability.
+  - name: Contribution guide
+    url: https://github.com/ChicoDotNet/FerrumWeave/blob/dev/CONTRIBUTING.md
+    about: Understand the Rust + .NET friendly contribution model before starting a large change.
