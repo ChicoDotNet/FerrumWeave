@@ -29,6 +29,10 @@ KNOWN_CONTRACTS = {
 EXPECTED_OUTPUTS = {
     "semantics_s01.rs": "42\n30\n1\n42\n7\n42\n42\n42\n",
 }
+EXPECTED_REJECTIONS = {
+    "borrow_invalid.rs": "E0502",
+}
+VERIFIED_FIXTURES = set(EXPECTED_OUTPUTS) | set(EXPECTED_REJECTIONS)
 
 
 def fail(message: str) -> None:
@@ -36,13 +40,7 @@ def fail(message: str) -> None:
 
 
 def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        command,
-        cwd=cwd,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    return subprocess.run(command, cwd=cwd, text=True, capture_output=True, check=False)
 
 
 def parse_scalar(value: str) -> object:
@@ -92,7 +90,7 @@ def load_ledger(path: Path) -> dict[str, object]:
     return data
 
 
-def verify_ledger() -> tuple[list[dict[str, object]], float]:
+def verify_ledger() -> tuple[list[dict[str, object]], float, str]:
     data = load_ledger(LEDGER)
     if data.get("milestone") != "R03":
         fail("R03 contract ledger has the wrong milestone id")
@@ -118,7 +116,7 @@ def verify_ledger() -> tuple[list[dict[str, object]], float]:
         fixture = contract.get("fixture")
         if not isinstance(fixture, str) or not fixture:
             fail(f"implemented contract {contract['id']} has no fixture")
-        if fixture not in EXPECTED_OUTPUTS:
+        if fixture not in VERIFIED_FIXTURES:
             fail(f"implemented contract {contract['id']} uses an unverified fixture {fixture!r}")
 
     coverage = 100.0 * len(implemented) / len(contracts)
@@ -128,8 +126,10 @@ def verify_ledger() -> tuple[list[dict[str, object]], float]:
         fail("R03 DoD coverage thresholds drifted from the roadmap policy")
     if status == "done" and coverage < minimum_when_done:
         fail(f"R03 marked done at only {coverage:.2f}% functional coverage")
+    if status == "done" and coverage != target_when_done:
+        fail(f"R03 marked done before reaching the declared 100% target: {coverage:.2f}%")
 
-    return implemented, coverage
+    return implemented, coverage, str(status)
 
 
 def clr_command(toolchain: str, backend: Path, linker: Path, source: Path, output: Path) -> list[str]:
@@ -153,16 +153,7 @@ def clr_command(toolchain: str, backend: Path, linker: Path, source: Path, outpu
 
 
 def native_command(toolchain: str, source: Path, output: Path) -> list[str]:
-    return [
-        "rustc",
-        f"+{toolchain}",
-        "-O",
-        "--edition",
-        "2021",
-        str(source),
-        "-o",
-        str(output),
-    ]
+    return ["rustc", f"+{toolchain}", "-O", "--edition", "2021", str(source), "-o", str(output)]
 
 
 def write_runtime_config(assembly: Path) -> None:
@@ -173,8 +164,7 @@ def write_runtime_config(assembly: Path) -> None:
         }
     }
     assembly.with_suffix(".runtimeconfig.json").write_text(
-        json.dumps(payload, indent=2) + "\n",
-        encoding="utf-8",
+        json.dumps(payload, indent=2) + "\n", encoding="utf-8"
     )
 
 
@@ -193,7 +183,9 @@ def execute_or_fail(command: list[str], cwd: Path, label: str) -> str:
     return result.stdout.replace("\r\n", "\n")
 
 
-def verify_fixture(toolchain: str, backend: Path, linker: Path, fixture_name: str, work: Path) -> None:
+def verify_positive_fixture(
+    toolchain: str, backend: Path, linker: Path, fixture_name: str, work: Path
+) -> None:
     source = FIXTURE_DIR / fixture_name
     if not source.is_file():
         fail(f"R03 fixture not found: {source}")
@@ -206,7 +198,6 @@ def verify_fixture(toolchain: str, backend: Path, linker: Path, fixture_name: st
 
     compile_or_fail(native_command(toolchain, source, native), f"native parity fixture {fixture_name}")
     native_stdout = execute_or_fail([str(native)], work, f"native parity fixture {fixture_name}")
-
     expected = EXPECTED_OUTPUTS[fixture_name]
     if native_stdout != expected:
         fail(f"native rustc produced unexpected semantics for {fixture_name}: {native_stdout!r}")
@@ -216,12 +207,31 @@ def verify_fixture(toolchain: str, backend: Path, linker: Path, fixture_name: st
         fail(f"CLR backend produced no managed artifact for {fixture_name}")
     write_runtime_config(managed)
     clr_stdout = execute_or_fail(["dotnet", str(managed)], work, f"CLR fixture {fixture_name}")
-
     if clr_stdout != native_stdout:
         fail(
             f"backend semantic mismatch for {fixture_name}: "
             f"native={native_stdout!r}, clr={clr_stdout!r}"
         )
+
+
+def verify_negative_fixture(
+    toolchain: str, backend: Path, linker: Path, fixture_name: str, work: Path
+) -> None:
+    source = FIXTURE_DIR / fixture_name
+    if not source.is_file():
+        fail(f"R03 negative fixture not found: {source}")
+    output = work / "negative.exe"
+    result = run(clr_command(toolchain, backend, linker, source, output), ROOT)
+    if result.returncode == 0:
+        fail(f"invalid safe-Rust fixture unexpectedly compiled: {fixture_name}")
+    expected_code = EXPECTED_REJECTIONS[fixture_name]
+    if expected_code not in result.stderr:
+        fail(
+            f"invalid safe-Rust fixture failed for the wrong reason; expected {expected_code}:\n"
+            f"{result.stderr}"
+        )
+    if output.exists():
+        fail(f"negative semantic rejection produced an executable artifact: {fixture_name}")
 
 
 def main() -> int:
@@ -238,15 +248,24 @@ def main() -> int:
     if not linker.is_file():
         fail(f"CIL linker not found: {linker}")
 
-    implemented, coverage = verify_ledger()
-    fixtures = sorted({str(contract["fixture"]) for contract in implemented})
+    implemented, coverage, status = verify_ledger()
+    positive_fixtures = sorted(
+        {str(contract["fixture"]) for contract in implemented if contract["fixture"] in EXPECTED_OUTPUTS}
+    )
+    negative_fixtures = sorted(
+        {str(contract["fixture"]) for contract in implemented if contract["fixture"] in EXPECTED_REJECTIONS}
+    )
 
     with tempfile.TemporaryDirectory(prefix="ferrumweave-r03-") as temporary:
         root = Path(temporary)
-        for index, fixture_name in enumerate(fixtures):
-            work = root / f"fixture-{index}"
+        for index, fixture_name in enumerate(positive_fixtures):
+            work = root / f"positive-{index}"
             work.mkdir()
-            verify_fixture(args.toolchain, backend, linker, fixture_name, work)
+            verify_positive_fixture(args.toolchain, backend, linker, fixture_name, work)
+        for index, fixture_name in enumerate(negative_fixtures):
+            work = root / f"negative-{index}"
+            work.mkdir()
+            verify_negative_fixture(args.toolchain, backend, linker, fixture_name, work)
 
     for contract in implemented:
         print(f"COVERED   {contract['id']}: {contract['family']}")
@@ -255,7 +274,10 @@ def main() -> int:
         f"R03 milestone progress: {len(implemented)}/{len(KNOWN_CONTRACTS)} "
         f"= {coverage:.2f}% ({missing} known contracts not implemented yet)"
     )
-    print("R03 remains in progress; >=96% becomes mandatory when status changes to done")
+    if status == "done":
+        print("R03 ledger is complete; CI certification is the final milestone gate")
+    else:
+        print("R03 remains in progress; >=96% becomes mandatory when status changes to done")
     return 0
 
 
