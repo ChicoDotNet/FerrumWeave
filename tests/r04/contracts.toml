@@ -52,8 +52,8 @@ proof = "ferrumweave-projection-types System.String UTF-16 projection and round-
 [[contracts]]
 id = "FW-R04-CTS-008"
 family = "array projection and round-trip"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "ferrumweave-projection-types SZARRAY signature and owned value round-trip unit tests"
 
 [[contracts]]
 id = "FW-R04-CTS-009"
