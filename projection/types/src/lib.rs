@@ -19,7 +19,7 @@ pub enum RustScalar {
     Char,
 }
 
-/// ECMA-335 ELEMENT_TYPE values used by direct CLI scalar signatures.
+/// ECMA-335 ELEMENT_TYPE values used by FerrumWeave's CTS signatures.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum CliElementType {
@@ -34,6 +34,7 @@ pub enum CliElementType {
     U8 = 0x0B,
     NativeInt = 0x18,
     NativeUInt = 0x19,
+    Object = 0x1C,
 }
 
 impl CliElementType {
@@ -64,6 +65,29 @@ impl NamedCtsValueTypeMapping {
     pub fn full_name(self) -> String {
         format!("{}.{}", self.namespace, self.name)
     }
+}
+
+/// Rust-side reference semantics relevant at a managed public boundary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RustReferenceSemantics {
+    SharedBorrow,
+    ExclusiveBorrow,
+    ManagedObjectHandle,
+}
+
+/// A projection whose CLR representation carries managed object identity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ManagedObjectMapping {
+    pub element_type: CliElementType,
+    pub system_type: &'static str,
+    pub preserves_object_identity: bool,
+}
+
+/// Why Rust reference semantics cannot be represented as a CLR object reference directly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoManagedObjectMapping {
+    pub rust: RustReferenceSemantics,
+    pub reason: &'static str,
 }
 
 /// Why a Rust scalar cannot be represented as a direct CLI scalar.
@@ -127,6 +151,29 @@ pub const fn named_cts_value_type_mapping(rust: RustScalar) -> Option<NamedCtsVa
             name: "UInt128",
         }),
         _ => None,
+    }
+}
+
+/// Return the CLR object-reference mapping only for an explicit managed handle.
+///
+/// A CLR object reference preserves managed object identity, but it does not
+/// encode Rust's shared/exclusive borrow rules. `&T` and `&mut T` therefore
+/// cannot cross this boundary merely by being re-labelled as `System.Object`.
+pub const fn managed_object_mapping(
+    rust: RustReferenceSemantics,
+) -> Result<ManagedObjectMapping, NoManagedObjectMapping> {
+    match rust {
+        RustReferenceSemantics::ManagedObjectHandle => Ok(ManagedObjectMapping {
+            element_type: CliElementType::Object,
+            system_type: "System.Object",
+            preserves_object_identity: true,
+        }),
+        RustReferenceSemantics::SharedBorrow | RustReferenceSemantics::ExclusiveBorrow => {
+            Err(NoManagedObjectMapping {
+                rust,
+                reason: "CLR object references preserve managed identity but do not encode Rust borrow semantics",
+            })
+        }
     }
 }
 
@@ -204,6 +251,7 @@ mod tests {
         assert_eq!(CliElementType::U8.code(), 0x0B);
         assert_eq!(CliElementType::NativeInt.code(), 0x18);
         assert_eq!(CliElementType::NativeUInt.code(), 0x19);
+        assert_eq!(CliElementType::Object.code(), 0x1C);
     }
 
     #[test]
@@ -253,6 +301,31 @@ mod tests {
             RustScalar::Char,
         ] {
             assert_eq!(named_cts_value_type_mapping(rust), None);
+        }
+    }
+
+    #[test]
+    fn explicit_managed_handle_maps_to_system_object_identity() {
+        assert_eq!(
+            managed_object_mapping(RustReferenceSemantics::ManagedObjectHandle),
+            Ok(ManagedObjectMapping {
+                element_type: CliElementType::Object,
+                system_type: "System.Object",
+                preserves_object_identity: true,
+            })
+        );
+    }
+
+    #[test]
+    fn rust_borrows_are_not_relabelled_as_managed_object_references() {
+        for rust in [
+            RustReferenceSemantics::SharedBorrow,
+            RustReferenceSemantics::ExclusiveBorrow,
+        ] {
+            let error = managed_object_mapping(rust)
+                .expect_err("Rust borrow semantics require a projection policy");
+            assert_eq!(error.rust, rust);
+            assert!(error.reason.contains("do not encode Rust borrow semantics"));
         }
     }
 }
