@@ -17,8 +17,18 @@ R04 is **in progress**. This document records only the type mappings that have e
 | `u64` | `ELEMENT_TYPE_U8` / `System.UInt64` | Certified by Rust unit tests |
 | `isize` | `ELEMENT_TYPE_I` / `System.IntPtr` | Certified by Rust unit tests |
 | `usize` | `ELEMENT_TYPE_U` / `System.UIntPtr` | Certified by Rust unit tests |
-| `i128` / `u128` | No direct CLI primitive; named CTS value-type work pending | Explicitly unsupported as a direct mapping |
+| `i128` / `u128` | Named `System.Int128` / `System.UInt128` value types | Covered by named-value-type policy tests; emitted metadata reflection still pending |
 | Rust `char` | **Not** directly `System.Char` | Explicitly unsupported as a lossy direct mapping |
+
+## R04 S03 — managed object identity boundary
+
+FerrumWeave now models managed object identity separately from Rust borrowing semantics:
+
+- an explicit managed-object handle maps to `ELEMENT_TYPE_OBJECT` / `System.Object` and preserves CLR object identity;
+- Rust `&T` and `&mut T` are **not** silently relabelled as managed object references;
+- the reason is semantic, not syntactic: a CLR object reference carries GC-managed identity but does not encode Rust's shared/exclusive borrowing rules.
+
+This policy keeps the public-boundary projection honest until later R04 slices define ownership/nullability and independently reflect emitted CLR signatures.
 
 ## Why `char` is intentionally different
 
@@ -28,6 +38,6 @@ R04 must choose and certify a projection policy rather than silently narrow the 
 
 ## Not yet certified
 
-R04 still needs executable evidence for named 128-bit CTS value types, managed references/object identity, `System.String`, arrays, public-boundary nullability, and emitted-signature round trips inspected independently by the CLR.
+R04 still needs executable evidence for `System.String`, arrays, public-boundary nullability, and emitted-signature round trips inspected independently by the CLR. Named 128-bit value types and managed-object identity now have Rust policy evidence, but their actual emitted metadata remains subject to the independent reflection gate.
 
-The canonical implementation policy for the current slice lives in `projection/types`; see ADR 0003 for the separation between direct CLI scalars and richer CTS projections.
+The canonical implementation policy lives in `projection/types`; see ADR 0003 for the separation between direct CLI scalars and richer CTS projections.
