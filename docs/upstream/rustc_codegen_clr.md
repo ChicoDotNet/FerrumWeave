@@ -1,30 +1,38 @@
 # Upstream: `rustc_codegen_clr`
 
-FerrumWeave treats [`FractalFir/rustc_codegen_clr`](https://github.com/FractalFir/rustc_codegen_clr) as major prior art and a likely upstream dependency/contribution target for real Rust → CLR code generation.
+FerrumWeave treats [`FractalFir/rustc_codegen_clr`](https://github.com/FractalFir/rustc_codegen_clr) as major prior art and an upstream dependency/contribution target for real Rust → CLR code generation.
 
-## Snapshot inspected for R01
+## R02 pinned integration snapshot
 
 - Repository: `FractalFir/rustc_codegen_clr`
-- Branch: `main`
+- Branch inspected: `main`
 - Commit: `a9aa553b136fce00eceb41fba30758830500a63f`
 - Commit message: `Updated rustc version`
+- Rust toolchain: `nightly-2025-10-14`
+- Required components: `rust-src`, `rustc-dev`, `llvm-tools-preview`
 - License: MIT OR Apache-2.0
 
-The upstream workspace contains `cilly`, described as a tool for creating and optimizing .NET assemblies. At the inspected revision, `cilly` is an internal path dependency of `rustc_codegen_clr` and enables nightly Rust language features in its crate root.
+At this revision the upstream workspace contains both the `rustc_codegen_clr` compiler backend and `cilly`, the assembly/linker infrastructure used to produce managed output.
 
-## FerrumWeave policy
+R02 checks out this exact upstream commit in CI, builds the backend and linker from source, and invokes real `rustc` with the backend through `-Z codegen-backend`. The generated PE/CLI artifact is then independently inspected and executed by CoreCLR on Linux and Windows.
 
-FerrumWeave does not vendor or copy `rustc_codegen_clr` in R01.
+## Why the integration is isolated
 
-R01 is intentionally an output-format probe and uses a tiny local ECMA-335 emitter so the repository can remain on stable Rust while proving the managed artifact boundary.
+FerrumWeave's normal repository development stays on its supported stable Rust baseline. `rustc_codegen_clr` necessarily integrates with private/nightly rustc compiler APIs, so R02 keeps that dependency in a dedicated compatibility lane instead of forcing the whole repository onto nightly.
 
-Before R02 begins real Rust → CLR code generation, the project must refresh this upstream snapshot and evaluate:
+This isolation is intentional:
 
-1. current supported `rustc` revision/toolchain;
-2. current `cilly` API and packaging status;
-3. Windows and Linux behavior;
-4. the smallest integration surface FerrumWeave actually needs;
-5. changes that should be proposed upstream instead of maintained locally.
+- application/repository code remains stable-Rust-first;
+- compiler-internals coupling is explicit and reproducibly pinned;
+- upstream source is checked out by CI rather than vendored;
+- changes in rustc internals cannot silently redefine the certified R02 contract;
+- upgrading the pin is a deliberate compatibility change that must pass the same Linux/Windows contract suite.
+
+The architectural decision is recorded in [`ADR 0002`](../architecture/adr/0002-r02-isolated-upstream-codegen-lane.md).
+
+## Upstream-first policy
+
+FerrumWeave does not copy or permanently fork `rustc_codegen_clr` merely to make local progress.
 
 Preferred lifecycle:
 
@@ -38,6 +46,10 @@ upstream contribution
 remove local divergence
 ```
 
+R02 required no FerrumWeave-maintained source patch to the pinned upstream backend. The integration work lives in FerrumWeave's fixtures, verifier, CI wiring, contracts, and compatibility documentation.
+
+Future milestones must refresh the upstream snapshot when they require new semantics rather than assuming the R02 pin is permanent.
+
 ## Provenance rule
 
-FerrumWeave may learn from the public architecture and behavior of upstream projects, but copied/adapted source must never enter the repository without explicit provenance and license review.
+FerrumWeave may learn from and execute the public architecture and behavior of upstream projects, but copied/adapted source must never enter the repository without explicit provenance and license review.
