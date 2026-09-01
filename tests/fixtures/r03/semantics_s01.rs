@@ -9,7 +9,7 @@
 
 use core::hint::black_box;
 
-// R03 cumulative semantic fixture (S01 + S02 + S03).
+// R03 cumulative semantic fixture (S01 + S02 + S03 + S04).
 //
 // The computation below is ordinary safe Rust. Only the observation function
 // differs by backend: native Rust prints with std, while the CLR build uses the
@@ -128,6 +128,17 @@ fn tuples_and_structs() -> i32 {
     left + right
 }
 
+#[inline(never)]
+fn field_reads_and_writes() -> i32 {
+    let mut pair = AnswerPair {
+        left: black_box(20),
+        right: black_box(20),
+    };
+    pair.left = pair.left + black_box(1);
+    pair.right += black_box(1);
+    pair.left + pair.right
+}
+
 fn main() {
     observe(primitives_and_locals());
     observe(assignment());
@@ -135,4 +146,5 @@ fn main() {
     observe(function_call());
     observe(conditional(loop_semantics()));
     observe(tuples_and_structs());
+    observe(field_reads_and_writes());
 }
