@@ -63,9 +63,7 @@ pub struct NoDirectCliMapping {
 /// `Err` is intentional: not every Rust scalar has a lossless ECMA-335
 /// primitive encoding. Named CTS value types and projection-specific types are
 /// separate mapping classes and must not be smuggled into this direct layer.
-pub const fn direct_cts_mapping(
-    rust: RustScalar,
-) -> Result<DirectCtsMapping, NoDirectCliMapping> {
+pub const fn direct_cts_mapping(rust: RustScalar) -> Result<DirectCtsMapping, NoDirectCliMapping> {
     let (element_type, system_type) = match rust {
         RustScalar::Bool => (CliElementType::Boolean, "System.Boolean"),
         RustScalar::I8 => (CliElementType::I1, "System.SByte"),
@@ -185,9 +183,14 @@ mod tests {
     #[test]
     fn i128_and_u128_are_not_misrepresented_as_cli_primitives() {
         for rust in [RustScalar::I128, RustScalar::U128] {
-            let error = direct_cts_mapping(rust).expect_err("128-bit integer needs named CTS mapping");
+            let error =
+                direct_cts_mapping(rust).expect_err("128-bit integer needs named CTS mapping");
             assert_eq!(error.rust, rust);
-            assert!(error.reason.contains("no direct 128-bit integer element type"));
+            assert!(
+                error
+                    .reason
+                    .contains("no direct 128-bit integer element type")
+            );
         }
     }
 }
