@@ -10,7 +10,10 @@ publish = false
 
 [workspace]
 resolver = "3"
-members = ["."]
+members = [".", "compiler/cil"]
+
+[dev-dependencies]
+ferrumweave-cil = { path = "compiler/cil" }
 
 [lints.rust]
 unsafe_code = "forbid"
