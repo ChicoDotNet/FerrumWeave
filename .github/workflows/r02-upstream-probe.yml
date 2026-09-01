@@ -42,7 +42,7 @@ jobs:
       - name: Install pinned upstream Rust toolchain
         shell: bash
         run: |
-          rustup toolchain install nightly-2025-10-14 --profile minimal --component rust-src,rustc-dev
+          rustup toolchain install nightly-2025-10-14 --profile minimal --component rust-src,rustc-dev,llvm-tools-preview
           rustc +nightly-2025-10-14 --version --verbose
       - name: Install IL assembler on Linux
         if: runner.os == 'Linux'
