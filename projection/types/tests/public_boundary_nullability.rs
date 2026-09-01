@@ -1,6 +1,6 @@
 use ferrumweave_projection_types::{
-    public_boundary_nullability, PublicBoundaryRepresentation, PublicBoundaryNullability,
-    RustBoundaryPresence,
+    PublicBoundaryNullability, PublicBoundaryRepresentation, RustBoundaryPresence,
+    public_boundary_nullability,
 };
 
 #[test]
