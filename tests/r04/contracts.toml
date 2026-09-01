@@ -40,8 +40,8 @@ proof = "ferrumweave-projection-types named CTS value-type mapping unit tests"
 [[contracts]]
 id = "FW-R04-CTS-006"
 family = "managed reference and object identity mapping"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "ferrumweave-projection-types managed object identity and borrow-boundary unit tests"
 
 [[contracts]]
 id = "FW-R04-CTS-007"
