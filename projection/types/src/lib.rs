@@ -32,6 +32,7 @@ pub enum CliElementType {
     U4 = 0x09,
     I8 = 0x0A,
     U8 = 0x0B,
+    String = 0x0E,
     NativeInt = 0x18,
     NativeUInt = 0x19,
     Object = 0x1C,
@@ -94,6 +95,20 @@ pub struct NoManagedObjectMapping {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoDirectCliMapping {
     pub rust: RustScalar,
+    pub reason: &'static str,
+}
+
+/// FerrumWeave's lossless Rust UTF-8 -> CLR `System.String` projection boundary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SystemStringProjection {
+    pub element_type: CliElementType,
+    pub system_type: &'static str,
+    pub clr_encoding: &'static str,
+}
+
+/// A CLR UTF-16 payload that cannot be represented as a valid Rust `String`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InvalidClrString {
     pub reason: &'static str,
 }
 
@@ -177,6 +192,32 @@ pub const fn managed_object_mapping(
     }
 }
 
+/// Return the CLR signature/encoding policy for Rust strings.
+#[must_use]
+pub const fn system_string_projection() -> SystemStringProjection {
+    SystemStringProjection {
+        element_type: CliElementType::String,
+        system_type: "System.String",
+        clr_encoding: "UTF-16",
+    }
+}
+
+/// Encode a valid Rust UTF-8 string as the UTF-16 code units carried by `System.String`.
+#[must_use]
+pub fn rust_string_to_utf16(value: &str) -> Vec<u16> {
+    value.encode_utf16().collect()
+}
+
+/// Decode CLR UTF-16 code units into a Rust `String` without silently replacing invalid data.
+///
+/// CLR `System.String` can contain unpaired surrogate code units while Rust `String`
+/// must be valid Unicode scalar data. Such CLR payloads are rejected explicitly.
+pub fn utf16_to_rust_string(value: &[u16]) -> Result<String, InvalidClrString> {
+    String::from_utf16(value).map_err(|_| InvalidClrString {
+        reason: "System.String contains an unpaired UTF-16 surrogate that cannot be represented by Rust String",
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -249,6 +290,7 @@ mod tests {
         assert_eq!(CliElementType::U4.code(), 0x09);
         assert_eq!(CliElementType::I8.code(), 0x0A);
         assert_eq!(CliElementType::U8.code(), 0x0B);
+        assert_eq!(CliElementType::String.code(), 0x0E);
         assert_eq!(CliElementType::NativeInt.code(), 0x18);
         assert_eq!(CliElementType::NativeUInt.code(), 0x19);
         assert_eq!(CliElementType::Object.code(), 0x1C);
@@ -327,5 +369,25 @@ mod tests {
             assert_eq!(error.rust, rust);
             assert!(error.reason.contains("do not encode Rust borrow semantics"));
         }
+    }
+
+    #[test]
+    fn rust_strings_project_to_system_string_and_round_trip_utf16() {
+        let projection = system_string_projection();
+        assert_eq!(projection.element_type, CliElementType::String);
+        assert_eq!(projection.system_type, "System.String");
+        assert_eq!(projection.clr_encoding, "UTF-16");
+
+        let original = "FerrumWeave 🦀 Δ nul:\0";
+        let clr_payload = rust_string_to_utf16(original);
+        assert!(clr_payload.len() > original.chars().count());
+        assert_eq!(utf16_to_rust_string(&clr_payload), Ok(original.to_owned()));
+    }
+
+    #[test]
+    fn inbound_unpaired_clr_surrogates_are_rejected_without_replacement() {
+        let error = utf16_to_rust_string(&[0xD800])
+            .expect_err("unpaired CLR surrogate must not be silently replaced");
+        assert!(error.reason.contains("unpaired UTF-16 surrogate"));
     }
 }
