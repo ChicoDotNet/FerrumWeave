@@ -40,8 +40,8 @@ fixture = "semantics_s01.rs"
 [[contracts]]
 id = "FW-R03-SEM-006"
 family = "loops and MIR branching"
-implemented = false
-fixture = ""
+implemented = true
+fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-007"

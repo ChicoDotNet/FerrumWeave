@@ -9,7 +9,7 @@
 
 use core::hint::black_box;
 
-// R03 S01 semantic fixture.
+// R03 cumulative semantic fixture (S01 + S02).
 //
 // The computation below is ordinary safe Rust. Only the observation function
 // differs by backend: native Rust prints with std, while the CLR build uses the
@@ -90,7 +90,28 @@ fn function_call() -> i32 {
 
 #[inline(never)]
 fn conditional(score: i32) -> i32 {
-    if score >= black_box(42) { 7 } else { 3 }
+    if score == black_box(42) { 7 } else { 3 }
+}
+
+#[inline(never)]
+fn loop_semantics() -> i32 {
+    let mut iteration = black_box(0);
+    let mut total = black_box(0);
+
+    while iteration < black_box(3) {
+        total += black_box(7);
+        iteration += black_box(1);
+    }
+
+    loop {
+        if iteration >= black_box(6) {
+            break;
+        }
+        total += black_box(7);
+        iteration += black_box(1);
+    }
+
+    total
 }
 
 fn main() {
@@ -98,5 +119,5 @@ fn main() {
     observe(assignment());
     observe(arithmetic_and_comparison());
     observe(function_call());
-    observe(conditional(function_call()));
+    observe(conditional(loop_semantics()));
 }
