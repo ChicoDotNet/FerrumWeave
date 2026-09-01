@@ -64,6 +64,22 @@ jobs:
           #![feature(adt_const_params, core_intrinsics, unsized_const_params)]
           #![allow(incomplete_features, internal_features)]
 
+          #[derive(Clone, Copy)]
+          struct RustcCLRInteropManagedChar {
+              size: u16,
+          }
+
+          #[inline(never)]
+          fn rustc_clr_interop_managed_call0_<
+              const ASSEMBLY: &'static str,
+              const CLASS_PATH: &'static str,
+              const IS_VALUETYPE: bool,
+              const METHOD: &'static str,
+              Ret,
+          >() -> Ret {
+              core::intrinsics::abort();
+          }
+
           #[inline(never)]
           fn rustc_clr_interop_managed_call1_<
               const ASSEMBLY: &'static str,
@@ -78,16 +94,46 @@ jobs:
               core::intrinsics::abort();
           }
 
-          fn main() {
+          fn write_char(value: u16) {
+              let managed = unsafe {
+                  core::mem::transmute::<u16, RustcCLRInteropManagedChar>(value)
+              };
               rustc_clr_interop_managed_call1_::<
                   "System.Console",
                   "System.Console",
                   false,
-                  "WriteLine",
+                  "Write",
                   true,
                   (),
-                  i32,
-              >(202);
+                  RustcCLRInteropManagedChar,
+              >(managed);
+          }
+
+          fn main() {
+              write_char('H' as u16);
+              write_char('e' as u16);
+              write_char('l' as u16);
+              write_char('l' as u16);
+              write_char('o' as u16);
+              write_char(' ' as u16);
+              write_char('F' as u16);
+              write_char('e' as u16);
+              write_char('r' as u16);
+              write_char('r' as u16);
+              write_char('u' as u16);
+              write_char('m' as u16);
+              write_char('W' as u16);
+              write_char('e' as u16);
+              write_char('a' as u16);
+              write_char('v' as u16);
+              write_char('e' as u16);
+              rustc_clr_interop_managed_call0_::<
+                  "System.Console",
+                  "System.Console",
+                  false,
+                  "WriteLine",
+                  (),
+              >();
           }
           EOF
       - name: Compile real Rust through rustc and CLR backend
@@ -125,4 +171,4 @@ jobs:
           EOF
           output="$(dotnet .r02/out/FerrumWeave.R02.exe)"
           printf '%s\n' "$output"
-          test "$output" = "202"
+          test "$output" = "Hello FerrumWeave"
