@@ -1,0 +1,8 @@
+schema_version = 1
+minimum_percent = 96.0
+
+[[contracts]]
+id = "FW-R00-HELLO-001"
+description = "Running the FerrumWeave binary succeeds and writes Hello FerrumWeave to stdout."
+implemented = true
+test = "hello_ferrumweave_cli_contract"
