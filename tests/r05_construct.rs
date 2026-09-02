@@ -1,5 +1,6 @@
 use ferrumweave::managed::{
-    method_constructs_member_ref, resolve_public_constructor_member_ref, resolve_public_static_method,
+    method_constructs_member_ref, resolve_public_constructor_member_ref,
+    resolve_public_static_method,
 };
 
 #[test]
