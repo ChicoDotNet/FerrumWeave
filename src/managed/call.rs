@@ -102,8 +102,8 @@ pub fn method_calls_member_ref(
         ));
     }
 
-    let method_offset = layout.method_def_start
-        + (method.method_row as usize - 1) * layout.method_def_row_size;
+    let method_offset =
+        layout.method_def_start + (method.method_row as usize - 1) * layout.method_def_row_size;
     let method_rva = read_u32(tables_data, method_offset)?;
     let body_offset = rva_to_file_offset(image, method_rva)?;
     let body = method_code(image, body_offset)?;
@@ -354,11 +354,7 @@ fn coded_index_size(rows: &[u32; 64], tables: &[usize], tag_bits: u32) -> usize 
 }
 
 fn table_index_size(rows: u32) -> usize {
-    if rows < 0x1_0000 {
-        2
-    } else {
-        4
-    }
+    if rows < 0x1_0000 { 2 } else { 4 }
 }
 
 fn heap_string(heap: &[u8], index: usize) -> Result<&str, ManagedMetadataError> {
@@ -367,13 +363,14 @@ fn heap_string(heap: &[u8], index: usize) -> Result<&str, ManagedMetadataError> 
             "string heap index is out of range",
         ));
     }
-    let end = heap[index..]
-        .iter()
-        .position(|byte| *byte == 0)
-        .ok_or(ManagedMetadataError::Malformed(
-            "unterminated string heap entry",
-        ))?
-        + index;
+    let end =
+        heap[index..]
+            .iter()
+            .position(|byte| *byte == 0)
+            .ok_or(ManagedMetadataError::Malformed(
+                "unterminated string heap entry",
+            ))?
+            + index;
     std::str::from_utf8(&heap[index..end])
         .map_err(|_| ManagedMetadataError::Malformed("string heap entry is not UTF-8"))
 }
