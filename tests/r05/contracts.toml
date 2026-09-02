@@ -11,7 +11,7 @@ target_percent_when_done = 100.0
 id = "FW-R05-DOTNET-001"
 family = "resolve and call a public static .NET method through managed metadata"
 implemented = false
-proof = "pending"
+proof = "pending: resolver is implemented; emitted call is not yet driven by the resolved target"
 
 [[contracts]]
 id = "FW-R05-DOTNET-002"
@@ -34,8 +34,8 @@ proof = "pending"
 [[contracts]]
 id = "FW-R05-DOTNET-005"
 family = "consume at least one System.* API"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "tests/functional.rs::r01_probe_executes_on_coreclr executes Rust-emitted IL calling System.Console.WriteLine"
 
 [[contracts]]
 id = "FW-R05-DOTNET-006"
@@ -46,11 +46,11 @@ proof = "pending"
 [[contracts]]
 id = "FW-R05-DOTNET-007"
 family = "managed API consumption is certified on Linux and Windows"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "Rust CI build + test matrix executes the managed probe on ubuntu-latest and windows-latest"
 
 [[contracts]]
 id = "FW-R05-DOTNET-008"
 family = "managed interoperability does not use P/Invoke or native FFI as its implementation"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "tests/functional.rs::r01_probe_has_no_native_implementation verifies IL-only CLR entry point with no native PE entry point/import directory"
