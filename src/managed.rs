@@ -1,5 +1,5 @@
 mod base;
-#[allow(clippy::manual_range_contains)]
+#[allow(unused_variables)]
 mod call;
 
 pub use base::*;
