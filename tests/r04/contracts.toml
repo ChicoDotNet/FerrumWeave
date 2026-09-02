@@ -1,0 +1,74 @@
+milestone = "R04"
+status = "done"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R04 declares its known CTS denominator before broadening the projection layer.
+# The milestone is complete only because the final verifier enforces the
+# transversal emitted-signature gate through independent CLR reflection.
+
+[[contracts]]
+id = "FW-R04-CTS-001"
+family = "fixed-width Rust integer to direct CTS scalar mappings"
+implemented = true
+proof = "ferrumweave-projection-types unit tests"
+
+[[contracts]]
+id = "FW-R04-CTS-002"
+family = "isize and usize to native CTS integer mappings"
+implemented = true
+proof = "ferrumweave-projection-types unit tests"
+
+[[contracts]]
+id = "FW-R04-CTS-003"
+family = "Rust bool to System.Boolean mapping"
+implemented = true
+proof = "ferrumweave-projection-types unit tests"
+
+[[contracts]]
+id = "FW-R04-CTS-004"
+family = "Rust char versus System.Char non-equivalence is explicit"
+implemented = true
+proof = "ferrumweave-projection-types unit tests"
+
+[[contracts]]
+id = "FW-R04-CTS-005"
+family = "i128 and u128 named CTS value-type mappings"
+implemented = true
+proof = "named CTS value-type mapping tests plus emitted System.Int128/System.UInt128 CLR reflection"
+
+[[contracts]]
+id = "FW-R04-CTS-006"
+family = "managed reference and object identity mapping"
+implemented = true
+proof = "managed object identity and borrow-boundary tests plus emitted System.Object CLR reflection"
+
+[[contracts]]
+id = "FW-R04-CTS-007"
+family = "System.String projection and round-trip"
+implemented = true
+proof = "System.String UTF-16 projection/round-trip tests plus emitted CLR reflection"
+
+[[contracts]]
+id = "FW-R04-CTS-008"
+family = "array projection and round-trip"
+implemented = true
+proof = "SZARRAY owned-value round-trip tests plus emitted System.Int32[] CLR reflection"
+
+[[contracts]]
+id = "FW-R04-CTS-009"
+family = "public-boundary nullability policy"
+implemented = true
+proof = "ferrumweave-projection-types public-boundary nullability integration tests"
+
+[[contracts]]
+id = "FW-R04-CTS-010"
+family = "emitted signatures match CTS mappings under independent CLR reflection"
+implemented = true
+proof = "eng/r04/ReflectionVerifier validates FerrumWeave-emitted representative signatures on Ubuntu and Windows"
+
+[[contracts]]
+id = "FW-R04-CTS-011"
+family = "unsupported direct mappings fail explicitly instead of narrowing silently"
+implemented = true
+proof = "char and 128-bit direct-mapping rejection unit tests"

@@ -1,0 +1,70 @@
+name: R04 CLR CTS Reflection
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - ".github/workflows/r04-integration.yml"
+      - "compiler/cil/**"
+      - "eng/r04/**"
+      - "projection/types/**"
+      - "tests/r04/**"
+      - "docs/compatibility/**"
+      - "docs/roadmap/README.md"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - ".github/workflows/r04-integration.yml"
+      - "compiler/cil/**"
+      - "eng/r04/**"
+      - "projection/types/**"
+      - "tests/r04/**"
+      - "docs/compatibility/**"
+      - "docs/roadmap/README.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r04-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reflection:
+    name: emitted assembly reflection (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "10.0.400"
+
+      - name: Emit managed probe with FerrumWeave
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo run --locked --package ferrumweave-cil --bin clr_probe -- target/ferrumweave/r04
+
+      - name: Verify emitted signature through CLR reflection
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run \
+            --project eng/r04/ReflectionVerifier/ReflectionVerifier.csproj \
+            --configuration Release \
+            -- \
+            target/ferrumweave/r04/FerrumWeave.Probe.dll
