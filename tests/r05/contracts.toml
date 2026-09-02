@@ -16,8 +16,8 @@ proof = "tests/r05_static_call.rs resolves System.Console.WriteLine to a CLR Mem
 [[contracts]]
 id = "FW-R05-DOTNET-002"
 family = "construct a supported public .NET type"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "tests/r05_construct.rs resolves System.Object::.ctor to a CLR MemberRef token and verifies Rust-emitted managed IL uses newobj with that exact token; Rust CI #109 certified Ubuntu and Windows and R04 CLR CTS Reflection #21 remained GREEN"
 
 [[contracts]]
 id = "FW-R05-DOTNET-003"
