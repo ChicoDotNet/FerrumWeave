@@ -1,0 +1,56 @@
+milestone = "R05"
+status = "in-progress"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R05 declares the managed-consumption denominator before implementation.
+# Contracts remain false until executable evidence proves the corresponding
+# Rust -> managed metadata capability; CI must not treat declarations as proof.
+
+[[contracts]]
+id = "FW-R05-DOTNET-001"
+family = "resolve and call a public static .NET method through managed metadata"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R05-DOTNET-002"
+family = "construct a supported public .NET type"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R05-DOTNET-003"
+family = "call a supported public instance method"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R05-DOTNET-004"
+family = "read and write a supported public property"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R05-DOTNET-005"
+family = "consume at least one System.* API"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R05-DOTNET-006"
+family = "consume a user-defined C# assembly compiled independently from FerrumWeave"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R05-DOTNET-007"
+family = "managed API consumption is certified on Linux and Windows"
+implemented = false
+proof = "pending"
+
+[[contracts]]
+id = "FW-R05-DOTNET-008"
+family = "managed interoperability does not use P/Invoke or native FFI as its implementation"
+implemented = false
+proof = "pending"
