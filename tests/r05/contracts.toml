@@ -10,8 +10,8 @@ target_percent_when_done = 100.0
 [[contracts]]
 id = "FW-R05-DOTNET-001"
 family = "resolve and call a public static .NET method through managed metadata"
-implemented = false
-proof = "pending: resolver is implemented; emitted call is not yet driven by the resolved target"
+implemented = true
+proof = "tests/r05_static_call.rs resolves System.Console.WriteLine to a CLR MemberRef token and verifies Rust-emitted managed IL calls that exact token; Rust CI certified Ubuntu and Windows"
 
 [[contracts]]
 id = "FW-R05-DOTNET-002"
