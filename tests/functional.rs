@@ -98,13 +98,11 @@ fn r01_probe_has_no_native_implementation() {
     let layout = inspect_probe(&image);
 
     assert_eq!(
-        layout.native_entry_point_rva,
-        0,
+        layout.native_entry_point_rva, 0,
         "PE native entry point must be empty"
     );
     assert_eq!(
-        layout.import_directory_rva,
-        0,
+        layout.import_directory_rva, 0,
         "R01 must not import a native bootstrap"
     );
     assert_eq!(layout.import_directory_size, 0);
