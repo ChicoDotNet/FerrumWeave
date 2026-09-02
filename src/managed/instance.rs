@@ -1,5 +1,5 @@
 use super::base::{ManagedMetadataError, ManagedMethodRef};
-use super::call::{resolve_public_static_member_ref, ManagedMemberRef};
+use super::call::{ManagedMemberRef, resolve_public_static_member_ref};
 
 pub fn resolve_public_instance_member_ref(
     image: &[u8],
@@ -264,11 +264,7 @@ fn coded_index_size(rows: &[u32; 64], tables: &[usize], tag_bits: u32) -> usize 
 }
 
 fn table_index_size(rows: u32) -> usize {
-    if rows < 0x1_0000 {
-        2
-    } else {
-        4
-    }
+    if rows < 0x1_0000 { 2 } else { 4 }
 }
 
 fn read_u16(data: &[u8], offset: usize) -> Result<u16, ManagedMetadataError> {
