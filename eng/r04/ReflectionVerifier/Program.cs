@@ -32,6 +32,8 @@ AssertGlobalProbe(assembly.ManifestModule, "ProbeBoolean", typeof(bool));
 AssertGlobalProbe(assembly.ManifestModule, "ProbeString", typeof(string));
 AssertGlobalProbe(assembly.ManifestModule, "ProbeObject", typeof(object));
 AssertGlobalProbe(assembly.ManifestModule, "ProbeI32Array", typeof(int[]));
+AssertGlobalProbe(assembly.ManifestModule, "ProbeInt128", typeof(Int128));
+AssertGlobalProbe(assembly.ManifestModule, "ProbeUInt128", typeof(UInt128));
 
 Console.WriteLine($"reflected {assembly.GetName().Name}::{entryPoint.Name} and representative R04 CTS signatures");
 return 0;
