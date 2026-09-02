@@ -23,7 +23,6 @@ pub enum ManagedMetadataError {
     MethodNotFound,
 }
 
-#[must_use]
 pub fn resolve_public_static_method(
     image: &[u8],
     namespace: &str,
@@ -79,12 +78,10 @@ fn resolve_from_tables(
         }
     }
 
-    for unsupported in 3..=5 {
-        if rows[unsupported] != 0 {
-            return Err(ManagedMetadataError::Unsupported(
-                "metadata tables between TypeDef and MethodDef are not projected yet",
-            ));
-        }
+    if rows[3..=5].iter().any(|row_count| *row_count != 0) {
+        return Err(ManagedMetadataError::Unsupported(
+            "metadata tables between TypeDef and MethodDef are not projected yet",
+        ));
     }
 
     let string_index_size = if heap_sizes & 0x01 != 0 { 4 } else { 2 };
