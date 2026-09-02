@@ -119,12 +119,22 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, PROBE_ASSEMBLY_FILE);
     let console_name = push_string(&mut strings, "Console");
+    let int128_name = push_string(&mut strings, "Int128");
+    let uint128_name = push_string(&mut strings, "UInt128");
     let system_namespace = push_string(&mut strings, "System");
     let module_type_name = push_string(&mut strings, "<Module>");
     let main_name = push_string(&mut strings, "Main");
+    let probe_i32_name = push_string(&mut strings, "ProbeI32");
+    let probe_boolean_name = push_string(&mut strings, "ProbeBoolean");
+    let probe_string_name = push_string(&mut strings, "ProbeString");
+    let probe_object_name = push_string(&mut strings, "ProbeObject");
+    let probe_i32_array_name = push_string(&mut strings, "ProbeI32Array");
+    let probe_int128_name = push_string(&mut strings, "ProbeInt128");
+    let probe_uint128_name = push_string(&mut strings, "ProbeUInt128");
     let writeline_name = push_string(&mut strings, "WriteLine");
     let assembly_name = push_string(&mut strings, PROBE_ASSEMBLY_NAME);
     let system_console_assembly_name = push_string(&mut strings, "System.Console");
+    let system_runtime_assembly_name = push_string(&mut strings, "System.Runtime");
     pad_vec(&mut strings, 4);
 
     let mut user_strings = vec![0_u8];
@@ -140,6 +150,14 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
 
     let mut blobs = vec![0_u8];
     let main_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x01]);
+    let probe_i32_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x08]);
+    let probe_boolean_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x02]);
+    let probe_string_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
+    let probe_object_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x1C]);
+    let probe_i32_array_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x1D, 0x08]);
+    // ELEMENT_TYPE_VALUETYPE + TypeDefOrRef-coded TypeRef rows 2 and 3.
+    let probe_int128_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x11, 0x09]);
+    let probe_uint128_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x11, 0x0D]);
     let writeline_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
     let system_public_key_token = push_blob(
         &mut blobs,
@@ -162,8 +180,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u64(&mut tables, 0); // Sorted mask.
 
     // Row counts, in table-id order for every set bit in the valid mask.
-    for _ in 0..7 {
-        push_u32(&mut tables, 1);
+    for count in [1_u32, 3, 1, 8, 1, 1, 2] {
+        push_u32(&mut tables, count);
     }
 
     // Module (0x00).
@@ -173,11 +191,19 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 0); // EncId.
     push_u16(&mut tables, 0); // EncBaseId.
 
-    // TypeRef (0x01): [System.Console]System.Console.
+    // TypeRef row 1: [System.Console]System.Console.
     // ResolutionScope tag 2 is AssemblyRef; row 1 => (1 << 2) | 2 = 6.
     push_u16(&mut tables, 6);
     push_u16(&mut tables, console_name);
     push_u16(&mut tables, system_namespace);
+
+    // TypeRef rows 2-3: [System.Runtime]System.Int128 / System.UInt128.
+    // AssemblyRef row 2 => (2 << 2) | 2 = 10.
+    for type_name in [int128_name, uint128_name] {
+        push_u16(&mut tables, 10);
+        push_u16(&mut tables, type_name);
+        push_u16(&mut tables, system_namespace);
+    }
 
     // TypeDef (0x02): the required global <Module> type.
     push_u32(&mut tables, 0);
@@ -194,6 +220,25 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, main_name);
     push_u16(&mut tables, main_signature);
     push_u16(&mut tables, 1); // First parameter (one-past-empty table).
+
+    for (name, signature) in [
+        (probe_i32_name, probe_i32_signature),
+        (probe_boolean_name, probe_boolean_signature),
+        (probe_string_name, probe_string_signature),
+        (probe_object_name, probe_object_signature),
+        (probe_i32_array_name, probe_i32_array_signature),
+        (probe_int128_name, probe_int128_signature),
+        (probe_uint128_name, probe_uint128_signature),
+    ] {
+        // Representative R04 CTS probes deliberately share the tiny method body.
+        // They are reflection contracts, not executable product entry points.
+        push_u32(&mut tables, method_rva);
+        push_u16(&mut tables, 0);
+        push_u16(&mut tables, 0x0096);
+        push_u16(&mut tables, name);
+        push_u16(&mut tables, signature);
+        push_u16(&mut tables, 1);
+    }
 
     // MemberRef (0x0A): System.Console.WriteLine(string).
     // MemberRefParent tag 1 is TypeRef; row 1 => (1 << 3) | 1 = 9.
@@ -212,16 +257,18 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, assembly_name);
     push_u16(&mut tables, 0); // Culture.
 
-    // AssemblyRef (0x23): System.Console 10.0.0.0.
-    push_u16(&mut tables, 10);
-    push_u16(&mut tables, 0);
-    push_u16(&mut tables, 0);
-    push_u16(&mut tables, 0);
-    push_u32(&mut tables, 0);
-    push_u16(&mut tables, system_public_key_token);
-    push_u16(&mut tables, system_console_assembly_name);
-    push_u16(&mut tables, 0); // Culture.
-    push_u16(&mut tables, 0); // Hash value.
+    for assembly_ref_name in [system_console_assembly_name, system_runtime_assembly_name] {
+        // AssemblyRef (0x23): .NET 10 framework assembly.
+        push_u16(&mut tables, 10);
+        push_u16(&mut tables, 0);
+        push_u16(&mut tables, 0);
+        push_u16(&mut tables, 0);
+        push_u32(&mut tables, 0);
+        push_u16(&mut tables, system_public_key_token);
+        push_u16(&mut tables, assembly_ref_name);
+        push_u16(&mut tables, 0); // Culture.
+        push_u16(&mut tables, 0); // Hash value.
+    }
     pad_vec(&mut tables, 4);
 
     let streams = [

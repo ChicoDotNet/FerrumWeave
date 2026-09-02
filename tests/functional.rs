@@ -41,10 +41,9 @@ fn r01_probe_is_managed_assembly() {
     assert_eq!(read_u32(&image, layout.metadata_offset), 0x424A_5342);
 
     let tables = metadata_stream(&image, layout.metadata_offset, "#~");
-    assert_eq!(
-        table_row_count(tables, 0x06),
-        1,
-        "one MethodDef is expected"
+    assert!(
+        table_row_count(tables, 0x06) >= 1,
+        "at least the managed entry-point MethodDef is expected"
     );
     assert_eq!(
         table_row_count(tables, 0x0A),
@@ -56,10 +55,9 @@ fn r01_probe_is_managed_assembly() {
         1,
         "one Assembly row is expected"
     );
-    assert_eq!(
-        table_row_count(tables, 0x23),
-        1,
-        "one AssemblyRef is expected"
+    assert!(
+        table_row_count(tables, 0x23) >= 1,
+        "at least one framework AssemblyRef is expected"
     );
 
     let strings = metadata_stream(&image, layout.metadata_offset, "#Strings");
