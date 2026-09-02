@@ -35,7 +35,9 @@ pub fn resolve_public_static_method(
     let tables = streams
         .iter()
         .find(|stream| stream.name == "#~" || stream.name == "#-")
-        .ok_or(ManagedMetadataError::Malformed("missing metadata tables stream"))?;
+        .ok_or(ManagedMetadataError::Malformed(
+            "missing metadata tables stream",
+        ))?;
     let strings = streams
         .iter()
         .find(|stream| stream.name == "#Strings")
@@ -61,7 +63,9 @@ fn resolve_from_tables(
     method_name: &str,
 ) -> Result<ManagedMethodRef, ManagedMetadataError> {
     if tables.len() < 24 {
-        return Err(ManagedMetadataError::Malformed("tables stream header is truncated"));
+        return Err(ManagedMetadataError::Malformed(
+            "tables stream header is truncated",
+        ));
     }
 
     let heap_sizes = tables[6];
@@ -97,12 +101,16 @@ fn resolve_from_tables(
     cursor = cursor
         .checked_add(module_row_size * rows[0] as usize)
         .and_then(|value| value.checked_add(type_ref_row_size * rows[1] as usize))
-        .ok_or(ManagedMetadataError::Malformed("metadata table offset overflow"))?;
+        .ok_or(ManagedMetadataError::Malformed(
+            "metadata table offset overflow",
+        ))?;
 
     let type_def_start = cursor;
     let method_def_start = type_def_start
         .checked_add(type_def_row_size * rows[2] as usize)
-        .ok_or(ManagedMetadataError::Malformed("metadata table offset overflow"))?;
+        .ok_or(ManagedMetadataError::Malformed(
+            "metadata table offset overflow",
+        ))?;
 
     let blob_index_size = if heap_sizes & 0x04 != 0 { 4 } else { 2 };
     let param_index_size = table_index_size(rows[8]);
@@ -111,18 +119,19 @@ fn resolve_from_tables(
     for type_row in 0..rows[2] as usize {
         let row_offset = type_def_start + type_row * type_def_row_size;
         let name_index = read_index(tables, row_offset + 4, string_index_size)?;
-        let namespace_index = read_index(tables, row_offset + 4 + string_index_size, string_index_size)?;
+        let namespace_index = read_index(
+            tables,
+            row_offset + 4 + string_index_size,
+            string_index_size,
+        )?;
         if heap_string(strings, name_index)? != type_name
             || heap_string(strings, namespace_index)? != namespace
         {
             continue;
         }
 
-        let method_list_offset = row_offset
-            + 4
-            + string_index_size * 2
-            + type_def_or_ref_size
-            + field_index_size;
+        let method_list_offset =
+            row_offset + 4 + string_index_size * 2 + type_def_or_ref_size + field_index_size;
         let first_method = read_index(tables, method_list_offset, method_index_size)? as u32;
         let next_first_method = if type_row + 1 < rows[2] as usize {
             let next_offset = method_list_offset + type_def_row_size;
@@ -142,7 +151,8 @@ fn resolve_from_tables(
             if heap_string(strings, name_index)? != method_name {
                 continue;
             }
-            let is_public = flags & METHOD_ATTRIBUTES_MEMBER_ACCESS_MASK == METHOD_ATTRIBUTES_PUBLIC;
+            let is_public =
+                flags & METHOD_ATTRIBUTES_MEMBER_ACCESS_MASK == METHOD_ATTRIBUTES_PUBLIC;
             let is_static = flags & METHOD_ATTRIBUTES_STATIC != 0;
             if is_public && is_static {
                 return Ok(ManagedMethodRef {
@@ -172,7 +182,11 @@ fn metadata_root(image: &[u8]) -> Result<&[u8], ManagedMetadataError> {
     let data_directory = match magic {
         0x10b => optional + 96,
         0x20b => optional + 112,
-        _ => return Err(ManagedMetadataError::Unsupported("unsupported PE optional header")),
+        _ => {
+            return Err(ManagedMetadataError::Unsupported(
+                "unsupported PE optional header",
+            ));
+        }
     };
 
     let cli_directory = data_directory + 14 * 8;
@@ -187,7 +201,9 @@ fn metadata_root(image: &[u8]) -> Result<&[u8], ManagedMetadataError> {
 
 fn metadata_streams(metadata: &[u8]) -> Result<Vec<StreamHeader>, ManagedMetadataError> {
     if read_u32(metadata, 0)? != 0x424a_5342 {
-        return Err(ManagedMetadataError::Malformed("missing CLR metadata signature"));
+        return Err(ManagedMetadataError::Malformed(
+            "missing CLR metadata signature",
+        ));
     }
     let version_len = read_u32(metadata, 12)? as usize;
     let mut cursor = 16usize
@@ -233,12 +249,18 @@ fn rva_to_file_offset(
             return Ok((raw_pointer + (rva - virtual_address)) as usize);
         }
     }
-    Err(ManagedMetadataError::Malformed("RVA does not map to a PE section"))
+    Err(ManagedMetadataError::Malformed(
+        "RVA does not map to a PE section",
+    ))
 }
 
 fn coded_index_size(rows: &[u32; 64], tables: &[usize], tag_bits: u32) -> usize {
     let max_rows = tables.iter().map(|table| rows[*table]).max().unwrap_or(0);
-    if max_rows < (1u32 << (16 - tag_bits)) { 2 } else { 4 }
+    if max_rows < (1u32 << (16 - tag_bits)) {
+        2
+    } else {
+        4
+    }
 }
 
 fn table_index_size(rows: u32) -> usize {
@@ -247,13 +269,18 @@ fn table_index_size(rows: u32) -> usize {
 
 fn heap_string(heap: &[u8], index: usize) -> Result<&str, ManagedMetadataError> {
     if index >= heap.len() {
-        return Err(ManagedMetadataError::Malformed("string heap index is out of range"));
+        return Err(ManagedMetadataError::Malformed(
+            "string heap index is out of range",
+        ));
     }
-    let end = heap[index..]
-        .iter()
-        .position(|byte| *byte == 0)
-        .ok_or(ManagedMetadataError::Malformed("unterminated string heap entry"))?
-        + index;
+    let end =
+        heap[index..]
+            .iter()
+            .position(|byte| *byte == 0)
+            .ok_or(ManagedMetadataError::Malformed(
+                "unterminated string heap entry",
+            ))?
+            + index;
     std::str::from_utf8(&heap[index..end])
         .map_err(|_| ManagedMetadataError::Malformed("string heap entry is not UTF-8"))
 }
@@ -262,7 +289,9 @@ fn read_index(data: &[u8], offset: usize, size: usize) -> Result<usize, ManagedM
     match size {
         2 => Ok(read_u16(data, offset)? as usize),
         4 => Ok(read_u32(data, offset)? as usize),
-        _ => Err(ManagedMetadataError::Malformed("invalid metadata index width")),
+        _ => Err(ManagedMetadataError::Malformed(
+            "invalid metadata index width",
+        )),
     }
 }
 
@@ -283,11 +312,7 @@ fn read_u64(data: &[u8], offset: usize) -> Result<u64, ManagedMetadataError> {
     ]))
 }
 
-fn subslice(
-    data: &[u8],
-    offset: usize,
-    size: usize,
-) -> Result<&[u8], ManagedMetadataError> {
+fn subslice(data: &[u8], offset: usize, size: usize) -> Result<&[u8], ManagedMetadataError> {
     let end = offset
         .checked_add(size)
         .ok_or(ManagedMetadataError::Malformed("slice offset overflow"))?;
