@@ -354,7 +354,11 @@ fn coded_index_size(rows: &[u32; 64], tables: &[usize], tag_bits: u32) -> usize 
 }
 
 fn table_index_size(rows: u32) -> usize {
-    if rows < 0x1_0000 { 2 } else { 4 }
+    if rows < 0x1_0000 {
+        2
+    } else {
+        4
+    }
 }
 
 fn heap_string(heap: &[u8], index: usize) -> Result<&str, ManagedMetadataError> {
