@@ -19,6 +19,7 @@ const CLR_HEADER_SIZE: usize = 0x48;
 const METHOD_DEF_TOKEN_MAIN: u32 = 0x0600_0001;
 const MEMBER_REF_TOKEN_WRITELINE: u32 = 0x0A00_0001;
 const MEMBER_REF_TOKEN_OBJECT_CTOR: u32 = 0x0A00_0002;
+const MEMBER_REF_TOKEN_OBJECT_TOSTRING: u32 = 0x0A00_0003;
 const USER_STRING_TOKEN_GREETING: u32 = 0x7000_0001;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,8 +32,8 @@ pub struct ProbePaths {
 ///
 /// The byte layout intentionally contains only the ECMA-335 structures required
 /// by the currently certified vertical slices. R05 extends the original R01
-/// probe with a real managed `newobj System.Object::.ctor` while preserving the
-/// executable `System.Console.WriteLine` path.
+/// probe with real managed construction and instance dispatch while preserving
+/// the executable `System.Console.WriteLine` path.
 #[must_use]
 pub fn emit_probe_assembly() -> Vec<u8> {
     let method_body = build_main_method_body();
@@ -98,10 +99,10 @@ pub fn write_probe_artifacts(directory: impl AsRef<Path>) -> io::Result<ProbePat
 }
 
 fn build_main_method_body() -> Vec<u8> {
-    let mut code = Vec::with_capacity(18);
+    let mut code = Vec::with_capacity(25);
 
     // Tiny method header: low bits 0b10 + code size in the upper six bits.
-    const CODE_SIZE: u8 = 17;
+    const CODE_SIZE: u8 = 24;
     code.push((CODE_SIZE << 2) | 0b10);
 
     // ldstr "Hello FerrumWeave"
@@ -116,7 +117,15 @@ fn build_main_method_body() -> Vec<u8> {
     code.push(0x73);
     push_u32(&mut code, MEMBER_REF_TOKEN_OBJECT_CTOR);
 
-    // pop the constructed object; construction itself is the R05 contract.
+    // Keep one object reference while dispatching the public instance method.
+    code.push(0x25); // dup
+
+    // callvirt instance string [System.Runtime]System.Object::ToString()
+    code.push(0x6F);
+    push_u32(&mut code, MEMBER_REF_TOKEN_OBJECT_TOSTRING);
+
+    // Discard the returned string and the retained object reference.
+    code.push(0x26);
     code.push(0x26);
 
     // ret
@@ -143,6 +152,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let probe_uint128_name = push_string(&mut strings, "ProbeUInt128");
     let writeline_name = push_string(&mut strings, "WriteLine");
     let ctor_name = push_string(&mut strings, ".ctor");
+    let tostring_name = push_string(&mut strings, "ToString");
     let assembly_name = push_string(&mut strings, PROBE_ASSEMBLY_NAME);
     let system_console_assembly_name = push_string(&mut strings, "System.Console");
     let system_runtime_assembly_name = push_string(&mut strings, "System.Runtime");
@@ -171,6 +181,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let probe_uint128_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x11, 0x0D]);
     let writeline_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
     let object_ctor_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x01]);
+    let object_tostring_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x0E]);
     let system_public_key_token = push_blob(
         &mut blobs,
         &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
@@ -192,7 +203,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u64(&mut tables, 0); // Sorted mask.
 
     // Row counts, in table-id order for every set bit in the valid mask.
-    for count in [1_u32, 4, 1, 8, 2, 1, 2] {
+    for count in [1_u32, 4, 1, 8, 3, 1, 2] {
         push_u32(&mut tables, count);
     }
 
@@ -267,6 +278,11 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 33);
     push_u16(&mut tables, ctor_name);
     push_u16(&mut tables, object_ctor_signature);
+
+    // MemberRef row 3: System.Object::ToString().
+    push_u16(&mut tables, 33);
+    push_u16(&mut tables, tostring_name);
+    push_u16(&mut tables, object_tostring_signature);
 
     // Assembly (0x20).
     push_u32(&mut tables, 0x0000_8004); // SHA-1, conventional ECMA-335 value.
@@ -560,6 +576,11 @@ mod tests {
             image
                 .windows("Object".len())
                 .any(|window| window == b"Object")
+        );
+        assert!(
+            image
+                .windows("ToString".len())
+                .any(|window| window == b"ToString")
         );
     }
 }
