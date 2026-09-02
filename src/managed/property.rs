@@ -1,7 +1,5 @@
 use super::base::{ManagedMetadataError, ManagedMethodRef};
-use super::call::{
-    ManagedMemberRef, method_calls_member_ref, resolve_public_static_member_ref,
-};
+use super::call::{ManagedMemberRef, method_calls_member_ref, resolve_public_static_member_ref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManagedPropertyRef {
@@ -37,8 +35,6 @@ pub fn method_calls_property_accessors(
     method: &ManagedMethodRef,
     property: &ManagedPropertyRef,
 ) -> Result<bool, ManagedMetadataError> {
-    Ok(
-        method_calls_member_ref(image, method, &property.getter)?
-            && method_calls_member_ref(image, method, &property.setter)?,
-    )
+    Ok(method_calls_member_ref(image, method, &property.getter)?
+        && method_calls_member_ref(image, method, &property.setter)?)
 }
