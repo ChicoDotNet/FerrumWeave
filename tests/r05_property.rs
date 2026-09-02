@@ -1,6 +1,5 @@
 use ferrumweave::managed::{
-    method_calls_property_accessors, resolve_public_property_accessors,
-    resolve_public_static_method,
+    method_calls_property_accessors, resolve_public_property_accessors, resolve_public_static_method,
 };
 
 #[test]
