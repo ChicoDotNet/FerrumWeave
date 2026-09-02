@@ -42,8 +42,8 @@ pub fn method_constructs_member_ref(
         ));
     }
 
-    let method_offset = layout.method_def_start
-        + (method.method_row as usize - 1) * layout.method_def_row_size;
+    let method_offset =
+        layout.method_def_start + (method.method_row as usize - 1) * layout.method_def_row_size;
     let method_rva = read_u32(tables_data, method_offset)?;
     let body_offset = rva_to_file_offset(image, method_rva)?;
     let body = method_code(image, body_offset)?;
