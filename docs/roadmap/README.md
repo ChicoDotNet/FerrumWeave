@@ -14,8 +14,8 @@ A milestone is complete only when it changes a technical fact about the project 
 | R01 — CLR artifact probe | **Done** | FerrumWeave can produce and execute a valid managed .NET assembly. |
 | R02 — Rust → CLR vertical slice | **Done** | Real Rust source passes through `rustc` and executes as managed code on CoreCLR. |
 | R03 — Core Rust semantics | **Done** | 11/11 declared safe-Rust semantic and negative contracts are certified on Linux and Windows with native/CLR differential evidence. |
-| R04 — CLR / CTS foundation | **Next** | Rust and fundamental CLR types have explicit, testable mappings. |
-| R05 — Rust consumes .NET | Planned | Rust can consume existing managed assemblies and .NET APIs. |
+| R04 — CLR / CTS foundation | **Done** | 11/11 declared CTS contracts are certified, including independent emitted-signature reflection on Linux and Windows. |
+| R05 — Rust consumes .NET | **Next** | Rust can consume existing managed assemblies and .NET APIs. |
 | R06 — .NET consumes Rust | Planned | C# and Visual Basic can consume public managed APIs implemented in Rust. |
 | R07 — Semantic interoperability | Planned | Ownership, GC, errors, nullability, resources, and other cross-runtime semantics have principled contracts. |
 | R08 — `.rsproj` and FerrumWeave SDK | Planned | Rust becomes a first-class SDK-style project in the `dotnet` toolchain. |
@@ -278,6 +278,8 @@ All of these conditions are satisfied by the certified R03 milestone. Broader Ru
 
 # R04 — CLR / CTS foundation
 
+**Status: Done. Certified in CI — 11/11 R04 contracts with independent CLR reflection across Linux and Windows.**
+
 ## Goal
 
 Define principled mappings between the Rust type world and the Common Type System.
@@ -302,6 +304,8 @@ R04 is Done when:
 - ownership/GC boundary rules have an ADR;
 - nullability behavior is explicit for every supported public boundary;
 - unsupported mappings fail clearly.
+
+All of these conditions are satisfied by the certified R04 milestone. The mapping policy is centralized in Rust, round-trip and boundary behavior is executable, ADR 0003 records the ownership/GC constraints, and FerrumWeave-emitted representative signatures are independently inspected through CLR reflection on Ubuntu and Windows. Broader managed API consumption remains R05 scope and must not be inferred from R04 completion.
 
 ---
 
