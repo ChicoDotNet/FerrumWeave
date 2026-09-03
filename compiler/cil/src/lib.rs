@@ -132,15 +132,9 @@ fn build_main_method_body() -> Vec<u8> {
 
     // Read then write the same portable managed property value.
     code.push(0x28);
-    push_u32(
-        &mut code,
-        MEMBER_REF_TOKEN_ENVIRONMENT_GET_CURRENT_DIRECTORY,
-    );
+    push_u32(&mut code, MEMBER_REF_TOKEN_ENVIRONMENT_GET_CURRENT_DIRECTORY);
     code.push(0x28);
-    push_u32(
-        &mut code,
-        MEMBER_REF_TOKEN_ENVIRONMENT_SET_CURRENT_DIRECTORY,
-    );
+    push_u32(&mut code, MEMBER_REF_TOKEN_ENVIRONMENT_SET_CURRENT_DIRECTORY);
 
     // ret
     code.push(0x2A);
@@ -199,8 +193,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let writeline_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
     let object_ctor_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x01]);
     let object_tostring_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x0E]);
-    let environment_get_current_directory_signature =
-        push_blob(&mut blobs, &[0x00, 0x00, 0x0E]);
+    let environment_get_current_directory_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x0E]);
     let environment_set_current_directory_signature =
         push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
     let system_public_key_token = push_blob(
@@ -314,16 +307,10 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     // TypeRef row 5 => (5 << 3) | 1 = 41.
     push_u16(&mut tables, 41);
     push_u16(&mut tables, get_current_directory_name);
-    push_u16(
-        &mut tables,
-        environment_get_current_directory_signature,
-    );
+    push_u16(&mut tables, environment_get_current_directory_signature);
     push_u16(&mut tables, 41);
     push_u16(&mut tables, set_current_directory_name);
-    push_u16(
-        &mut tables,
-        environment_set_current_directory_signature,
-    );
+    push_u16(&mut tables, environment_set_current_directory_signature);
 
     // Assembly (0x20).
     push_u32(&mut tables, 0x0000_8004); // SHA-1, conventional ECMA-335 value.
