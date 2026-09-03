@@ -132,9 +132,15 @@ fn build_main_method_body() -> Vec<u8> {
 
     // Read then write the same portable managed property value.
     code.push(0x28);
-    push_u32(&mut code, MEMBER_REF_TOKEN_ENVIRONMENT_GET_CURRENT_DIRECTORY);
+    push_u32(
+        &mut code,
+        MEMBER_REF_TOKEN_ENVIRONMENT_GET_CURRENT_DIRECTORY,
+    );
     code.push(0x28);
-    push_u32(&mut code, MEMBER_REF_TOKEN_ENVIRONMENT_SET_CURRENT_DIRECTORY);
+    push_u32(
+        &mut code,
+        MEMBER_REF_TOKEN_ENVIRONMENT_SET_CURRENT_DIRECTORY,
+    );
 
     // ret
     code.push(0x2A);
