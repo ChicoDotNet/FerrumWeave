@@ -28,8 +28,8 @@ proof = "tests/r05_instance_call.rs resolves System.Object.ToString to a CLR Mem
 [[contracts]]
 id = "FW-R05-DOTNET-004"
 family = "read and write a supported public property"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "tests/r05_property.rs resolves System.Environment.CurrentDirectory getter/setter MemberRefs and verifies Rust-emitted managed IL calls both exact tokens; Rust CI #127 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #39 remained GREEN"
 
 [[contracts]]
 id = "FW-R05-DOTNET-005"
