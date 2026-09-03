@@ -5,8 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use ferrumweave::managed::resolve_public_static_method;
 use ferrumweave_cil::{
-    PROBE_ASSEMBLY_FILE, PROBE_RUNTIME_CONFIG_FILE,
-    emit_probe_assembly_with_external_static_call, probe_runtime_config,
+    PROBE_ASSEMBLY_FILE, PROBE_RUNTIME_CONFIG_FILE, emit_probe_assembly_with_external_static_call,
+    probe_runtime_config,
 };
 
 const USER_ASSEMBLY_NAME: &str = "FerrumWeave.UserFixture";
@@ -61,13 +61,10 @@ fn rust_emitted_il_consumes_independently_compiled_csharp_assembly() {
         .join("net10.0")
         .join(format!("{USER_ASSEMBLY_NAME}.dll"));
     let user_image = fs::read(&user_assembly).expect("read independently compiled C# assembly");
-    let method = resolve_public_static_method(
-        &user_image,
-        USER_NAMESPACE,
-        USER_TYPE,
-        USER_METHOD,
-    )
-    .expect("FerrumWeave should resolve the user-defined public static method from CLR metadata");
+    let method = resolve_public_static_method(&user_image, USER_NAMESPACE, USER_TYPE, USER_METHOD)
+        .expect(
+            "FerrumWeave should resolve the user-defined public static method from CLR metadata",
+        );
     assert_eq!(method.namespace, USER_NAMESPACE);
     assert_eq!(method.type_name, USER_TYPE);
     assert_eq!(method.method_name, USER_METHOD);
