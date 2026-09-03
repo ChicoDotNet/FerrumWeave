@@ -20,6 +20,8 @@ const METHOD_DEF_TOKEN_MAIN: u32 = 0x0600_0001;
 const MEMBER_REF_TOKEN_WRITELINE: u32 = 0x0A00_0001;
 const MEMBER_REF_TOKEN_OBJECT_CTOR: u32 = 0x0A00_0002;
 const MEMBER_REF_TOKEN_OBJECT_TOSTRING: u32 = 0x0A00_0003;
+const MEMBER_REF_TOKEN_ENVIRONMENT_GET_CURRENT_DIRECTORY: u32 = 0x0A00_0004;
+const MEMBER_REF_TOKEN_ENVIRONMENT_SET_CURRENT_DIRECTORY: u32 = 0x0A00_0005;
 const USER_STRING_TOKEN_GREETING: u32 = 0x7000_0001;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,8 +34,8 @@ pub struct ProbePaths {
 ///
 /// The byte layout intentionally contains only the ECMA-335 structures required
 /// by the currently certified vertical slices. R05 extends the original R01
-/// probe with real managed construction and instance dispatch while preserving
-/// the executable `System.Console.WriteLine` path.
+/// probe with real managed construction, instance dispatch, and property access
+/// while preserving the executable `System.Console.WriteLine` path.
 #[must_use]
 pub fn emit_probe_assembly() -> Vec<u8> {
     let method_body = build_main_method_body();
@@ -99,10 +101,10 @@ pub fn write_probe_artifacts(directory: impl AsRef<Path>) -> io::Result<ProbePat
 }
 
 fn build_main_method_body() -> Vec<u8> {
-    let mut code = Vec::with_capacity(25);
+    let mut code = Vec::with_capacity(35);
 
     // Tiny method header: low bits 0b10 + code size in the upper six bits.
-    const CODE_SIZE: u8 = 24;
+    const CODE_SIZE: u8 = 34;
     code.push((CODE_SIZE << 2) | 0b10);
 
     // ldstr "Hello FerrumWeave"
@@ -128,6 +130,18 @@ fn build_main_method_body() -> Vec<u8> {
     code.push(0x26);
     code.push(0x26);
 
+    // Read then write the same portable managed property value.
+    code.push(0x28);
+    push_u32(
+        &mut code,
+        MEMBER_REF_TOKEN_ENVIRONMENT_GET_CURRENT_DIRECTORY,
+    );
+    code.push(0x28);
+    push_u32(
+        &mut code,
+        MEMBER_REF_TOKEN_ENVIRONMENT_SET_CURRENT_DIRECTORY,
+    );
+
     // ret
     code.push(0x2A);
     code
@@ -140,6 +154,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let int128_name = push_string(&mut strings, "Int128");
     let uint128_name = push_string(&mut strings, "UInt128");
     let object_name = push_string(&mut strings, "Object");
+    let environment_name = push_string(&mut strings, "Environment");
     let system_namespace = push_string(&mut strings, "System");
     let module_type_name = push_string(&mut strings, "<Module>");
     let main_name = push_string(&mut strings, "Main");
@@ -153,6 +168,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let writeline_name = push_string(&mut strings, "WriteLine");
     let ctor_name = push_string(&mut strings, ".ctor");
     let tostring_name = push_string(&mut strings, "ToString");
+    let get_current_directory_name = push_string(&mut strings, "get_CurrentDirectory");
+    let set_current_directory_name = push_string(&mut strings, "set_CurrentDirectory");
     let assembly_name = push_string(&mut strings, PROBE_ASSEMBLY_NAME);
     let system_console_assembly_name = push_string(&mut strings, "System.Console");
     let system_runtime_assembly_name = push_string(&mut strings, "System.Runtime");
@@ -182,6 +199,10 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let writeline_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
     let object_ctor_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x01]);
     let object_tostring_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x0E]);
+    let environment_get_current_directory_signature =
+        push_blob(&mut blobs, &[0x00, 0x00, 0x0E]);
+    let environment_set_current_directory_signature =
+        push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
     let system_public_key_token = push_blob(
         &mut blobs,
         &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
@@ -203,7 +224,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u64(&mut tables, 0); // Sorted mask.
 
     // Row counts, in table-id order for every set bit in the valid mask.
-    for count in [1_u32, 4, 1, 8, 3, 1, 2] {
+    for count in [1_u32, 5, 1, 8, 5, 1, 2] {
         push_u32(&mut tables, count);
     }
 
@@ -231,6 +252,11 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     // TypeRef row 4: [System.Runtime]System.Object.
     push_u16(&mut tables, 10);
     push_u16(&mut tables, object_name);
+    push_u16(&mut tables, system_namespace);
+
+    // TypeRef row 5: [System.Runtime]System.Environment.
+    push_u16(&mut tables, 10);
+    push_u16(&mut tables, environment_name);
     push_u16(&mut tables, system_namespace);
 
     // TypeDef (0x02): the required global <Module> type.
@@ -283,6 +309,21 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 33);
     push_u16(&mut tables, tostring_name);
     push_u16(&mut tables, object_tostring_signature);
+
+    // MemberRef rows 4-5: System.Environment.CurrentDirectory accessors.
+    // TypeRef row 5 => (5 << 3) | 1 = 41.
+    push_u16(&mut tables, 41);
+    push_u16(&mut tables, get_current_directory_name);
+    push_u16(
+        &mut tables,
+        environment_get_current_directory_signature,
+    );
+    push_u16(&mut tables, 41);
+    push_u16(&mut tables, set_current_directory_name);
+    push_u16(
+        &mut tables,
+        environment_set_current_directory_signature,
+    );
 
     // Assembly (0x20).
     push_u32(&mut tables, 0x0000_8004); // SHA-1, conventional ECMA-335 value.
@@ -581,6 +622,11 @@ mod tests {
             image
                 .windows("ToString".len())
                 .any(|window| window == b"ToString")
+        );
+        assert!(
+            image
+                .windows("Environment".len())
+                .any(|window| window == b"Environment")
         );
     }
 }
