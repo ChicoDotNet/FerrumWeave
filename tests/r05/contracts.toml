@@ -1,5 +1,5 @@
 milestone = "R05"
-status = "in-progress"
+status = "done"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -40,8 +40,8 @@ proof = "tests/functional.rs::r01_probe_executes_on_coreclr executes Rust-emitte
 [[contracts]]
 id = "FW-R05-DOTNET-006"
 family = "consume a user-defined C# assembly compiled independently from FerrumWeave"
-implemented = false
-proof = "pending"
+implemented = true
+proof = "tests/r05_user_assembly.rs independently compiles FerrumWeave.UserFixture.dll, resolves UserFixture.Api.Greeting through managed metadata, emits AssemblyRef/TypeRef/MemberRef/call from Rust, and executes the consumer under CoreCLR; Rust CI #134 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #46 remained GREEN"
 
 [[contracts]]
 id = "FW-R05-DOTNET-007"
