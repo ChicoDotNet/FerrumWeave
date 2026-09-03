@@ -33,13 +33,8 @@ pub fn emit_probe_assembly_with_external_static_call(
     let method_offset = EXTERNAL_CLR_HEADER_SIZE;
     let method_rva = EXTERNAL_SECTION_RVA + external_to_u32(method_offset);
 
-    let metadata = build_external_metadata(
-        method_rva,
-        assembly_name,
-        namespace,
-        type_name,
-        method_name,
-    );
+    let metadata =
+        build_external_metadata(method_rva, assembly_name, namespace, type_name, method_name);
     let metadata_offset = external_align_usize(method_offset + method_body.len(), 4);
     let metadata_rva = EXTERNAL_SECTION_RVA + external_to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
@@ -285,7 +280,11 @@ fn write_external_pe_headers(headers: &mut [u8], section_virtual_size: u32, sect
     external_write_u32_at(headers, coff + 4, 0);
     external_write_u32_at(headers, coff + 8, 0);
     external_write_u32_at(headers, coff + 12, 0);
-    external_write_u16_at(headers, coff + 16, external_to_u16(EXTERNAL_OPTIONAL_HEADER_SIZE));
+    external_write_u16_at(
+        headers,
+        coff + 16,
+        external_to_u16(EXTERNAL_OPTIONAL_HEADER_SIZE),
+    );
     external_write_u16_at(headers, coff + 18, 0x2022);
 
     let optional = coff + 20;
@@ -294,7 +293,11 @@ fn write_external_pe_headers(headers: &mut [u8], section_virtual_size: u32, sect
     external_write_u32_at(headers, optional + 20, EXTERNAL_SECTION_RVA);
     external_write_u32_at(headers, optional + 28, 0x0040_0000);
     external_write_u32_at(headers, optional + 32, EXTERNAL_SECTION_ALIGNMENT);
-    external_write_u32_at(headers, optional + 36, external_to_u32(EXTERNAL_FILE_ALIGNMENT));
+    external_write_u32_at(
+        headers,
+        optional + 36,
+        external_to_u32(EXTERNAL_FILE_ALIGNMENT),
+    );
     external_write_u16_at(headers, optional + 40, 4);
     external_write_u16_at(headers, optional + 48, 4);
 
@@ -303,7 +306,11 @@ fn write_external_pe_headers(headers: &mut [u8], section_virtual_size: u32, sect
         EXTERNAL_SECTION_ALIGNMENT,
     );
     external_write_u32_at(headers, optional + 56, image_size);
-    external_write_u32_at(headers, optional + 60, external_to_u32(EXTERNAL_HEADERS_SIZE));
+    external_write_u32_at(
+        headers,
+        optional + 60,
+        external_to_u32(EXTERNAL_HEADERS_SIZE),
+    );
     external_write_u16_at(headers, optional + 68, 3);
     external_write_u16_at(headers, optional + 70, 0x0100);
     external_write_u32_at(headers, optional + 72, 0x0010_0000);
@@ -314,14 +321,22 @@ fn write_external_pe_headers(headers: &mut [u8], section_virtual_size: u32, sect
 
     let cli_directory = optional + 96 + (14 * 8);
     external_write_u32_at(headers, cli_directory, EXTERNAL_SECTION_RVA);
-    external_write_u32_at(headers, cli_directory + 4, external_to_u32(EXTERNAL_CLR_HEADER_SIZE));
+    external_write_u32_at(
+        headers,
+        cli_directory + 4,
+        external_to_u32(EXTERNAL_CLR_HEADER_SIZE),
+    );
 
     let section = optional + EXTERNAL_OPTIONAL_HEADER_SIZE;
     headers[section..section + 8].copy_from_slice(b".text\0\0\0");
     external_write_u32_at(headers, section + 8, section_virtual_size);
     external_write_u32_at(headers, section + 12, EXTERNAL_SECTION_RVA);
     external_write_u32_at(headers, section + 16, section_raw_size);
-    external_write_u32_at(headers, section + 20, external_to_u32(EXTERNAL_HEADERS_SIZE));
+    external_write_u32_at(
+        headers,
+        section + 20,
+        external_to_u32(EXTERNAL_HEADERS_SIZE),
+    );
     external_write_u32_at(headers, section + 36, 0x6000_0020);
 }
 
