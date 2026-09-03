@@ -118,8 +118,12 @@ pub fn method_calls_member_ref(
                 }
                 cursor += 5;
             }
-            0x72 => cursor += 5,
-            0x2A => cursor += 1,
+            // Token-bearing instructions already certified by adjacent R05 slices.
+            // They are not the target of this inspector, but their operand width
+            // must be respected so later call instructions can be inspected safely.
+            0x6F | 0x72 | 0x73 => cursor += 5,
+            // Stack-only instructions used by the emitted probe.
+            0x25 | 0x26 | 0x2A => cursor += 1,
             _ => {
                 return Err(ManagedMetadataError::Unsupported(
                     "IL opcode is not projected by the R05 call inspector",
