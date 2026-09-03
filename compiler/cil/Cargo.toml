@@ -8,5 +8,8 @@ repository = "https://github.com/ChicoDotNet/FerrumWeave"
 license = "MIT OR Apache-2.0"
 publish = false
 
+[lib]
+path = "src/wrapper.rs"
+
 [lints.rust]
 unsafe_code = "forbid"
