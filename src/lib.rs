@@ -1,3 +1,5 @@
+pub mod managed;
+
 /// Returns the canonical R00 greeting.
 #[must_use]
 pub const fn greeting() -> &'static str {
