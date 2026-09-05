@@ -18,6 +18,10 @@ const SECTION_RVA: u32 = 0x2000;
 const CLR_HEADER_SIZE: usize = 0x48;
 const METHOD_DEF_TOKEN_MAIN: u32 = 0x0600_0001;
 const MEMBER_REF_TOKEN_WRITELINE: u32 = 0x0A00_0001;
+const MEMBER_REF_TOKEN_OBJECT_CTOR: u32 = 0x0A00_0002;
+const MEMBER_REF_TOKEN_OBJECT_TOSTRING: u32 = 0x0A00_0003;
+const MEMBER_REF_TOKEN_ENVIRONMENT_GET_CURRENT_DIRECTORY: u32 = 0x0A00_0004;
+const MEMBER_REF_TOKEN_ENVIRONMENT_SET_CURRENT_DIRECTORY: u32 = 0x0A00_0005;
 const USER_STRING_TOKEN_GREETING: u32 = 0x7000_0001;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,11 +30,12 @@ pub struct ProbePaths {
     pub runtime_config: PathBuf,
 }
 
-/// Emits the deliberately tiny R01 managed assembly.
+/// Emits the deliberately tiny managed probe assembly.
 ///
-/// R01 is an output-format probe, not a general-purpose CIL backend. The byte
-/// layout here intentionally contains only the ECMA-335 structures required to
-/// prove that FerrumWeave can own a managed PE/CLI artifact end to end.
+/// The byte layout intentionally contains only the ECMA-335 structures required
+/// by the currently certified vertical slices. R05 extends the original R01
+/// probe with real managed construction, instance dispatch, and property access
+/// while preserving the executable `System.Console.WriteLine` path.
 #[must_use]
 pub fn emit_probe_assembly() -> Vec<u8> {
     let method_body = build_main_method_body();
@@ -96,10 +101,10 @@ pub fn write_probe_artifacts(directory: impl AsRef<Path>) -> io::Result<ProbePat
 }
 
 fn build_main_method_body() -> Vec<u8> {
-    let mut code = Vec::with_capacity(12);
+    let mut code = Vec::with_capacity(35);
 
     // Tiny method header: low bits 0b10 + code size in the upper six bits.
-    const CODE_SIZE: u8 = 11;
+    const CODE_SIZE: u8 = 34;
     code.push((CODE_SIZE << 2) | 0b10);
 
     // ldstr "Hello FerrumWeave"
@@ -109,6 +114,33 @@ fn build_main_method_body() -> Vec<u8> {
     // call void [System.Console]System.Console::WriteLine(string)
     code.push(0x28);
     push_u32(&mut code, MEMBER_REF_TOKEN_WRITELINE);
+
+    // newobj instance void [System.Runtime]System.Object::.ctor()
+    code.push(0x73);
+    push_u32(&mut code, MEMBER_REF_TOKEN_OBJECT_CTOR);
+
+    // Keep one object reference while dispatching the public instance method.
+    code.push(0x25); // dup
+
+    // callvirt instance string [System.Runtime]System.Object::ToString()
+    code.push(0x6F);
+    push_u32(&mut code, MEMBER_REF_TOKEN_OBJECT_TOSTRING);
+
+    // Discard the returned string and the retained object reference.
+    code.push(0x26);
+    code.push(0x26);
+
+    // Read then write the same portable managed property value.
+    code.push(0x28);
+    push_u32(
+        &mut code,
+        MEMBER_REF_TOKEN_ENVIRONMENT_GET_CURRENT_DIRECTORY,
+    );
+    code.push(0x28);
+    push_u32(
+        &mut code,
+        MEMBER_REF_TOKEN_ENVIRONMENT_SET_CURRENT_DIRECTORY,
+    );
 
     // ret
     code.push(0x2A);
@@ -121,6 +153,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let console_name = push_string(&mut strings, "Console");
     let int128_name = push_string(&mut strings, "Int128");
     let uint128_name = push_string(&mut strings, "UInt128");
+    let object_name = push_string(&mut strings, "Object");
+    let environment_name = push_string(&mut strings, "Environment");
     let system_namespace = push_string(&mut strings, "System");
     let module_type_name = push_string(&mut strings, "<Module>");
     let main_name = push_string(&mut strings, "Main");
@@ -132,6 +166,10 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let probe_int128_name = push_string(&mut strings, "ProbeInt128");
     let probe_uint128_name = push_string(&mut strings, "ProbeUInt128");
     let writeline_name = push_string(&mut strings, "WriteLine");
+    let ctor_name = push_string(&mut strings, ".ctor");
+    let tostring_name = push_string(&mut strings, "ToString");
+    let get_current_directory_name = push_string(&mut strings, "get_CurrentDirectory");
+    let set_current_directory_name = push_string(&mut strings, "set_CurrentDirectory");
     let assembly_name = push_string(&mut strings, PROBE_ASSEMBLY_NAME);
     let system_console_assembly_name = push_string(&mut strings, "System.Console");
     let system_runtime_assembly_name = push_string(&mut strings, "System.Runtime");
@@ -142,7 +180,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     debug_assert_eq!(greeting_offset, 1);
     pad_vec(&mut user_strings, 4);
 
-    // A deterministic MVID keeps the R01 probe reproducible byte-for-byte.
+    // A deterministic MVID keeps the probe reproducible byte-for-byte.
     let guid = vec![
         0x46, 0x57, 0x52, 0x30, 0x31, 0x43, 0x49, 0x4C, 0x50, 0x52, 0x4F, 0x42, 0x45, 0x30, 0x30,
         0x31,
@@ -159,6 +197,11 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let probe_int128_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x11, 0x09]);
     let probe_uint128_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x11, 0x0D]);
     let writeline_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
+    let object_ctor_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x01]);
+    let object_tostring_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x0E]);
+    let environment_get_current_directory_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x0E]);
+    let environment_set_current_directory_signature =
+        push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
     let system_public_key_token = push_blob(
         &mut blobs,
         &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
@@ -180,7 +223,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u64(&mut tables, 0); // Sorted mask.
 
     // Row counts, in table-id order for every set bit in the valid mask.
-    for count in [1_u32, 3, 1, 8, 1, 1, 2] {
+    for count in [1_u32, 5, 1, 8, 5, 1, 2] {
         push_u32(&mut tables, count);
     }
 
@@ -204,6 +247,16 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
         push_u16(&mut tables, type_name);
         push_u16(&mut tables, system_namespace);
     }
+
+    // TypeRef row 4: [System.Runtime]System.Object.
+    push_u16(&mut tables, 10);
+    push_u16(&mut tables, object_name);
+    push_u16(&mut tables, system_namespace);
+
+    // TypeRef row 5: [System.Runtime]System.Environment.
+    push_u16(&mut tables, 10);
+    push_u16(&mut tables, environment_name);
+    push_u16(&mut tables, system_namespace);
 
     // TypeDef (0x02): the required global <Module> type.
     push_u32(&mut tables, 0);
@@ -240,11 +293,30 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
         push_u16(&mut tables, 1);
     }
 
-    // MemberRef (0x0A): System.Console.WriteLine(string).
+    // MemberRef row 1: System.Console.WriteLine(string).
     // MemberRefParent tag 1 is TypeRef; row 1 => (1 << 3) | 1 = 9.
     push_u16(&mut tables, 9);
     push_u16(&mut tables, writeline_name);
     push_u16(&mut tables, writeline_signature);
+
+    // MemberRef row 2: System.Object::.ctor(). TypeRef row 4 => (4 << 3) | 1 = 33.
+    push_u16(&mut tables, 33);
+    push_u16(&mut tables, ctor_name);
+    push_u16(&mut tables, object_ctor_signature);
+
+    // MemberRef row 3: System.Object::ToString().
+    push_u16(&mut tables, 33);
+    push_u16(&mut tables, tostring_name);
+    push_u16(&mut tables, object_tostring_signature);
+
+    // MemberRef rows 4-5: System.Environment.CurrentDirectory accessors.
+    // TypeRef row 5 => (5 << 3) | 1 = 41.
+    push_u16(&mut tables, 41);
+    push_u16(&mut tables, get_current_directory_name);
+    push_u16(&mut tables, environment_get_current_directory_signature);
+    push_u16(&mut tables, 41);
+    push_u16(&mut tables, set_current_directory_name);
+    push_u16(&mut tables, environment_set_current_directory_signature);
 
     // Assembly (0x20).
     push_u32(&mut tables, 0x0000_8004); // SHA-1, conventional ECMA-335 value.
@@ -332,7 +404,7 @@ fn write_clr_header(header: &mut [u8], metadata_rva: u32, metadata_size: u32) {
     write_u32_at(header, 0x0C, metadata_size);
     write_u32_at(header, 0x10, 0x0000_0001); // COMIMAGE_FLAGS_ILONLY.
     write_u32_at(header, 0x14, METHOD_DEF_TOKEN_MAIN);
-    // Remaining data directories are intentionally zero for R01.
+    // Remaining data directories are intentionally zero for the probe.
 }
 
 fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_size: u32) {
@@ -462,11 +534,11 @@ fn pad_vec(buffer: &mut Vec<u8>, alignment: usize) {
 }
 
 fn to_u16(value: usize) -> u16 {
-    u16::try_from(value).expect("R01 probe index fits u16")
+    u16::try_from(value).expect("probe index fits u16")
 }
 
 fn to_u32(value: usize) -> u32 {
-    u32::try_from(value).expect("R01 probe size fits u32")
+    u32::try_from(value).expect("probe size fits u32")
 }
 
 fn push_u16(buffer: &mut Vec<u8>, value: u16) {
@@ -533,6 +605,21 @@ mod tests {
             image
                 .windows("System.Console".len())
                 .any(|window| window == b"System.Console")
+        );
+        assert!(
+            image
+                .windows("Object".len())
+                .any(|window| window == b"Object")
+        );
+        assert!(
+            image
+                .windows("ToString".len())
+                .any(|window| window == b"ToString")
+        );
+        assert!(
+            image
+                .windows("Environment".len())
+                .any(|window| window == b"Environment")
         );
     }
 }

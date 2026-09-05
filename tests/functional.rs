@@ -45,10 +45,9 @@ fn r01_probe_is_managed_assembly() {
         table_row_count(tables, 0x06) >= 1,
         "at least the managed entry-point MethodDef is expected"
     );
-    assert_eq!(
-        table_row_count(tables, 0x0A),
-        1,
-        "one MemberRef is expected"
+    assert!(
+        table_row_count(tables, 0x0A) >= 1,
+        "at least one managed MemberRef is expected"
     );
     assert_eq!(
         table_row_count(tables, 0x20),

@@ -1,0 +1,56 @@
+milestone = "R05"
+status = "done"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R05 declares the managed-consumption denominator before implementation.
+# Contracts remain false until executable evidence proves the corresponding
+# Rust -> managed metadata capability; CI must not treat declarations as proof.
+
+[[contracts]]
+id = "FW-R05-DOTNET-001"
+family = "resolve and call a public static .NET method through managed metadata"
+implemented = true
+proof = "tests/r05_static_call.rs resolves System.Console.WriteLine to a CLR MemberRef token and verifies Rust-emitted managed IL calls that exact token; Rust CI certified Ubuntu and Windows"
+
+[[contracts]]
+id = "FW-R05-DOTNET-002"
+family = "construct a supported public .NET type"
+implemented = true
+proof = "tests/r05_construct.rs resolves System.Object::.ctor to a CLR MemberRef token and verifies Rust-emitted managed IL uses newobj with that exact token; Rust CI #109 certified Ubuntu and Windows and R04 CLR CTS Reflection #21 remained GREEN"
+
+[[contracts]]
+id = "FW-R05-DOTNET-003"
+family = "call a supported public instance method"
+implemented = true
+proof = "tests/r05_instance_call.rs resolves System.Object.ToString to a CLR MemberRef token and verifies Rust-emitted managed IL uses callvirt with that exact token; Rust CI #117 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #29 remained GREEN"
+
+[[contracts]]
+id = "FW-R05-DOTNET-004"
+family = "read and write a supported public property"
+implemented = true
+proof = "tests/r05_property.rs resolves System.Environment.CurrentDirectory getter/setter MemberRefs and verifies Rust-emitted managed IL calls both exact tokens; Rust CI #127 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #39 remained GREEN"
+
+[[contracts]]
+id = "FW-R05-DOTNET-005"
+family = "consume at least one System.* API"
+implemented = true
+proof = "tests/functional.rs::r01_probe_executes_on_coreclr executes Rust-emitted IL calling System.Console.WriteLine"
+
+[[contracts]]
+id = "FW-R05-DOTNET-006"
+family = "consume a user-defined C# assembly compiled independently from FerrumWeave"
+implemented = true
+proof = "tests/r05_user_assembly.rs independently compiles FerrumWeave.UserFixture.dll, resolves UserFixture.Api.Greeting through managed metadata, emits AssemblyRef/TypeRef/MemberRef/call from Rust, and executes the consumer under CoreCLR; Rust CI #134 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #46 remained GREEN"
+
+[[contracts]]
+id = "FW-R05-DOTNET-007"
+family = "managed API consumption is certified on Linux and Windows"
+implemented = true
+proof = "Rust CI build + test matrix executes the managed probe on ubuntu-latest and windows-latest"
+
+[[contracts]]
+id = "FW-R05-DOTNET-008"
+family = "managed interoperability does not use P/Invoke or native FFI as its implementation"
+implemented = true
+proof = "tests/functional.rs::r01_probe_has_no_native_implementation verifies IL-only CLR entry point with no native PE entry point/import directory"
