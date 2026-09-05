@@ -1,0 +1,54 @@
+milestone = "R06"
+status = "in_progress"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R06 declares the reverse managed-interoperability denominator before implementation.
+# Contracts remain false until executable evidence proves that ordinary .NET consumers
+# can use Rust-defined managed APIs. Consumer projects may be C#/VB test fixtures, but
+# they must not reimplement the Rust-defined behavior under test.
+
+[[contracts]]
+id = "FW-R06-DOTNET-001"
+family = "Rust produces a managed assembly exposing a coherent public static Rust-defined API"
+implemented = false
+
+[[contracts]]
+id = "FW-R06-DOTNET-002"
+family = "a C# project references the Rust-produced managed assembly and calls supported public static Rust-defined behavior"
+implemented = false
+
+[[contracts]]
+id = "FW-R06-DOTNET-003"
+family = "a Visual Basic .NET project references the Rust-produced managed assembly and calls supported public static Rust-defined behavior"
+implemented = false
+
+[[contracts]]
+id = "FW-R06-DOTNET-004"
+family = "Rust produces a managed public type with a supported instance-call shape"
+implemented = false
+
+[[contracts]]
+id = "FW-R06-DOTNET-005"
+family = "a C# project constructs or receives the Rust-defined managed type and calls supported public instance behavior"
+implemented = false
+
+[[contracts]]
+id = "FW-R06-DOTNET-006"
+family = "a Visual Basic .NET project constructs or receives the Rust-defined managed type and calls supported public instance behavior"
+implemented = false
+
+[[contracts]]
+id = "FW-R06-DOTNET-007"
+family = "independent CLR reflection verifies coherent public names, signatures, visibility, and supported types"
+implemented = false
+
+[[contracts]]
+id = "FW-R06-DOTNET-008"
+family = "managed consumers require no P/Invoke or native ABI layer"
+implemented = false
+
+[[contracts]]
+id = "FW-R06-DOTNET-009"
+family = "supported R06 consumer scenarios are certified on Linux and Windows"
+implemented = false
