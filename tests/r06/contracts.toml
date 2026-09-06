@@ -53,7 +53,8 @@ proof = "tests/r06_reflection.rs emits the Rust-defined assembly then launches a
 [[contracts]]
 id = "FW-R06-DOTNET-008"
 family = "managed consumers require no P/Invoke or native ABI layer"
-implemented = false
+implemented = true
+proof = "tests/r06_no_native_abi.rs launches an independent net10.0 metadata verifier over the Rust-emitted PE and requires CorFlags.ILOnly, zero ECMA-335 ModuleRef rows, no MethodAttributes.PinvokeImpl, and no MethodImport module handles; Rust CI #163 certified the verifier and all R06 consumer tests on Ubuntu and Windows while R04 CLR CTS Reflection #72 remained GREEN"
 
 [[contracts]]
 id = "FW-R06-DOTNET-009"
