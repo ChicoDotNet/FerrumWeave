@@ -435,8 +435,17 @@ mod tests {
     fn disposable_image_is_deterministic_and_names_the_contract_surface() {
         let image = emit_r07_disposable_assembly();
         assert_eq!(image, emit_r07_disposable_assembly());
-        for expected in [R07_RESOURCE_TYPE_NAME, R07_DISPOSE_METHOD_NAME, R07_RELEASE_COUNT_METHOD_NAME, "IDisposable"] {
-            assert!(image.windows(expected.len()).any(|window| window == expected.as_bytes()));
+        for expected in [
+            R07_RESOURCE_TYPE_NAME,
+            R07_DISPOSE_METHOD_NAME,
+            R07_RELEASE_COUNT_METHOD_NAME,
+            "IDisposable",
+        ] {
+            assert!(
+                image
+                    .windows(expected.len())
+                    .any(|window| window == expected.as_bytes())
+            );
         }
     }
 }
