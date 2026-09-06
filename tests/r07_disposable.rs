@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use ferrumweave_cil::{PROBE_ASSEMBLY_FILE, write_r06_static_api_artifact};
+use ferrumweave_cil::{PROBE_ASSEMBLY_FILE, write_r07_disposable_artifact};
 
 const CONSUMER_ASSEMBLY_NAME: &str = "FerrumWeave.R07.DisposableConsumer";
 const EXPECTED_OUTPUT: &str = "0\n1\n1";
@@ -16,7 +16,7 @@ fn rust_drop_resource_projects_to_idisposable_with_exactly_once_release() {
     fs::create_dir_all(&consumer).expect("create R07 IDisposable C# consumer directory");
 
     let assembly =
-        write_r06_static_api_artifact(&produced).expect("emit Rust-produced managed assembly");
+        write_r07_disposable_artifact(&produced).expect("emit Rust-produced managed assembly");
     fs::copy(&assembly, consumer.join(PROBE_ASSEMBLY_FILE))
         .expect("place Rust-produced managed assembly beside R07 IDisposable consumer project");
 
