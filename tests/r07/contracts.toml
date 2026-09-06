@@ -59,7 +59,8 @@ proof = "tests/r07_managed_identity.rs builds and executes an independent net10.
 [[contracts]]
 id = "FW-R07-SEM-009"
 family = "at least one supported generic boundary has a coherent Rust/CTS representation observable by CLR consumers"
-implemented = false
+implemented = true
+proof = "tests/r07_generic_boundary.rs loads the Rust-emitted assembly in an independent net10.0 CLR consumer and uses System.Reflection to verify that OptionSomeI32 and OptionNoneI32 expose a genuine generic return type whose generic definition is System.Nullable<> and whose sole generic argument is System.Int32. Exact SHA 9079dcf41dbe8bf9387b5f552ece4f12ef2b351a was GREEN in Rust CI #205 and R04 CLR CTS Reflection #112, including Ubuntu/Windows integration certification."
 
 [[contracts]]
 id = "FW-R07-SEM-010"
