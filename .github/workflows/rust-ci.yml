@@ -78,8 +78,8 @@ jobs:
         run: cargo build --workspace --all-targets --locked
       - name: Unit tests
         run: cargo test --workspace --lib --locked
-      - name: Functional tests
-        run: cargo test --workspace --test functional --locked
+      - name: Integration tests
+        run: cargo test --workspace --tests --locked
 
   code-coverage:
     name: code coverage
