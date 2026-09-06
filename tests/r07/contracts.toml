@@ -35,7 +35,8 @@ proof = "tests/r07_result_success.rs builds and executes an independent net10.0 
 [[contracts]]
 id = "FW-R07-SEM-005"
 family = "Result<T, E> failure crosses a supported public CLR boundary as a coherent managed exception rather than a hidden status-code convention"
-implemented = false
+implemented = true
+proof = "tests/r07_result_failure.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly. FerrumWeave.RustApi.ResultErrI32() is emitted in compiler/cil/src/r06.rs as managed IL that loads the stable message, constructs System.InvalidOperationException(string), and throws it; the C# harness only consumes the public CLR contract and observes the exact message 'FerrumWeave Result error'. Rust CI #189 certified exact product SHA 9d9f003e93f99de96feca18f0b2d11e39705e1e0 GREEN for fmt/clippy, functional coverage, 92.54% code coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #96 was also GREEN on Linux and Windows."
 
 [[contracts]]
 id = "FW-R07-SEM-006"
