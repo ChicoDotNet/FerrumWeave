@@ -11,12 +11,14 @@ target_percent_when_done = 100.0
 [[contracts]]
 id = "FW-R06-DOTNET-001"
 family = "Rust produces a managed assembly exposing a coherent public static Rust-defined API"
-implemented = false
+implemented = true
+proof = "compiler/cil/src/r06.rs emits FerrumWeave.RustApi.Answer() as public static int32 with a Rust-built ECMA-335 TypeDef/MethodDef and IL body ldc.i4.s 42; ret; Rust CI #148 certified the exact implementation on Ubuntu and Windows"
 
 [[contracts]]
 id = "FW-R06-DOTNET-002"
 family = "a C# project references the Rust-produced managed assembly and calls supported public static Rust-defined behavior"
-implemented = false
+implemented = true
+proof = "tests/r06_csharp_static.rs builds an independent net10.0 C# executable that references FerrumWeave.Probe.dll, calls FerrumWeave.RustApi.Answer(), executes under CoreCLR, and asserts stdout 42; Rust CI #148 integration tests passed on Ubuntu and Windows"
 
 [[contracts]]
 id = "FW-R06-DOTNET-003"
