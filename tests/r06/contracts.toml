@@ -1,5 +1,5 @@
 milestone = "R06"
-status = "in_progress"
+status = "done"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -59,4 +59,5 @@ proof = "tests/r06_no_native_abi.rs launches an independent net10.0 metadata ver
 [[contracts]]
 id = "FW-R06-DOTNET-009"
 family = "supported R06 consumer scenarios are certified on Linux and Windows"
-implemented = false
+implemented = true
+proof = "Rust CI #164 ran the complete workspace integration-test suite at ledger state 8/9 and passed all R06 C#/VB static and instance consumers, independent CLR reflection, and no-native-ABI verification on ubuntu-latest and windows-latest; fmt/clippy, functional coverage and code coverage remained GREEN, and R04 CLR CTS Reflection #73 passed independently on Linux and Windows"
