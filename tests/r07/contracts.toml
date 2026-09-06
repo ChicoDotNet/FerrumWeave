@@ -29,7 +29,8 @@ proof = "tests/r07_option_value.rs builds and executes an independent net10.0 C#
 [[contracts]]
 id = "FW-R07-SEM-004"
 family = "Result<T, E> success crosses a supported public CLR boundary as the declared success value"
-implemented = false
+implemented = true
+proof = "tests/r07_result_success.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly and observes FerrumWeave.RustApi.ResultOkI32() == 42. The behavior is emitted as managed IL by compiler/cil/src/r06.rs; the C# harness only consumes the public CLR contract. Rust CI #182 certified exact product SHA 1efc849ace95bfe04d069ac8cd2a94e1e6bec258 GREEN for fmt/clippy, functional coverage, code coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #89 was also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-005"
