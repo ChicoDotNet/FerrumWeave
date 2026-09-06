@@ -29,12 +29,14 @@ proof = "tests/r06_vb_static.rs builds an independent net10.0 VB.NET executable 
 [[contracts]]
 id = "FW-R06-DOTNET-004"
 family = "Rust produces a managed public type with a supported instance-call shape"
-implemented = false
+implemented = true
+proof = "compiler/cil/src/r06.rs emits public FerrumWeave.RustValue : System.Object with a managed public .ctor() that calls System.Object::.ctor() and a public instance int32 Answer() IL body returning 42; Rust CI #154 certified the exact SHA on Ubuntu and Windows with 92.00% Rust line coverage and R04 CLR CTS Reflection #63 GREEN"
 
 [[contracts]]
 id = "FW-R06-DOTNET-005"
 family = "a C# project constructs or receives the Rust-defined managed type and calls supported public instance behavior"
-implemented = false
+implemented = true
+proof = "tests/r06_csharp_instance.rs builds an independent net10.0 C# executable referencing the Rust-produced assembly, constructs new FerrumWeave.RustValue(), calls value.Answer(), executes under CoreCLR, and asserts stdout 42; Rust CI #154 integration tests passed on Ubuntu and Windows"
 
 [[contracts]]
 id = "FW-R06-DOTNET-006"
