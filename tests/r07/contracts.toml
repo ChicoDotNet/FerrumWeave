@@ -41,7 +41,8 @@ proof = "tests/r07_result_failure.rs builds and executes an independent net10.0 
 [[contracts]]
 id = "FW-R07-SEM-006"
 family = "panic behavior at a supported managed public boundary follows an explicit policy and does not silently unwind across an unsupported runtime boundary"
-implemented = false
+implemented = true
+proof = "projection/types/tests/panic_boundary_policy.rs exercises FerrumWeave's Rust-side managed-boundary policy directly: managed_panic_boundary_policy() returns RejectUncontainedPanic, reports that CLR-boundary unwind is not permitted, and exposes a stable diagnostic requiring panic containment or explicit failure modeling. Rust CI #193 certified exact product SHA 860b74a81bba08f0bbc09d72f433e9ced1f27142 GREEN for fmt/clippy, functional coverage, 92.57% code coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #100 was also GREEN on Linux and Windows."
 
 [[contracts]]
 id = "FW-R07-SEM-007"
