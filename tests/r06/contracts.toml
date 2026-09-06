@@ -41,7 +41,8 @@ proof = "tests/r06_csharp_instance.rs builds an independent net10.0 C# executabl
 [[contracts]]
 id = "FW-R06-DOTNET-006"
 family = "a Visual Basic .NET project constructs or receives the Rust-defined managed type and calls supported public instance behavior"
-implemented = false
+implemented = true
+proof = "tests/r06_vb_instance.rs builds an independent net10.0 VB.NET executable referencing the Rust-produced assembly, constructs New FerrumWeave.RustValue(), calls value.Answer(), executes under CoreCLR, and asserts stdout 42; Rust CI #156 certified the exact SHA with fmt/clippy, coverage and integration tests GREEN on Ubuntu and Windows, while R04 CLR CTS Reflection #65 remained GREEN"
 
 [[contracts]]
 id = "FW-R06-DOTNET-007"
