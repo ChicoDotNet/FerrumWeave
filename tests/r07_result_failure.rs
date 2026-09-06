@@ -68,7 +68,10 @@ catch (InvalidOperationException ex)
         String::from_utf8_lossy(&run.stdout),
         String::from_utf8_lossy(&run.stderr)
     );
-    assert_eq!(String::from_utf8_lossy(&run.stdout).trim(), EXPECTED_MESSAGE);
+    assert_eq!(
+        String::from_utf8_lossy(&run.stdout).trim(),
+        EXPECTED_MESSAGE
+    );
 
     let _ = fs::remove_dir_all(root);
 }
