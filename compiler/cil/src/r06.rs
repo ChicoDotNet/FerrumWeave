@@ -53,12 +53,8 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
         align_usize(option_some_i32_offset + option_some_i32_body.len(), 4);
     let option_none_i32_rva = SECTION_RVA + to_u32(option_none_i32_offset);
 
-    let result_ok_i32_body = build_answer_method_body();
-    let result_ok_i32_offset = align_usize(option_none_i32_offset + option_none_i32_body.len(), 4);
-    let result_ok_i32_rva = SECTION_RVA + to_u32(result_ok_i32_offset);
-
     let ctor_body = build_constructor_method_body();
-    let ctor_offset = align_usize(result_ok_i32_offset + result_ok_i32_body.len(), 4);
+    let ctor_offset = align_usize(option_none_i32_offset + option_none_i32_body.len(), 4);
     let ctor_rva = SECTION_RVA + to_u32(ctor_offset);
 
     let instance_answer_body = build_answer_method_body();
@@ -72,7 +68,6 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
         option_none_rva,
         option_some_i32_rva,
         option_none_i32_rva,
-        result_ok_i32_rva,
         ctor_rva,
         instance_answer_rva,
     );
@@ -91,8 +86,6 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
         .copy_from_slice(&option_some_i32_body);
     section[option_none_i32_offset..option_none_i32_offset + option_none_i32_body.len()]
         .copy_from_slice(&option_none_i32_body);
-    section[result_ok_i32_offset..result_ok_i32_offset + result_ok_i32_body.len()]
-        .copy_from_slice(&result_ok_i32_body);
     section[ctor_offset..ctor_offset + ctor_body.len()].copy_from_slice(&ctor_body);
     section[instance_answer_offset..instance_answer_offset + instance_answer_body.len()]
         .copy_from_slice(&instance_answer_body);
@@ -190,7 +183,6 @@ fn build_metadata(
     option_none_rva: u32,
     option_some_i32_rva: u32,
     option_none_i32_rva: u32,
-    result_ok_i32_rva: u32,
     ctor_rva: u32,
     instance_answer_rva: u32,
 ) -> Vec<u8> {
@@ -342,8 +334,9 @@ fn build_metadata(
     push_u16(&mut tables, static_nullable_i32_signature);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 6: public static int32 RustApi.ResultOkI32().
-    push_u32(&mut tables, result_ok_i32_rva);
+    // MethodDef row 6: public static int32 RustApi.ResultOkI32(). It deliberately
+    // shares the proven three-byte success-value IL body with Answer().
+    push_u32(&mut tables, static_answer_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0096);
     push_u16(&mut tables, result_ok_i32_name);
