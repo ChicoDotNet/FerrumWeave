@@ -23,7 +23,8 @@ proof = "tests/r07_option_reference.rs builds and executes an independent net10.
 [[contracts]]
 id = "FW-R07-SEM-003"
 family = "Option<T> for a supported CLR value type uses an explicit System.Nullable<T> projection for Some and None"
-implemented = false
+implemented = true
+proof = "tests/r07_option_value.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly. FerrumWeave.RustApi.OptionSomeI32() returns System.Nullable<int> constructed by managed IL newobj against a TypeSpec-bound System.Nullable`1 constructor with VAR 0, while OptionNoneI32() returns the default Nullable<int> through managed ldnull + unbox.any. Rust CI #178 certified the exact product SHA fbb53f6741d3d3b02f9040d15540f5918516bcb8 GREEN for fmt/clippy, functional coverage, code coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #85 was also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-004"
