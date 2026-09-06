@@ -1,4 +1,4 @@
-use ferrumweave_projection_types::{direct_cts_mapping, utf16_to_rust_string, RustScalar};
+use ferrumweave_projection_types::{RustScalar, direct_cts_mapping, utf16_to_rust_string};
 
 #[test]
 fn rust_char_is_rejected_as_a_direct_system_char_projection_with_a_stable_diagnostic() {
