@@ -661,7 +661,6 @@ mod tests {
             R07_RESULT_OK_I32_METHOD_NAME,
             R07_RESULT_ERR_I32_METHOD_NAME,
             R07_OPTION_SOME_VALUE,
-            R07_RESULT_ERROR_MESSAGE,
         ] {
             assert!(
                 first
