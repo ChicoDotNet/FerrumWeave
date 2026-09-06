@@ -14,6 +14,8 @@ const SECTION_ALIGNMENT: u32 = 0x2000;
 const SECTION_RVA: u32 = 0x2000;
 const CLR_HEADER_SIZE: usize = 0x48;
 const MEMBER_REF_TOKEN_OBJECT_CTOR: u32 = 0x0A00_0001;
+const MEMBER_REF_TOKEN_NULLABLE_I32_CTOR: u32 = 0x0A00_0002;
+const TYPE_SPEC_TOKEN_NULLABLE_I32: u32 = 0x1B00_0001;
 const USER_STRING_TOKEN_OPTION_SOME: u32 = 0x7000_0001;
 
 pub const R06_NAMESPACE: &str = "FerrumWeave";
@@ -23,6 +25,8 @@ pub const R06_STATIC_METHOD_NAME: &str = "Answer";
 pub const R06_STATIC_ANSWER: i32 = 42;
 pub const R07_OPTION_SOME_METHOD_NAME: &str = "OptionSomeString";
 pub const R07_OPTION_NONE_METHOD_NAME: &str = "OptionNoneString";
+pub const R07_OPTION_SOME_I32_METHOD_NAME: &str = "OptionSomeI32";
+pub const R07_OPTION_NONE_I32_METHOD_NAME: &str = "OptionNoneI32";
 pub const R07_OPTION_SOME_VALUE: &str = "FerrumWeave";
 
 #[must_use]
@@ -39,8 +43,16 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
     let option_none_offset = align_usize(option_some_offset + option_some_body.len(), 4);
     let option_none_rva = SECTION_RVA + to_u32(option_none_offset);
 
+    let option_some_i32_body = build_option_some_i32_body();
+    let option_some_i32_offset = align_usize(option_none_offset + option_none_body.len(), 4);
+    let option_some_i32_rva = SECTION_RVA + to_u32(option_some_i32_offset);
+
+    let option_none_i32_body = build_option_none_i32_body();
+    let option_none_i32_offset = align_usize(option_some_i32_offset + option_some_i32_body.len(), 4);
+    let option_none_i32_rva = SECTION_RVA + to_u32(option_none_i32_offset);
+
     let ctor_body = build_constructor_method_body();
-    let ctor_offset = align_usize(option_none_offset + option_none_body.len(), 4);
+    let ctor_offset = align_usize(option_none_i32_offset + option_none_i32_body.len(), 4);
     let ctor_rva = SECTION_RVA + to_u32(ctor_offset);
 
     let instance_answer_body = build_answer_method_body();
@@ -52,6 +64,8 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
         static_answer_rva,
         option_some_rva,
         option_none_rva,
+        option_some_i32_rva,
+        option_none_i32_rva,
         ctor_rva,
         instance_answer_rva,
     );
@@ -66,6 +80,10 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
         .copy_from_slice(&option_some_body);
     section[option_none_offset..option_none_offset + option_none_body.len()]
         .copy_from_slice(&option_none_body);
+    section[option_some_i32_offset..option_some_i32_offset + option_some_i32_body.len()]
+        .copy_from_slice(&option_some_i32_body);
+    section[option_none_i32_offset..option_none_i32_offset + option_none_i32_body.len()]
+        .copy_from_slice(&option_none_i32_body);
     section[ctor_offset..ctor_offset + ctor_body.len()].copy_from_slice(&ctor_body);
     section[instance_answer_offset..instance_answer_offset + instance_answer_body.len()]
         .copy_from_slice(&instance_answer_body);
@@ -123,6 +141,29 @@ fn build_option_none_string_body() -> Vec<u8> {
     body
 }
 
+fn build_option_some_i32_body() -> Vec<u8> {
+    let mut body = Vec::with_capacity(9);
+    const CODE_SIZE: u8 = 8;
+    body.push((CODE_SIZE << 2) | 0b10);
+    body.push(0x1F); // ldc.i4.s
+    body.push(u8::try_from(R06_STATIC_ANSWER).expect("R07 Option value fits signed byte"));
+    body.push(0x73); // newobj instance void System.Nullable<int32>::.ctor(int32)
+    push_u32(&mut body, MEMBER_REF_TOKEN_NULLABLE_I32_CTOR);
+    body.push(0x2A); // ret
+    body
+}
+
+fn build_option_none_i32_body() -> Vec<u8> {
+    let mut body = Vec::with_capacity(8);
+    const CODE_SIZE: u8 = 7;
+    body.push((CODE_SIZE << 2) | 0b10);
+    body.push(0x14); // ldnull
+    body.push(0xA5); // unbox.any System.Nullable<int32>; null becomes default Nullable<int32>
+    push_u32(&mut body, TYPE_SPEC_TOKEN_NULLABLE_I32);
+    body.push(0x2A); // ret
+    body
+}
+
 fn build_constructor_method_body() -> Vec<u8> {
     let mut body = Vec::with_capacity(8);
     const CODE_SIZE: u8 = 7;
@@ -138,12 +179,15 @@ fn build_metadata(
     static_answer_rva: u32,
     option_some_rva: u32,
     option_none_rva: u32,
+    option_some_i32_rva: u32,
+    option_none_i32_rva: u32,
     ctor_rva: u32,
     instance_answer_rva: u32,
 ) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, PROBE_ASSEMBLY_FILE);
     let object_name = push_string(&mut strings, "Object");
+    let nullable_name = push_string(&mut strings, "Nullable`1");
     let system_namespace = push_string(&mut strings, "System");
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, R06_TYPE_NAME);
@@ -152,6 +196,8 @@ fn build_metadata(
     let answer_name = push_string(&mut strings, R06_STATIC_METHOD_NAME);
     let option_some_name = push_string(&mut strings, R07_OPTION_SOME_METHOD_NAME);
     let option_none_name = push_string(&mut strings, R07_OPTION_NONE_METHOD_NAME);
+    let option_some_i32_name = push_string(&mut strings, R07_OPTION_SOME_I32_METHOD_NAME);
+    let option_none_i32_name = push_string(&mut strings, R07_OPTION_NONE_I32_METHOD_NAME);
     let ctor_name = push_string(&mut strings, ".ctor");
     let assembly_name = push_string(&mut strings, "FerrumWeave.Probe");
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
@@ -170,8 +216,13 @@ fn build_metadata(
     let mut blobs = vec![0_u8];
     let static_answer_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
     let static_string_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x0E]);
+    // DEFAULT, 0 params, GENERICINST VALUETYPE TypeRef(Nullable`1), 1 generic arg, I4.
+    let static_nullable_i32_signature =
+        push_blob(&mut blobs, &[0x00, 0x00, 0x15, 0x11, 0x09, 0x01, 0x08]);
     let ctor_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x01]);
+    let nullable_i32_ctor_signature = push_blob(&mut blobs, &[0x20, 0x01, 0x01, 0x08]);
     let instance_answer_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x08]);
+    let nullable_i32_type_signature = push_blob(&mut blobs, &[0x15, 0x11, 0x09, 0x01, 0x08]);
     let system_public_key_token = push_blob(
         &mut blobs,
         &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
@@ -187,12 +238,13 @@ fn build_metadata(
         | (1_u64 << 2)
         | (1_u64 << 6)
         | (1_u64 << 10)
+        | (1_u64 << 27)
         | (1_u64 << 32)
         | (1_u64 << 35);
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0);
 
-    for count in [1_u32, 1, 3, 5, 1, 1, 1] {
+    for count in [1_u32, 2, 3, 7, 2, 1, 1, 1] {
         push_u32(&mut tables, count);
     }
 
@@ -206,6 +258,11 @@ fn build_metadata(
     // TypeRef row 1: [System.Runtime]System.Object.
     push_u16(&mut tables, 6); // AssemblyRef row 1, ResolutionScope tag 2.
     push_u16(&mut tables, object_name);
+    push_u16(&mut tables, system_namespace);
+
+    // TypeRef row 2: [System.Runtime]System.Nullable`1.
+    push_u16(&mut tables, 6);
+    push_u16(&mut tables, nullable_name);
     push_u16(&mut tables, system_namespace);
 
     // TypeDef row 1: <Module>. RustApi also starts at method row 1,
@@ -231,7 +288,7 @@ fn build_metadata(
     push_u16(&mut tables, ferrumweave_namespace);
     push_u16(&mut tables, 5);
     push_u16(&mut tables, 1);
-    push_u16(&mut tables, 4);
+    push_u16(&mut tables, 6);
 
     // MethodDef row 1: public static int32 RustApi.Answer().
     push_u32(&mut tables, static_answer_rva);
@@ -257,7 +314,23 @@ fn build_metadata(
     push_u16(&mut tables, static_string_signature);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 4: public specialname rtspecialname instance void RustValue::.ctor().
+    // MethodDef row 4: public static System.Nullable<int32> RustApi.OptionSomeI32().
+    push_u32(&mut tables, option_some_i32_rva);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0x0096);
+    push_u16(&mut tables, option_some_i32_name);
+    push_u16(&mut tables, static_nullable_i32_signature);
+    push_u16(&mut tables, 1);
+
+    // MethodDef row 5: public static System.Nullable<int32> RustApi.OptionNoneI32().
+    push_u32(&mut tables, option_none_i32_rva);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0x0096);
+    push_u16(&mut tables, option_none_i32_name);
+    push_u16(&mut tables, static_nullable_i32_signature);
+    push_u16(&mut tables, 1);
+
+    // MethodDef row 6: public specialname rtspecialname instance void RustValue::.ctor().
     push_u32(&mut tables, ctor_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x1886);
@@ -265,7 +338,7 @@ fn build_metadata(
     push_u16(&mut tables, ctor_signature);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 5: public instance int32 RustValue.Answer().
+    // MethodDef row 7: public instance int32 RustValue.Answer().
     push_u32(&mut tables, instance_answer_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0086);
@@ -278,6 +351,15 @@ fn build_metadata(
     push_u16(&mut tables, 9);
     push_u16(&mut tables, ctor_name);
     push_u16(&mut tables, ctor_signature);
+
+    // MemberRef row 2: instance void System.Nullable<int32>::.ctor(int32).
+    // MemberRefParent tag 4 is TypeSpec; row 1 => (1 << 3) | 4 = 12.
+    push_u16(&mut tables, 12);
+    push_u16(&mut tables, ctor_name);
+    push_u16(&mut tables, nullable_i32_ctor_signature);
+
+    // TypeSpec row 1: System.Nullable<int32>.
+    push_u16(&mut tables, nullable_i32_type_signature);
 
     // Assembly (0x20): FerrumWeave.Probe 1.0.0.0.
     push_u32(&mut tables, 0x0000_8004);
@@ -502,6 +584,8 @@ mod tests {
             R06_STATIC_METHOD_NAME,
             R07_OPTION_SOME_METHOD_NAME,
             R07_OPTION_NONE_METHOD_NAME,
+            R07_OPTION_SOME_I32_METHOD_NAME,
+            R07_OPTION_NONE_I32_METHOD_NAME,
             R07_OPTION_SOME_VALUE,
         ] {
             assert!(
