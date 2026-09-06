@@ -53,7 +53,8 @@ proof = "compiler/cil/src/r07.rs emits a dedicated IL-only managed FerrumWeave.R
 [[contracts]]
 id = "FW-R07-SEM-008"
 family = "supported managed ownership/GC lifetime preserves identity without duplicate release or invalid access after release in supported scenarios"
-implemented = false
+implemented = true
+proof = "tests/r07_managed_identity.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted FerrumWeave.RustResource. Two managed aliases are ReferenceEquals-identical, disposing through either alias updates the same per-instance release state exactly once, repeated Dispose through the other alias remains idempotent, ReleaseCount remains safely observable after release, and GC.KeepAlive preserves both references through the observation. Exact SHA 92384d62af1cd308c6670f05a895d124eac0fe83 was GREEN in Rust CI on Ubuntu and Windows, code coverage, fmt/clippy, functional coverage, and emitted-assembly reflection on Linux and Windows."
 
 [[contracts]]
 id = "FW-R07-SEM-009"
