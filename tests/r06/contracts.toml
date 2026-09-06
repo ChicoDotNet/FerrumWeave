@@ -23,7 +23,8 @@ proof = "tests/r06_csharp_static.rs builds an independent net10.0 C# executable 
 [[contracts]]
 id = "FW-R06-DOTNET-003"
 family = "a Visual Basic .NET project references the Rust-produced managed assembly and calls supported public static Rust-defined behavior"
-implemented = false
+implemented = true
+proof = "tests/r06_vb_static.rs builds an independent net10.0 VB.NET executable that references FerrumWeave.Probe.dll, calls FerrumWeave.RustApi.Answer(), executes under CoreCLR, and asserts stdout 42; Rust CI #150 certified fmt/clippy, code/functional coverage, Ubuntu and Windows and R04 CLR CTS Reflection #59 remained GREEN"
 
 [[contracts]]
 id = "FW-R06-DOTNET-004"
