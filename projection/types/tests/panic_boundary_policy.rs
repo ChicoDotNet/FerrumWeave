@@ -1,6 +1,4 @@
-use ferrumweave_projection_types::{
-    ManagedPanicBoundaryPolicy, managed_panic_boundary_policy,
-};
+use ferrumweave_projection_types::{ManagedPanicBoundaryPolicy, managed_panic_boundary_policy};
 
 #[test]
 fn uncontained_rust_panic_is_rejected_before_managed_export() {
