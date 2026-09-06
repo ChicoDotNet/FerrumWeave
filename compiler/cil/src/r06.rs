@@ -148,7 +148,7 @@ fn build_option_some_i32_body() -> Vec<u8> {
     body.push((CODE_SIZE << 2) | 0b10);
     body.push(0x1F); // ldc.i4.s
     body.push(u8::try_from(R06_STATIC_ANSWER).expect("R07 Option value fits signed byte"));
-    body.push(0x73); // newobj instance void System.Nullable<int32>::.ctor(int32)
+    body.push(0x73); // newobj instance void System.Nullable<int32>::.ctor(!0)
     push_u32(&mut body, MEMBER_REF_TOKEN_NULLABLE_I32_CTOR);
     body.push(0x2A); // ret
     body
@@ -221,7 +221,8 @@ fn build_metadata(
     let static_nullable_i32_signature =
         push_blob(&mut blobs, &[0x00, 0x00, 0x15, 0x11, 0x09, 0x01, 0x08]);
     let ctor_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x01]);
-    let nullable_i32_ctor_signature = push_blob(&mut blobs, &[0x20, 0x01, 0x01, 0x08]);
+    // HASTHIS, 1 param, VOID, VAR 0. The TypeSpec parent binds VAR 0 to int32.
+    let nullable_i32_ctor_signature = push_blob(&mut blobs, &[0x20, 0x01, 0x01, 0x13, 0x00]);
     let instance_answer_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x08]);
     let nullable_i32_type_signature = push_blob(&mut blobs, &[0x15, 0x11, 0x09, 0x01, 0x08]);
     let system_public_key_token = push_blob(
@@ -353,7 +354,7 @@ fn build_metadata(
     push_u16(&mut tables, ctor_name);
     push_u16(&mut tables, ctor_signature);
 
-    // MemberRef row 2: instance void System.Nullable<int32>::.ctor(int32).
+    // MemberRef row 2: instance void System.Nullable<int32>::.ctor(!0).
     // MemberRefParent tag 4 is TypeSpec; row 1 => (1 << 3) | 4 = 12.
     push_u16(&mut tables, 12);
     push_u16(&mut tables, ctor_name);
