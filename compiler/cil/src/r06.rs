@@ -27,6 +27,7 @@ pub const R07_OPTION_SOME_METHOD_NAME: &str = "OptionSomeString";
 pub const R07_OPTION_NONE_METHOD_NAME: &str = "OptionNoneString";
 pub const R07_OPTION_SOME_I32_METHOD_NAME: &str = "OptionSomeI32";
 pub const R07_OPTION_NONE_I32_METHOD_NAME: &str = "OptionNoneI32";
+pub const R07_RESULT_OK_I32_METHOD_NAME: &str = "ResultOkI32";
 pub const R07_OPTION_SOME_VALUE: &str = "FerrumWeave";
 
 #[must_use]
@@ -52,8 +53,12 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
         align_usize(option_some_i32_offset + option_some_i32_body.len(), 4);
     let option_none_i32_rva = SECTION_RVA + to_u32(option_none_i32_offset);
 
+    let result_ok_i32_body = build_answer_method_body();
+    let result_ok_i32_offset = align_usize(option_none_i32_offset + option_none_i32_body.len(), 4);
+    let result_ok_i32_rva = SECTION_RVA + to_u32(result_ok_i32_offset);
+
     let ctor_body = build_constructor_method_body();
-    let ctor_offset = align_usize(option_none_i32_offset + option_none_i32_body.len(), 4);
+    let ctor_offset = align_usize(result_ok_i32_offset + result_ok_i32_body.len(), 4);
     let ctor_rva = SECTION_RVA + to_u32(ctor_offset);
 
     let instance_answer_body = build_answer_method_body();
@@ -67,6 +72,7 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
         option_none_rva,
         option_some_i32_rva,
         option_none_i32_rva,
+        result_ok_i32_rva,
         ctor_rva,
         instance_answer_rva,
     );
@@ -85,6 +91,8 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
         .copy_from_slice(&option_some_i32_body);
     section[option_none_i32_offset..option_none_i32_offset + option_none_i32_body.len()]
         .copy_from_slice(&option_none_i32_body);
+    section[result_ok_i32_offset..result_ok_i32_offset + result_ok_i32_body.len()]
+        .copy_from_slice(&result_ok_i32_body);
     section[ctor_offset..ctor_offset + ctor_body.len()].copy_from_slice(&ctor_body);
     section[instance_answer_offset..instance_answer_offset + instance_answer_body.len()]
         .copy_from_slice(&instance_answer_body);
@@ -182,6 +190,7 @@ fn build_metadata(
     option_none_rva: u32,
     option_some_i32_rva: u32,
     option_none_i32_rva: u32,
+    result_ok_i32_rva: u32,
     ctor_rva: u32,
     instance_answer_rva: u32,
 ) -> Vec<u8> {
@@ -199,6 +208,7 @@ fn build_metadata(
     let option_none_name = push_string(&mut strings, R07_OPTION_NONE_METHOD_NAME);
     let option_some_i32_name = push_string(&mut strings, R07_OPTION_SOME_I32_METHOD_NAME);
     let option_none_i32_name = push_string(&mut strings, R07_OPTION_NONE_I32_METHOD_NAME);
+    let result_ok_i32_name = push_string(&mut strings, R07_RESULT_OK_I32_METHOD_NAME);
     let ctor_name = push_string(&mut strings, ".ctor");
     let assembly_name = push_string(&mut strings, "FerrumWeave.Probe");
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
@@ -246,7 +256,7 @@ fn build_metadata(
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0);
 
-    for count in [1_u32, 2, 3, 7, 2, 1, 1, 1] {
+    for count in [1_u32, 2, 3, 8, 2, 1, 1, 1] {
         push_u32(&mut tables, count);
     }
 
@@ -290,7 +300,7 @@ fn build_metadata(
     push_u16(&mut tables, ferrumweave_namespace);
     push_u16(&mut tables, 5);
     push_u16(&mut tables, 1);
-    push_u16(&mut tables, 6);
+    push_u16(&mut tables, 7);
 
     // MethodDef row 1: public static int32 RustApi.Answer().
     push_u32(&mut tables, static_answer_rva);
@@ -332,7 +342,15 @@ fn build_metadata(
     push_u16(&mut tables, static_nullable_i32_signature);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 6: public specialname rtspecialname instance void RustValue::.ctor().
+    // MethodDef row 6: public static int32 RustApi.ResultOkI32().
+    push_u32(&mut tables, result_ok_i32_rva);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0x0096);
+    push_u16(&mut tables, result_ok_i32_name);
+    push_u16(&mut tables, static_answer_signature);
+    push_u16(&mut tables, 1);
+
+    // MethodDef row 7: public specialname rtspecialname instance void RustValue::.ctor().
     push_u32(&mut tables, ctor_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x1886);
@@ -340,7 +358,7 @@ fn build_metadata(
     push_u16(&mut tables, ctor_signature);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 7: public instance int32 RustValue.Answer().
+    // MethodDef row 8: public instance int32 RustValue.Answer().
     push_u32(&mut tables, instance_answer_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0086);
@@ -588,6 +606,7 @@ mod tests {
             R07_OPTION_NONE_METHOD_NAME,
             R07_OPTION_SOME_I32_METHOD_NAME,
             R07_OPTION_NONE_I32_METHOD_NAME,
+            R07_RESULT_OK_I32_METHOD_NAME,
             R07_OPTION_SOME_VALUE,
         ] {
             assert!(
