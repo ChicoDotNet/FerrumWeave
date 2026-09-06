@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use ferrumweave_cil::r06::write_r06_static_api_artifact;
+use ferrumweave_cil::write_r06_static_api_artifact;
 
 #[test]
 fn clr_reflection_observes_coherent_rust_defined_public_api() {
