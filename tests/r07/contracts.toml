@@ -71,7 +71,8 @@ proof = "projection/types/tests/borrow_lifetime_boundary.rs exercises the Rust-s
 [[contracts]]
 id = "FW-R07-SEM-011"
 family = "unsupported cross-runtime semantic combinations fail explicitly and diagnostically"
-implemented = false
+implemented = true
+proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises two unsupported semantic combinations directly against the Rust projection layer: Rust char -> System.Char is rejected because the CLR representation cannot preserve every Rust Unicode scalar value without potential loss, and invalid CLR UTF-16 -> Rust String is rejected rather than normalized with replacement characters. Exact SHA 494ba57012adb1ffa1901dfbe7e13b58436610c5 was GREEN in Rust CI #210 and R04 CLR CTS Reflection #117, including Ubuntu/Windows integration certification."
 
 [[contracts]]
 id = "FW-R07-SEM-012"
