@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [lib]
-path = "src/wrapper.rs"
+path = "src/root.rs"
 
 [lints.rust]
 unsafe_code = "forbid"
