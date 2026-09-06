@@ -20,6 +20,18 @@ const TYPE_SPEC_TOKEN_NULLABLE_I32: u32 = 0x1B00_0001;
 const USER_STRING_TOKEN_OPTION_SOME: u32 = 0x7000_0001;
 const USER_STRING_TOKEN_RESULT_ERROR: u32 = 0x7000_0019;
 
+#[derive(Debug, Clone, Copy)]
+struct MetadataRvas {
+    static_answer: u32,
+    option_some: u32,
+    option_none: u32,
+    option_some_i32: u32,
+    option_none_i32: u32,
+    result_err: u32,
+    ctor: u32,
+    instance_answer: u32,
+}
+
 pub const R06_NAMESPACE: &str = "FerrumWeave";
 pub const R06_TYPE_NAME: &str = "RustApi";
 pub const R06_INSTANCE_TYPE_NAME: &str = "RustValue";
@@ -70,16 +82,16 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
     let instance_answer_rva = SECTION_RVA + to_u32(instance_answer_offset);
 
     let metadata_offset = align_usize(instance_answer_offset + instance_answer_body.len(), 4);
-    let metadata = build_metadata(
-        static_answer_rva,
-        option_some_rva,
-        option_none_rva,
-        option_some_i32_rva,
-        option_none_i32_rva,
-        result_err_rva,
-        ctor_rva,
-        instance_answer_rva,
-    );
+    let metadata = build_metadata(MetadataRvas {
+        static_answer: static_answer_rva,
+        option_some: option_some_rva,
+        option_none: option_none_rva,
+        option_some_i32: option_some_i32_rva,
+        option_none_i32: option_none_i32_rva,
+        result_err: result_err_rva,
+        ctor: ctor_rva,
+        instance_answer: instance_answer_rva,
+    });
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
     let section_raw_size = align_usize(section_virtual_size, FILE_ALIGNMENT);
@@ -200,16 +212,18 @@ fn build_constructor_method_body() -> Vec<u8> {
     body
 }
 
-fn build_metadata(
-    static_answer_rva: u32,
-    option_some_rva: u32,
-    option_none_rva: u32,
-    option_some_i32_rva: u32,
-    option_none_i32_rva: u32,
-    result_err_rva: u32,
-    ctor_rva: u32,
-    instance_answer_rva: u32,
-) -> Vec<u8> {
+fn build_metadata(rvas: MetadataRvas) -> Vec<u8> {
+    let MetadataRvas {
+        static_answer: static_answer_rva,
+        option_some: option_some_rva,
+        option_none: option_none_rva,
+        option_some_i32: option_some_i32_rva,
+        option_none_i32: option_none_i32_rva,
+        result_err: result_err_rva,
+        ctor: ctor_rva,
+        instance_answer: instance_answer_rva,
+    } = rvas;
+
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, PROBE_ASSEMBLY_FILE);
     let object_name = push_string(&mut strings, "Object");
