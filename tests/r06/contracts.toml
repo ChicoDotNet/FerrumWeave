@@ -47,7 +47,8 @@ proof = "tests/r06_vb_instance.rs builds an independent net10.0 VB.NET executabl
 [[contracts]]
 id = "FW-R06-DOTNET-007"
 family = "independent CLR reflection verifies coherent public names, signatures, visibility, and supported types"
-implemented = false
+implemented = true
+proof = "tests/r06_reflection.rs emits the Rust-defined assembly then launches an independent net10.0 CLR verifier using AssemblyLoadContext and System.Reflection to require public FerrumWeave.RustApi static Answer():int, public constructible FerrumWeave.RustValue, public parameterless .ctor(), and public instance Answer():int; after correcting the test to consume the crate's existing public re-export, Rust CI #160 and R04 CLR CTS Reflection #69 certified the exact SHA on Linux and Windows"
 
 [[contracts]]
 id = "FW-R06-DOTNET-008"
