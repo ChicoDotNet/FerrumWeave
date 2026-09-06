@@ -14,12 +14,16 @@ const SECTION_ALIGNMENT: u32 = 0x2000;
 const SECTION_RVA: u32 = 0x2000;
 const CLR_HEADER_SIZE: usize = 0x48;
 const MEMBER_REF_TOKEN_OBJECT_CTOR: u32 = 0x0A00_0001;
+const USER_STRING_TOKEN_OPTION_SOME: u32 = 0x7000_0001;
 
 pub const R06_NAMESPACE: &str = "FerrumWeave";
 pub const R06_TYPE_NAME: &str = "RustApi";
 pub const R06_INSTANCE_TYPE_NAME: &str = "RustValue";
 pub const R06_STATIC_METHOD_NAME: &str = "Answer";
 pub const R06_STATIC_ANSWER: i32 = 42;
+pub const R07_OPTION_SOME_METHOD_NAME: &str = "OptionSomeString";
+pub const R07_OPTION_NONE_METHOD_NAME: &str = "OptionNoneString";
+pub const R07_OPTION_SOME_VALUE: &str = "FerrumWeave";
 
 #[must_use]
 pub fn emit_r06_static_api_assembly() -> Vec<u8> {
@@ -27,8 +31,16 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
     let static_answer_offset = CLR_HEADER_SIZE;
     let static_answer_rva = SECTION_RVA + to_u32(static_answer_offset);
 
+    let option_some_body = build_option_some_string_body();
+    let option_some_offset = align_usize(static_answer_offset + static_answer_body.len(), 4);
+    let option_some_rva = SECTION_RVA + to_u32(option_some_offset);
+
+    let option_none_body = build_option_none_string_body();
+    let option_none_offset = align_usize(option_some_offset + option_some_body.len(), 4);
+    let option_none_rva = SECTION_RVA + to_u32(option_none_offset);
+
     let ctor_body = build_constructor_method_body();
-    let ctor_offset = align_usize(static_answer_offset + static_answer_body.len(), 4);
+    let ctor_offset = align_usize(option_none_offset + option_none_body.len(), 4);
     let ctor_rva = SECTION_RVA + to_u32(ctor_offset);
 
     let instance_answer_body = build_answer_method_body();
@@ -36,7 +48,13 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
     let instance_answer_rva = SECTION_RVA + to_u32(instance_answer_offset);
 
     let metadata_offset = align_usize(instance_answer_offset + instance_answer_body.len(), 4);
-    let metadata = build_metadata(static_answer_rva, ctor_rva, instance_answer_rva);
+    let metadata = build_metadata(
+        static_answer_rva,
+        option_some_rva,
+        option_none_rva,
+        ctor_rva,
+        instance_answer_rva,
+    );
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
     let section_raw_size = align_usize(section_virtual_size, FILE_ALIGNMENT);
@@ -44,6 +62,10 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
     let mut section = vec![0_u8; section_raw_size];
     section[static_answer_offset..static_answer_offset + static_answer_body.len()]
         .copy_from_slice(&static_answer_body);
+    section[option_some_offset..option_some_offset + option_some_body.len()]
+        .copy_from_slice(&option_some_body);
+    section[option_none_offset..option_none_offset + option_none_body.len()]
+        .copy_from_slice(&option_none_body);
     section[ctor_offset..ctor_offset + ctor_body.len()].copy_from_slice(&ctor_body);
     section[instance_answer_offset..instance_answer_offset + instance_answer_body.len()]
         .copy_from_slice(&instance_answer_body);
@@ -82,6 +104,25 @@ fn build_answer_method_body() -> Vec<u8> {
     body
 }
 
+fn build_option_some_string_body() -> Vec<u8> {
+    let mut body = Vec::with_capacity(7);
+    const CODE_SIZE: u8 = 6;
+    body.push((CODE_SIZE << 2) | 0b10);
+    body.push(0x72); // ldstr
+    push_u32(&mut body, USER_STRING_TOKEN_OPTION_SOME);
+    body.push(0x2A); // ret
+    body
+}
+
+fn build_option_none_string_body() -> Vec<u8> {
+    let mut body = Vec::with_capacity(3);
+    const CODE_SIZE: u8 = 2;
+    body.push((CODE_SIZE << 2) | 0b10);
+    body.push(0x14); // ldnull
+    body.push(0x2A); // ret
+    body
+}
+
 fn build_constructor_method_body() -> Vec<u8> {
     let mut body = Vec::with_capacity(8);
     const CODE_SIZE: u8 = 7;
@@ -93,7 +134,13 @@ fn build_constructor_method_body() -> Vec<u8> {
     body
 }
 
-fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u32) -> Vec<u8> {
+fn build_metadata(
+    static_answer_rva: u32,
+    option_some_rva: u32,
+    option_none_rva: u32,
+    ctor_rva: u32,
+    instance_answer_rva: u32,
+) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, PROBE_ASSEMBLY_FILE);
     let object_name = push_string(&mut strings, "Object");
@@ -103,10 +150,17 @@ fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u3
     let rust_value_name = push_string(&mut strings, R06_INSTANCE_TYPE_NAME);
     let ferrumweave_namespace = push_string(&mut strings, R06_NAMESPACE);
     let answer_name = push_string(&mut strings, R06_STATIC_METHOD_NAME);
+    let option_some_name = push_string(&mut strings, R07_OPTION_SOME_METHOD_NAME);
+    let option_none_name = push_string(&mut strings, R07_OPTION_NONE_METHOD_NAME);
     let ctor_name = push_string(&mut strings, ".ctor");
     let assembly_name = push_string(&mut strings, "FerrumWeave.Probe");
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
     pad_vec(&mut strings, 4);
+
+    let mut user_strings = vec![0_u8];
+    let option_some_string = push_user_string(&mut user_strings, R07_OPTION_SOME_VALUE);
+    debug_assert_eq!(option_some_string, 1);
+    pad_vec(&mut user_strings, 4);
 
     let guid = vec![
         0x46, 0x57, 0x52, 0x30, 0x36, 0x53, 0x54, 0x41, 0x54, 0x49, 0x43, 0x41, 0x50, 0x49, 0x30,
@@ -115,6 +169,7 @@ fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u3
 
     let mut blobs = vec![0_u8];
     let static_answer_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
+    let static_string_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x0E]);
     let ctor_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x01]);
     let instance_answer_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x08]);
     let system_public_key_token = push_blob(
@@ -137,7 +192,7 @@ fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u3
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0);
 
-    for count in [1_u32, 1, 3, 3, 1, 1, 1] {
+    for count in [1_u32, 1, 3, 5, 1, 1, 1] {
         push_u32(&mut tables, count);
     }
 
@@ -176,7 +231,7 @@ fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u3
     push_u16(&mut tables, ferrumweave_namespace);
     push_u16(&mut tables, 5);
     push_u16(&mut tables, 1);
-    push_u16(&mut tables, 2);
+    push_u16(&mut tables, 4);
 
     // MethodDef row 1: public static int32 RustApi.Answer().
     push_u32(&mut tables, static_answer_rva);
@@ -186,7 +241,23 @@ fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u3
     push_u16(&mut tables, static_answer_signature);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 2: public specialname rtspecialname instance void RustValue::.ctor().
+    // MethodDef row 2: public static string RustApi.OptionSomeString().
+    push_u32(&mut tables, option_some_rva);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0x0096);
+    push_u16(&mut tables, option_some_name);
+    push_u16(&mut tables, static_string_signature);
+    push_u16(&mut tables, 1);
+
+    // MethodDef row 3: public static string RustApi.OptionNoneString().
+    push_u32(&mut tables, option_none_rva);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0x0096);
+    push_u16(&mut tables, option_none_name);
+    push_u16(&mut tables, static_string_signature);
+    push_u16(&mut tables, 1);
+
+    // MethodDef row 4: public specialname rtspecialname instance void RustValue::.ctor().
     push_u32(&mut tables, ctor_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x1886);
@@ -194,7 +265,7 @@ fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u3
     push_u16(&mut tables, ctor_signature);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 3: public instance int32 RustValue.Answer().
+    // MethodDef row 5: public instance int32 RustValue.Answer().
     push_u32(&mut tables, instance_answer_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0086);
@@ -234,6 +305,7 @@ fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u3
     let streams = [
         ("#~", tables),
         ("#Strings", strings),
+        ("#US", user_strings),
         ("#GUID", guid),
         ("#Blob", blobs),
     ];
@@ -352,6 +424,18 @@ fn push_blob(heap: &mut Vec<u8>, value: &[u8]) -> u16 {
     index
 }
 
+fn push_user_string(heap: &mut Vec<u8>, value: &str) -> u32 {
+    let index = to_u32(heap.len());
+    let utf16: Vec<u16> = value.encode_utf16().collect();
+    let payload_size = utf16.len() * 2 + 1;
+    push_compressed_unsigned(heap, to_u32(payload_size));
+    for unit in utf16 {
+        push_u16(heap, unit);
+    }
+    heap.push(0);
+    index
+}
+
 fn push_compressed_unsigned(buffer: &mut Vec<u8>, value: u32) {
     match value {
         0..=0x7F => buffer.push(u8::try_from(value).expect("7-bit value fits u8")),
@@ -416,6 +500,9 @@ mod tests {
             R06_TYPE_NAME,
             R06_INSTANCE_TYPE_NAME,
             R06_STATIC_METHOD_NAME,
+            R07_OPTION_SOME_METHOD_NAME,
+            R07_OPTION_NONE_METHOD_NAME,
+            R07_OPTION_SOME_VALUE,
         ] {
             assert!(
                 first
