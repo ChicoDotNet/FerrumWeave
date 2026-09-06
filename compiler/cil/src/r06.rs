@@ -48,7 +48,8 @@ pub fn emit_r06_static_api_assembly() -> Vec<u8> {
     let option_some_i32_rva = SECTION_RVA + to_u32(option_some_i32_offset);
 
     let option_none_i32_body = build_option_none_i32_body();
-    let option_none_i32_offset = align_usize(option_some_i32_offset + option_some_i32_body.len(), 4);
+    let option_none_i32_offset =
+        align_usize(option_some_i32_offset + option_some_i32_body.len(), 4);
     let option_none_i32_rva = SECTION_RVA + to_u32(option_none_i32_offset);
 
     let ctor_body = build_constructor_method_body();
