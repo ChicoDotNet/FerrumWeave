@@ -65,7 +65,8 @@ proof = "tests/r07_generic_boundary.rs loads the Rust-emitted assembly in an ind
 [[contracts]]
 id = "FW-R07-SEM-010"
 family = "Rust borrow/lifetime semantics that cannot safely escape a managed boundary are rejected explicitly rather than erased into GC reachability"
-implemented = false
+implemented = true
+proof = "projection/types/tests/borrow_lifetime_boundary.rs exercises the Rust-side projection contract for both SharedBorrow and ExclusiveBorrow. managed_object_mapping(...) rejects each borrowed shape as Unsupported, preserves the rejected ManagedObjectSource in the diagnostic, and emits stable rationale that CLR managed references preserve reachability/identity but do not encode Rust borrow/lifetime guarantees. Exact SHA a1f919605933d75364b331672a0894b8a8220241 was GREEN in Rust CI #207 and R04 CLR CTS Reflection #114, including Ubuntu/Windows integration certification."
 
 [[contracts]]
 id = "FW-R07-SEM-011"
