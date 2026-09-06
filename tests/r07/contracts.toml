@@ -1,5 +1,5 @@
 milestone = "R07"
-status = "in_progress"
+status = "done"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -77,4 +77,5 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 [[contracts]]
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
-implemented = false
+implemented = true
+proof = "Exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. Rust CI certified fmt/clippy, functional coverage, code coverage, and the complete integration suite on Ubuntu and Windows, replaying all supported R07 CLR consumers and Rust-side boundary contracts together. This closes the declared R07 denominator at 12/12 without adding unproven scenarios." 
