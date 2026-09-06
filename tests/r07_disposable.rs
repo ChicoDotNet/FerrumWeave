@@ -65,7 +65,8 @@ Console.WriteLine(resource.ReleaseCount());
         String::from_utf8_lossy(&run.stdout),
         String::from_utf8_lossy(&run.stderr)
     );
-    let observed: Vec<_> = String::from_utf8_lossy(&run.stdout).lines().collect();
+    let stdout = String::from_utf8_lossy(&run.stdout);
+    let observed: Vec<_> = stdout.lines().collect();
     assert_eq!(observed, EXPECTED_VALUES);
 
     let _ = fs::remove_dir_all(root);
