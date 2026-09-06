@@ -33,6 +33,7 @@ fn managed_r06_api_requires_no_pinvoke_or_native_abi_layer() {
         verifier.join("Program.cs"),
         r#"using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 using var stream = File.OpenRead(Path.GetFullPath(args.Single()));
@@ -46,8 +47,9 @@ if ((corHeader.Flags & CorFlags.ILOnly) == 0)
     throw new InvalidOperationException($"R06 artifact must be IL-only, flags were {corHeader.Flags}");
 
 var metadata = pe.GetMetadataReader();
-if (metadata.ModuleReferences.Count != 0)
-    throw new InvalidOperationException($"native module references found: {metadata.ModuleReferences.Count}");
+var moduleRefCount = metadata.GetTableRowCount(TableIndex.ModuleRef);
+if (moduleRefCount != 0)
+    throw new InvalidOperationException($"native module references found: {moduleRefCount}");
 
 foreach (var handle in metadata.MethodDefinitions)
 {
