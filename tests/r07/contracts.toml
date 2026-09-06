@@ -11,12 +11,14 @@ target_percent_when_done = 100.0
 [[contracts]]
 id = "FW-R07-SEM-001"
 family = "Option<T> Some for a supported managed reference preserves the managed value/identity at the CLR boundary"
-implemented = false
+implemented = true
+proof = "tests/r07_option_reference.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly; FerrumWeave.RustApi.OptionSomeString() is emitted in compiler/cil/src/r06.rs as managed IL ldstr 'FerrumWeave'; ret and preserves the expected managed reference value. Rust CI #173 certified integration tests on Ubuntu and Windows for exact product SHA deeee2b684dd98facbd3356460ef4113244ee468; code coverage, fmt/clippy, functional coverage, and emitted-assembly reflection were also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-002"
 family = "Option<T> None for a supported managed reference projects to explicit CLR null semantics"
-implemented = false
+implemented = true
+proof = "tests/r07_option_reference.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly; FerrumWeave.RustApi.OptionNoneString() is emitted in compiler/cil/src/r06.rs as managed IL ldnull; ret and the CLR consumer observes null explicitly. Rust CI #173 certified integration tests on Ubuntu and Windows for exact product SHA deeee2b684dd98facbd3356460ef4113244ee468; code coverage, fmt/clippy, functional coverage, and emitted-assembly reflection were also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-003"
