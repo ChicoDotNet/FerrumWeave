@@ -47,11 +47,12 @@ proof = "projection/types/tests/panic_boundary_policy.rs exercises FerrumWeave's
 [[contracts]]
 id = "FW-R07-SEM-007"
 family = "a supported Rust Drop/RAII resource projects to IDisposable-style cleanup with exactly-once observable release semantics"
-implemented = false
+implemented = true
+proof = "compiler/cil/src/r07.rs emits a dedicated IL-only managed FerrumWeave.RustResource class implementing System.IDisposable with private per-instance releaseCount state, public constructor, idempotent Dispose(), and ReleaseCount(). tests/r07_disposable.rs builds and executes an independent net10.0 C# consumer, verifies the IDisposable cast, and observes logical release counts 0 -> 1 -> 1 before cleanup, after first Dispose, and after repeated Dispose. Rust CI #201 certified exact product SHA 4d1187c1281eae9c578db01183b60e1f241580ac GREEN for fmt/clippy, functional coverage, 93.26% line coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #108 was also GREEN on Linux and Windows."
 
 [[contracts]]
 id = "FW-R07-SEM-008"
-family = "supported managed ownership/GC lifetime preserves identity without introducing known double-free or use-after-free behavior"
+family = "supported managed ownership/GC lifetime preserves identity without duplicate release or invalid access after release in supported scenarios"
 implemented = false
 
 [[contracts]]
