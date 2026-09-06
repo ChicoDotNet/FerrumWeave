@@ -1,0 +1,69 @@
+milestone = "R07"
+status = "in_progress"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R07 turns mechanical CLR interoperability into explicit cross-runtime semantics.
+# The denominator is declared up front from the roadmap and inherited R04/R06 boundaries.
+# A contract remains false until executable evidence proves the supported behavior; ADRs and
+# compatibility documentation are milestone DoD evidence but do not substitute for execution.
+
+[[contracts]]
+id = "FW-R07-SEM-001"
+family = "Option<T> Some for a supported managed reference preserves the managed value/identity at the CLR boundary"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-002"
+family = "Option<T> None for a supported managed reference projects to explicit CLR null semantics"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-003"
+family = "Option<T> for a supported CLR value type uses an explicit System.Nullable<T> projection for Some and None"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-004"
+family = "Result<T, E> success crosses a supported public CLR boundary as the declared success value"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-005"
+family = "Result<T, E> failure crosses a supported public CLR boundary as a coherent managed exception rather than a hidden status-code convention"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-006"
+family = "panic behavior at a supported managed public boundary follows an explicit policy and does not silently unwind across an unsupported runtime boundary"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-007"
+family = "a supported Rust Drop/RAII resource projects to IDisposable-style cleanup with exactly-once observable release semantics"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-008"
+family = "supported managed ownership/GC lifetime preserves identity without introducing known double-free or use-after-free behavior"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-009"
+family = "at least one supported generic boundary has a coherent Rust/CTS representation observable by CLR consumers"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-010"
+family = "Rust borrow/lifetime semantics that cannot safely escape a managed boundary are rejected explicitly rather than erased into GC reachability"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-011"
+family = "unsupported cross-runtime semantic combinations fail explicitly and diagnostically"
+implemented = false
+
+[[contracts]]
+id = "FW-R07-SEM-012"
+family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
+implemented = false
