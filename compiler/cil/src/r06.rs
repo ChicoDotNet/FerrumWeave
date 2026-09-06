@@ -13,25 +13,40 @@ const FILE_ALIGNMENT: usize = 0x200;
 const SECTION_ALIGNMENT: u32 = 0x2000;
 const SECTION_RVA: u32 = 0x2000;
 const CLR_HEADER_SIZE: usize = 0x48;
+const MEMBER_REF_TOKEN_OBJECT_CTOR: u32 = 0x0A00_0001;
 
 pub const R06_NAMESPACE: &str = "FerrumWeave";
 pub const R06_TYPE_NAME: &str = "RustApi";
+pub const R06_INSTANCE_TYPE_NAME: &str = "RustValue";
 pub const R06_STATIC_METHOD_NAME: &str = "Answer";
 pub const R06_STATIC_ANSWER: i32 = 42;
 
 #[must_use]
 pub fn emit_r06_static_api_assembly() -> Vec<u8> {
-    let body = build_answer_method_body();
-    let method_offset = CLR_HEADER_SIZE;
-    let method_rva = SECTION_RVA + to_u32(method_offset);
-    let metadata_offset = align_usize(method_offset + body.len(), 4);
-    let metadata = build_metadata(method_rva);
+    let static_answer_body = build_answer_method_body();
+    let static_answer_offset = CLR_HEADER_SIZE;
+    let static_answer_rva = SECTION_RVA + to_u32(static_answer_offset);
+
+    let ctor_body = build_constructor_method_body();
+    let ctor_offset = align_usize(static_answer_offset + static_answer_body.len(), 4);
+    let ctor_rva = SECTION_RVA + to_u32(ctor_offset);
+
+    let instance_answer_body = build_answer_method_body();
+    let instance_answer_offset = align_usize(ctor_offset + ctor_body.len(), 4);
+    let instance_answer_rva = SECTION_RVA + to_u32(instance_answer_offset);
+
+    let metadata_offset = align_usize(instance_answer_offset + instance_answer_body.len(), 4);
+    let metadata = build_metadata(static_answer_rva, ctor_rva, instance_answer_rva);
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
     let section_raw_size = align_usize(section_virtual_size, FILE_ALIGNMENT);
 
     let mut section = vec![0_u8; section_raw_size];
-    section[method_offset..method_offset + body.len()].copy_from_slice(&body);
+    section[static_answer_offset..static_answer_offset + static_answer_body.len()]
+        .copy_from_slice(&static_answer_body);
+    section[ctor_offset..ctor_offset + ctor_body.len()].copy_from_slice(&ctor_body);
+    section[instance_answer_offset..instance_answer_offset + instance_answer_body.len()]
+        .copy_from_slice(&instance_answer_body);
     section[metadata_offset..metadata_offset + metadata.len()].copy_from_slice(&metadata);
     write_clr_header(
         &mut section[..CLR_HEADER_SIZE],
@@ -67,15 +82,28 @@ fn build_answer_method_body() -> Vec<u8> {
     body
 }
 
-fn build_metadata(method_rva: u32) -> Vec<u8> {
+fn build_constructor_method_body() -> Vec<u8> {
+    let mut body = Vec::with_capacity(8);
+    const CODE_SIZE: u8 = 7;
+    body.push((CODE_SIZE << 2) | 0b10);
+    body.push(0x02); // ldarg.0
+    body.push(0x28); // call instance void System.Object::.ctor()
+    push_u32(&mut body, MEMBER_REF_TOKEN_OBJECT_CTOR);
+    body.push(0x2A); // ret
+    body
+}
+
+fn build_metadata(static_answer_rva: u32, ctor_rva: u32, instance_answer_rva: u32) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, PROBE_ASSEMBLY_FILE);
     let object_name = push_string(&mut strings, "Object");
     let system_namespace = push_string(&mut strings, "System");
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, R06_TYPE_NAME);
+    let rust_value_name = push_string(&mut strings, R06_INSTANCE_TYPE_NAME);
     let ferrumweave_namespace = push_string(&mut strings, R06_NAMESPACE);
     let answer_name = push_string(&mut strings, R06_STATIC_METHOD_NAME);
+    let ctor_name = push_string(&mut strings, ".ctor");
     let assembly_name = push_string(&mut strings, "FerrumWeave.Probe");
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
     pad_vec(&mut strings, 4);
@@ -86,7 +114,9 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     ];
 
     let mut blobs = vec![0_u8];
-    let answer_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
+    let static_answer_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
+    let ctor_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x01]);
+    let instance_answer_signature = push_blob(&mut blobs, &[0x20, 0x00, 0x08]);
     let system_public_key_token = push_blob(
         &mut blobs,
         &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
@@ -97,12 +127,17 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u32(&mut tables, 0);
     tables.extend_from_slice(&[2, 0, 0, 1]);
 
-    let valid_tables =
-        (1_u64 << 0) | (1_u64 << 1) | (1_u64 << 2) | (1_u64 << 6) | (1_u64 << 32) | (1_u64 << 35);
+    let valid_tables = (1_u64 << 0)
+        | (1_u64 << 1)
+        | (1_u64 << 2)
+        | (1_u64 << 6)
+        | (1_u64 << 10)
+        | (1_u64 << 32)
+        | (1_u64 << 35);
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0);
 
-    for count in [1_u32, 1, 2, 1, 1, 1] {
+    for count in [1_u32, 1, 3, 3, 1, 1, 1] {
         push_u32(&mut tables, count);
     }
 
@@ -118,8 +153,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, object_name);
     push_u16(&mut tables, system_namespace);
 
-    // TypeDef row 1: <Module>. Its MethodList points at row 1, but row 2 also
-    // points at row 1 so the first type owns no methods and RustApi owns Answer.
+    // TypeDef row 1: <Module>. RustApi also starts at method row 1,
+    // therefore the module owns no methods.
     push_u32(&mut tables, 0);
     push_u16(&mut tables, module_type_name);
     push_u16(&mut tables, 0);
@@ -135,13 +170,43 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 1: public static int32 Answer().
-    push_u32(&mut tables, method_rva);
+    // TypeDef row 3: public class FerrumWeave.RustValue : Object.
+    push_u32(&mut tables, 0x0010_0001);
+    push_u16(&mut tables, rust_value_name);
+    push_u16(&mut tables, ferrumweave_namespace);
+    push_u16(&mut tables, 5);
+    push_u16(&mut tables, 1);
+    push_u16(&mut tables, 2);
+
+    // MethodDef row 1: public static int32 RustApi.Answer().
+    push_u32(&mut tables, static_answer_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0096);
     push_u16(&mut tables, answer_name);
-    push_u16(&mut tables, answer_signature);
+    push_u16(&mut tables, static_answer_signature);
     push_u16(&mut tables, 1);
+
+    // MethodDef row 2: public specialname rtspecialname instance void RustValue::.ctor().
+    push_u32(&mut tables, ctor_rva);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0x1886);
+    push_u16(&mut tables, ctor_name);
+    push_u16(&mut tables, ctor_signature);
+    push_u16(&mut tables, 1);
+
+    // MethodDef row 3: public instance int32 RustValue.Answer().
+    push_u32(&mut tables, instance_answer_rva);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0x0086);
+    push_u16(&mut tables, answer_name);
+    push_u16(&mut tables, instance_answer_signature);
+    push_u16(&mut tables, 1);
+
+    // MemberRef row 1: instance void [System.Runtime]System.Object::.ctor().
+    // MemberRefParent tag 1 is TypeRef; row 1 => (1 << 3) | 1 = 9.
+    push_u16(&mut tables, 9);
+    push_u16(&mut tables, ctor_name);
+    push_u16(&mut tables, ctor_signature);
 
     // Assembly (0x20): FerrumWeave.Probe 1.0.0.0.
     push_u32(&mut tables, 0x0000_8004);
@@ -346,7 +411,12 @@ mod tests {
     fn static_api_image_is_deterministic_and_names_the_public_surface() {
         let first = emit_r06_static_api_assembly();
         assert_eq!(first, emit_r06_static_api_assembly());
-        for expected in [R06_NAMESPACE, R06_TYPE_NAME, R06_STATIC_METHOD_NAME] {
+        for expected in [
+            R06_NAMESPACE,
+            R06_TYPE_NAME,
+            R06_INSTANCE_TYPE_NAME,
+            R06_STATIC_METHOD_NAME,
+        ] {
             assert!(
                 first
                     .windows(expected.len())
