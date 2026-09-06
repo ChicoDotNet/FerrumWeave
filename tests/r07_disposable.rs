@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use ferrumweave_cil::{PROBE_ASSEMBLY_FILE, write_r07_disposable_artifact};
 
 const CONSUMER_ASSEMBLY_NAME: &str = "FerrumWeave.R07.DisposableConsumer";
-const EXPECTED_OUTPUT: &str = "0\n1\n1";
+const EXPECTED_VALUES: [&str; 3] = ["0", "1", "1"];
 
 #[test]
 fn rust_drop_resource_projects_to_idisposable_with_exactly_once_release() {
@@ -65,7 +65,8 @@ Console.WriteLine(resource.ReleaseCount());
         String::from_utf8_lossy(&run.stdout),
         String::from_utf8_lossy(&run.stderr)
     );
-    assert_eq!(String::from_utf8_lossy(&run.stdout).trim(), EXPECTED_OUTPUT);
+    let observed: Vec<_> = String::from_utf8_lossy(&run.stdout).lines().collect();
+    assert_eq!(observed, EXPECTED_VALUES);
 
     let _ = fs::remove_dir_all(root);
 }
