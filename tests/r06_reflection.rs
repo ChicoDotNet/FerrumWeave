@@ -95,9 +95,7 @@ Console.WriteLine("R06 CLR reflection contract verified");
         String::from_utf8_lossy(&run.stdout),
         String::from_utf8_lossy(&run.stderr)
     );
-    assert!(
-        String::from_utf8_lossy(&run.stdout).contains("R06 CLR reflection contract verified")
-    );
+    assert!(String::from_utf8_lossy(&run.stdout).contains("R06 CLR reflection contract verified"));
 
     let _ = fs::remove_dir_all(root);
 }
