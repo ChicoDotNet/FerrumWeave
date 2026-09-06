@@ -15,8 +15,8 @@ fn csharp_constructs_rust_defined_type_and_calls_instance_behavior() {
     let consumer = root.join("csharp-instance-consumer");
     fs::create_dir_all(&consumer).expect("create R06 C# instance consumer directory");
 
-    let assembly =
-        write_r06_static_api_artifact(&produced).expect("emit current Rust-produced managed assembly");
+    let assembly = write_r06_static_api_artifact(&produced)
+        .expect("emit current Rust-produced managed assembly");
     fs::copy(&assembly, consumer.join(PROBE_ASSEMBLY_FILE))
         .expect("place Rust-produced managed assembly beside C# consumer project");
 
