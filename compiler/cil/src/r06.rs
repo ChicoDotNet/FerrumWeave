@@ -97,12 +97,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u32(&mut tables, 0);
     tables.extend_from_slice(&[2, 0, 0, 1]);
 
-    let valid_tables = (1_u64 << 0)
-        | (1_u64 << 1)
-        | (1_u64 << 2)
-        | (1_u64 << 6)
-        | (1_u64 << 32)
-        | (1_u64 << 35);
+    let valid_tables =
+        (1_u64 << 0) | (1_u64 << 1) | (1_u64 << 2) | (1_u64 << 6) | (1_u64 << 32) | (1_u64 << 35);
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0);
 
