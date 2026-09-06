@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use ferrumweave_cil::{PROBE_ASSEMBLY_FILE, write_probe_artifacts};
+use ferrumweave_cil::{PROBE_ASSEMBLY_FILE, write_r06_static_api_artifact};
 
 const CONSUMER_ASSEMBLY_NAME: &str = "FerrumWeave.R06.CSharpConsumer";
 const RUST_NAMESPACE: &str = "FerrumWeave";
@@ -18,8 +18,9 @@ fn csharp_calls_rust_defined_public_static_behavior() {
     let consumer = root.join("csharp-consumer");
     fs::create_dir_all(&consumer).expect("create R06 C# consumer directory");
 
-    let artifacts = write_probe_artifacts(&produced).expect("emit Rust-produced managed assembly");
-    fs::copy(&artifacts.assembly, consumer.join(PROBE_ASSEMBLY_FILE))
+    let assembly =
+        write_r06_static_api_artifact(&produced).expect("emit Rust-produced managed assembly");
+    fs::copy(&assembly, consumer.join(PROBE_ASSEMBLY_FILE))
         .expect("place Rust-produced managed assembly beside C# consumer project");
 
     fs::write(
