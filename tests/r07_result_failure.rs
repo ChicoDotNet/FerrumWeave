@@ -23,20 +23,18 @@ fn result_failure_crosses_managed_boundary_as_coherent_exception() {
     write_project(&consumer);
     fs::write(
         consumer.join("Program.cs"),
-        format!(
-            r#"using System;
+        r#"using System;
 
 try
-{{
+{
     _ = FerrumWeave.RustApi.ResultErrI32();
     Console.WriteLine("NO_EXCEPTION");
-}}
+}
 catch (InvalidOperationException ex)
-{{
+{
     Console.WriteLine(ex.Message);
-}}
-"#
-        ),
+}
+"#,
     )
     .expect("write R07 Result failure C# consumer source");
 
