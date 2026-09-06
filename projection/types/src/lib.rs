@@ -168,6 +168,30 @@ pub struct UnsupportedNullability {
     pub reason: &'static str,
 }
 
+/// Explicit policy for Rust panics at managed public boundaries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ManagedPanicBoundaryPolicy {
+    RejectUncontainedPanic,
+}
+
+impl ManagedPanicBoundaryPolicy {
+    #[must_use]
+    pub const fn permits_unwind_across_clr(self) -> bool {
+        false
+    }
+
+    #[must_use]
+    pub const fn diagnostic(self) -> &'static str {
+        "uncontained Rust panic cannot cross a managed CLR public boundary; contain or model failure explicitly"
+    }
+}
+
+/// Return FerrumWeave's managed-boundary panic policy.
+#[must_use]
+pub const fn managed_panic_boundary_policy() -> ManagedPanicBoundaryPolicy {
+    ManagedPanicBoundaryPolicy::RejectUncontainedPanic
+}
+
 /// Return FerrumWeave's centralized direct Rust -> CTS scalar policy.
 ///
 /// `Err` is intentional: not every Rust scalar has a lossless ECMA-335
