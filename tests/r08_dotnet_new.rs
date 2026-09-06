@@ -8,10 +8,7 @@ fn unique_temp_dir() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("system clock must be after Unix epoch")
         .as_nanos();
-    std::env::temp_dir().join(format!(
-        "ferrumweave-r08-{}-{nonce}",
-        std::process::id()
-    ))
+    std::env::temp_dir().join(format!("ferrumweave-r08-{}-{nonce}", std::process::id()))
 }
 
 #[test]
@@ -57,8 +54,8 @@ fn dotnet_new_rust_creates_rsproj_and_rust_source() {
     assert!(project.contains("<Project Sdk=\"FerrumWeave.Sdk\">"));
     assert!(project.contains("<TargetFramework>net10.0</TargetFramework>"));
 
-    let source = fs::read_to_string(output.join("src/main.rs"))
-        .expect("template must generate Rust source");
+    let source =
+        fs::read_to_string(output.join("src/main.rs")).expect("template must generate Rust source");
     assert!(source.contains("fn main()"));
 
     let _ = fs::remove_dir_all(temp);
