@@ -10,7 +10,7 @@ fn unique_temp_dir() -> PathBuf {
         .as_nanos();
     std::env::temp_dir().join(format!(
         "ferrumweave-r08-run-{}-{nonce}",
-        std::process::id()
+        std::process::id(),
     ))
 }
 
@@ -41,20 +41,20 @@ fn dotnet_run_executes_the_managed_ferrumweave_project() {
         run.status.success(),
         "FerrumWeave.Sdk must make the managed project directly runnable through dotnet run:\nstdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&run.stdout),
-        String::from_utf8_lossy(&run.stderr)
+        String::from_utf8_lossy(&run.stderr),
     );
 
     let stdout = String::from_utf8_lossy(&run.stdout);
     assert_eq!(
         stdout.trim(),
         "Hello from FerrumWeave!",
-        "dotnet run must execute the Rust main observable rather than merely launching a placeholder CLR artifact"
+        "dotnet run must execute the Rust main observable rather than merely launching a placeholder CLR artifact",
     );
 
     let assembly = temp.join("bin/Debug/net10.0/HelloFerrum.dll");
     assert!(
         assembly.is_file(),
-        "dotnet run must execute the same managed project artifact produced by the SDK build lifecycle"
+        "dotnet run must execute the same managed project artifact produced by the SDK build lifecycle",
     );
 
     let _ = fs::remove_dir_all(temp);
