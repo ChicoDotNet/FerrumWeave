@@ -9,8 +9,8 @@ target_percent_when_done = 100.0
 [[contracts]]
 id = "FW-R09-SLNX-001"
 family = "one .slnx contains Visual Basic, C#, F#, and FerrumWeave Rust projects"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r09_slnx.rs requires tests/fixtures/r09/Enterprise.slnx to declare Legacy/Legacy.vbproj, Domain/Domain.csproj, Analytics/Analytics.fsproj, and RiskEngine/RiskEngine.rsproj. Exact SHA ccd7f1f8039d3f721ef3ef848d02fc2b8bbfd92a completed GREEN in Rust CI #273, including fmt/clippy, code coverage, functional coverage, and integration on Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R09-SLNX-002"
