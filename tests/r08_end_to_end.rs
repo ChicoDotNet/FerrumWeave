@@ -132,12 +132,7 @@ fn documented_prerequisites_drive_the_complete_supported_sdk_lifecycle() {
 
     assert_success(
         "dotnet clean",
-        &run(
-            "dotnet",
-            &["clean", "HelloFerrum.rsproj", "--no-restore"],
-            &temp,
-            &repo,
-        ),
+        &run("dotnet", &["clean", "HelloFerrum.rsproj"], &temp, &repo),
     );
     assert!(
         !assembly.exists(),
