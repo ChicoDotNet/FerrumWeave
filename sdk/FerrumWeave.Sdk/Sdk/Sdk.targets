@@ -1,3 +1,8 @@
 <Project>
   <Import Project="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/Sdk/Sdk.targets" />
+
+  <Target Name="CoreCompile">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <Exec Command="cargo run --quiet --manifest-path &quot;$(FerrumWeaveRepoRoot)/compiler/cil/Cargo.toml&quot; --bin ferrumweave_emit -- &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot;" />
+  </Target>
 </Project>
