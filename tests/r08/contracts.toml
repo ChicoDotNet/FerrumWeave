@@ -58,8 +58,8 @@ proof = "tests/r08_sdk_lifecycle.rs rejects bespoke shell/PowerShell/cmd/batch/M
 [[contracts]]
 id = "FW-R08-SDK-009"
 family = "the SDK defaults to the current supported stable/LTS .NET line"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r08_supported_dotnet.rs requires the canonical template to target net10.0 and verifies the certified environment exposes a .NET 10 SDK through the real 'dotnet --list-sdks' command. Certified on Linux and Windows by Rust CI #260 and R04 CLR CTS Reflection #155 at 679cf6f7152ff647673cf94ee8fc1b490e26f438."
 
 [[contracts]]
 id = "FW-R08-SDK-010"
