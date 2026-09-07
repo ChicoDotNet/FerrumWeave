@@ -34,8 +34,8 @@ proof = "tests/r08_build.rs runs real 'dotnet build HelloFerrum.rsproj' through 
 [[contracts]]
 id = "FW-R08-SDK-005"
 family = "dotnet run executes the generated Rust project"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r08_run.rs invokes real 'dotnet run --project HelloFerrum.rsproj' through FerrumWeave.Sdk, requires the managed entry point to execute the Rust source observable 'Hello from FerrumWeave!', and preserves the managed assembly contract. Certified on Linux and Windows by Rust CI #251 and R04 CLR CTS Reflection #146 at 9b19d642f92d0dfe04000c1dc0c48f8311f53bbe."
 
 [[contracts]]
 id = "FW-R08-SDK-006"
