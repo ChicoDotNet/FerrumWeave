@@ -31,7 +31,7 @@ fn dotnet_build_produces_a_managed_ferrumweave_assembly() {
         .expect("copy canonical R08 Rust source fixture");
 
     let build = Command::new("dotnet")
-        .args(["build", "HelloFerrum.rsproj", "--no-restore"])
+        .args(["build", "HelloFerrum.rsproj"])
         .current_dir(&temp)
         .env("MSBuildSDKsPath", repo.join("sdk"))
         .output()
