@@ -52,8 +52,8 @@ proof = "tests/r08_test.rs invokes real 'dotnet test HelloFerrum.rsproj --no-res
 [[contracts]]
 id = "FW-R08-SDK-008"
 family = "the project lifecycle requires no bespoke manual build script outside the SDK contract"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r08_sdk_lifecycle.rs rejects bespoke shell/PowerShell/cmd/batch/Makefile build scripts in the canonical Rust template, requires the .rsproj to delegate lifecycle ownership to FerrumWeave.Sdk, and executes real dotnet build through that SDK boundary to materialize bin/Debug/net10.0/HelloFerrum.dll. Certified on Linux and Windows by Rust CI #258 and R04 CLR CTS Reflection #153 at a44fa893971ac811004b1ac3413f26430e59b067."
 
 [[contracts]]
 id = "FW-R08-SDK-009"
