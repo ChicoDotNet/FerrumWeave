@@ -35,16 +35,17 @@ fn assert_success(label: &str, output: &Output) {
 #[test]
 fn documented_prerequisites_drive_the_complete_supported_sdk_lifecycle() {
     let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let readme = fs::read_to_string(repo.join("README.md")).expect("README must be readable");
+    let prerequisites = fs::read_to_string(repo.join("docs/r08-sdk-prerequisites.md"))
+        .expect("R08 SDK prerequisites must be readable");
 
     assert!(
-        readme.contains("## R08 SDK prerequisites"),
+        prerequisites.contains("# R08 SDK prerequisites"),
         "R08 certification prerequisites must be documented before the lifecycle is claimed complete",
     );
     for prerequisite in ["Rust 1.98", ".NET 10 SDK"] {
         assert!(
-            readme.contains(prerequisite),
-            "README R08 prerequisites must name {prerequisite}",
+            prerequisites.contains(prerequisite),
+            "R08 prerequisites must name {prerequisite}",
         );
     }
 
@@ -79,12 +80,7 @@ fn documented_prerequisites_drive_the_complete_supported_sdk_lifecycle() {
 
     assert_success(
         "dotnet restore",
-        &run(
-            "dotnet",
-            &["restore", "HelloFerrum.rsproj"],
-            &temp,
-            &repo,
-        ),
+        &run("dotnet", &["restore", "HelloFerrum.rsproj"], &temp, &repo),
     );
     assert_success(
         "dotnet build",
@@ -97,7 +93,10 @@ fn documented_prerequisites_drive_the_complete_supported_sdk_lifecycle() {
     );
 
     let assembly = temp.join("bin/Debug/net10.0/HelloFerrum.dll");
-    assert!(assembly.is_file(), "dotnet build must materialize HelloFerrum.dll");
+    assert!(
+        assembly.is_file(),
+        "dotnet build must materialize HelloFerrum.dll"
+    );
 
     let run_output = run(
         "dotnet",
