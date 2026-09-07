@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Legacy/Legacy.vbproj" />
+  <Project Path="Domain/Domain.csproj" />
+  <Project Path="Analytics/Analytics.fsproj" />
+  <Project Path="RiskEngine/RiskEngine.rsproj" />
+</Solution>
