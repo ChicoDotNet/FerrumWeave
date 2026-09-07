@@ -55,7 +55,7 @@ mod tests {
     fn extracts_literal_main_observable() {
         assert_eq!(
             parse_single_println("fn main() { println!(\"Hello from FerrumWeave!\"); }"),
-            Some("Hello from FerrumWeave!")
+            Some("Hello from FerrumWeave!"),
         );
     }
 
@@ -64,7 +64,7 @@ mod tests {
         assert_eq!(parse_single_println("fn main() {}"), None);
         assert_eq!(
             parse_single_println("fn main() { println!(\"a\\nb\"); }"),
-            None
+            None,
         );
     }
 }
