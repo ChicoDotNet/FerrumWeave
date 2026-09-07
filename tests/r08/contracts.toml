@@ -16,14 +16,14 @@ proof = "tests/r08_dotnet_new.rs installs the repository template through the re
 [[contracts]]
 id = "FW-R08-SDK-002"
 family = ".rsproj is an SDK-style project owned by FerrumWeave.Sdk"
-implemented = false
-proof = ""
+implemented = true
+proof = "sdk/templates/rust/HelloFerrum.rsproj names FerrumWeave.Sdk as its MSBuild SDK, while sdk/FerrumWeave.Sdk/Sdk/Sdk.props and Sdk.targets provide the repository-owned SDK boundary and delegate the standard .NET lifecycle to Microsoft.NET.Sdk. Certified by tests/r08_restore.rs on Linux and Windows in Rust CI #225 at 8cdd02e2d1d0cdf7f06b580b21c5c6ebe8ec369d."
 
 [[contracts]]
 id = "FW-R08-SDK-003"
 family = "dotnet restore performs the supported restore responsibilities"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r08_restore.rs runs real 'dotnet restore HelloFerrum.rsproj' with the repository SDK resolver path and requires standard obj/project.assets.json output. Certified on Linux and Windows by Rust CI #225 at 8cdd02e2d1d0cdf7f06b580b21c5c6ebe8ec369d."
 
 [[contracts]]
 id = "FW-R08-SDK-004"
