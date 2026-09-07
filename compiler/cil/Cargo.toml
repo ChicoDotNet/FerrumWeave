@@ -7,9 +7,18 @@ description = "FerrumWeave CIL and CLR artifact emission primitives"
 repository = "https://github.com/ChicoDotNet/FerrumWeave"
 license = "MIT OR Apache-2.0"
 publish = false
+autobins = false
 
 [lib]
 path = "src/root.rs"
+
+[[bin]]
+name = "clr_probe"
+path = "src/bin/clr_probe.rs"
+
+[[bin]]
+name = "ferrumweave_emit"
+path = "src/bin/ferrumweave_emit.rs"
 
 [lints.rust]
 unsafe_code = "forbid"
