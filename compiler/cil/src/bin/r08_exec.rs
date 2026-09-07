@@ -85,8 +85,8 @@ fn build_metadata(assembly_name: &str, message: &str, answer_rva: u32, main_rva:
     pad_vec(&mut user_strings, 4);
 
     let guid = vec![
-        0x46, 0x57, 0x52, 0x30, 0x38, 0x45, 0x58, 0x45, 0x43, 0x55, 0x54, 0x41, 0x42, 0x4C,
-        0x45, 0x31,
+        0x46, 0x57, 0x52, 0x30, 0x38, 0x45, 0x58, 0x45, 0x43, 0x55, 0x54, 0x41, 0x42, 0x4C, 0x45,
+        0x31,
     ];
 
     let mut blobs = vec![0_u8];
@@ -190,17 +190,9 @@ fn build_metadata(assembly_name: &str, message: &str, answer_rva: u32, main_rva:
     push_u16(&mut tables, 0);
 
     // AssemblyRef row 1: System.Runtime 10.0.0.0.
-    push_assembly_ref(
-        &mut tables,
-        system_public_key_token,
-        system_runtime_name,
-    );
+    push_assembly_ref(&mut tables, system_public_key_token, system_runtime_name);
     // AssemblyRef row 2: System.Console 10.0.0.0.
-    push_assembly_ref(
-        &mut tables,
-        system_public_key_token,
-        system_console_name,
-    );
+    push_assembly_ref(&mut tables, system_public_key_token, system_console_name);
     pad_vec(&mut tables, 4);
 
     let streams = [
