@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "FerrumWeave contributors",
+  "classifications": ["Rust", ".NET", "Console"],
+  "identity": "FerrumWeave.Templates.Rust.Console",
+  "name": "FerrumWeave Rust Console",
+  "shortName": "rust",
+  "sourceName": "HelloFerrum",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "Rust",
+    "type": "project"
+  }
+}
