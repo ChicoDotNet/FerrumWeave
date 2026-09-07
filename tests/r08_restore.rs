@@ -10,7 +10,7 @@ fn unique_temp_dir() -> PathBuf {
         .as_nanos();
     std::env::temp_dir().join(format!(
         "ferrumweave-r08-restore-{}-{nonce}",
-        std::process::id()
+        std::process::id(),
     ))
 }
 
@@ -41,11 +41,11 @@ fn ferrumweave_sdk_resolves_and_dotnet_restore_succeeds() {
         restore.status.success(),
         "FerrumWeave.Sdk must resolve and dotnet restore must succeed:\nstdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&restore.stdout),
-        String::from_utf8_lossy(&restore.stderr)
+        String::from_utf8_lossy(&restore.stderr),
     );
     assert!(
         temp.join("obj/project.assets.json").is_file(),
-        "restore must produce the standard NuGet assets file"
+        "restore must produce the standard NuGet assets file",
     );
 
     let _ = fs::remove_dir_all(temp);
