@@ -40,8 +40,8 @@ proof = "tests/r08_run.rs invokes real 'dotnet run --project HelloFerrum.rsproj'
 [[contracts]]
 id = "FW-R08-SDK-006"
 family = "dotnet clean removes supported build outputs predictably"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r08_clean.rs performs the supported real build lifecycle, requires bin/Debug/net10.0/HelloFerrum.dll to exist, invokes real 'dotnet clean HelloFerrum.rsproj' through FerrumWeave.Sdk, and requires that managed build artifact to be removed. Certified on Linux and Windows by Rust CI #253 and R04 CLR CTS Reflection #148 at 902a7c53557e3cf4de185a9460f4664487f53fd7."
 
 [[contracts]]
 id = "FW-R08-SDK-007"
