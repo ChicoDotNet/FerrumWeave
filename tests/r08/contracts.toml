@@ -1,5 +1,5 @@
 milestone = "R08"
-status = "active"
+status = "done"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -64,5 +64,5 @@ proof = "tests/r08_supported_dotnet.rs requires the canonical template to target
 [[contracts]]
 id = "FW-R08-SDK-010"
 family = "the complete supported R08 SDK lifecycle is certified from documented prerequisites on Linux and Windows"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r08_end_to_end.rs verifies documented Rust 1.98 and .NET 10 SDK prerequisites, then exercises the complete supported lifecycle through the real dotnet CLI: restore, build, run, explicit test-adapter limitation, and clean, including the managed HelloFerrum.dll artifact and 'Hello from FerrumWeave!' observable. Exact SHA 246cf36ccf219d2dc83f5814f088c9ca43d3d76b completed GREEN in Rust CI #265 for fmt/clippy, functional coverage, code coverage, and integration on Ubuntu and Windows; R04 CLR CTS Reflection #160 was also GREEN."
