@@ -3,6 +3,7 @@
   <PropertyGroup>
     <FerrumWeaveSdk>true</FerrumWeaveSdk>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <FerrumWeaveRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../..'))</FerrumWeaveRepoRoot>
   </PropertyGroup>
 </Project>
