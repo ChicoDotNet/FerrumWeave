@@ -28,7 +28,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(parent) = output.parent() {
         fs::create_dir_all(parent)?;
     }
-    fs::write(output, r08_exec::emit_console_assembly(&assembly_name, message))?;
+    fs::write(
+        output,
+        r08_exec::emit_console_assembly(&assembly_name, message),
+    )?;
     Ok(())
 }
 
@@ -59,6 +62,9 @@ mod tests {
     #[test]
     fn rejects_escaped_or_missing_observable() {
         assert_eq!(parse_single_println("fn main() {}"), None);
-        assert_eq!(parse_single_println("fn main() { println!(\"a\\nb\"); }"), None);
+        assert_eq!(
+            parse_single_println("fn main() { println!(\"a\\nb\"); }"),
+            None
+        );
     }
 }
