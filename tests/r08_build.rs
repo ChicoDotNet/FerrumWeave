@@ -10,7 +10,7 @@ fn unique_temp_dir() -> PathBuf {
         .as_nanos();
     std::env::temp_dir().join(format!(
         "ferrumweave-r08-build-{}-{nonce}",
-        std::process::id()
+        std::process::id(),
     ))
 }
 
@@ -41,13 +41,13 @@ fn dotnet_build_produces_a_managed_ferrumweave_assembly() {
         build.status.success(),
         "FerrumWeave.Sdk must own a successful dotnet build:\nstdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&build.stdout),
-        String::from_utf8_lossy(&build.stderr)
+        String::from_utf8_lossy(&build.stderr),
     );
 
     let assembly = temp.join("bin/Debug/net10.0/HelloFerrum.dll");
     assert!(
         assembly.is_file(),
-        "dotnet build must produce the managed FerrumWeave assembly at the standard TargetPath"
+        "dotnet build must produce the managed FerrumWeave assembly at the standard TargetPath",
     );
 
     let probe = temp.join("probe");
@@ -90,12 +90,12 @@ System.Console.Write(answer.Invoke(null, null));
         inspect.status.success(),
         "build output must load as a managed FerrumWeave assembly:\nstdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&inspect.stdout),
-        String::from_utf8_lossy(&inspect.stderr)
+        String::from_utf8_lossy(&inspect.stderr),
     );
     assert_eq!(
         String::from_utf8_lossy(&inspect.stdout).trim(),
         "42",
-        "dotnet build must expose FerrumWeave-emitted Rust API behavior, not an empty SDK placeholder assembly"
+        "dotnet build must expose FerrumWeave-emitted Rust API behavior, not an empty SDK placeholder assembly",
     );
 
     let _ = fs::remove_dir_all(temp);
