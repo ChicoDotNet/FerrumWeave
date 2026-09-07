@@ -28,7 +28,7 @@ fn dotnet_new_rust_creates_rsproj_and_rust_source() {
         install.status.success(),
         "dotnet new install failed:\nstdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&install.stdout),
-        String::from_utf8_lossy(&install.stderr)
+        String::from_utf8_lossy(&install.stderr),
     );
 
     let create = Command::new("dotnet")
@@ -46,7 +46,7 @@ fn dotnet_new_rust_creates_rsproj_and_rust_source() {
         create.status.success(),
         "dotnet new rust failed:\nstdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&create.stdout),
-        String::from_utf8_lossy(&create.stderr)
+        String::from_utf8_lossy(&create.stderr),
     );
 
     let project = fs::read_to_string(output.join("HelloFerrum.rsproj"))
