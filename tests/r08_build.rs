@@ -49,10 +49,47 @@ fn dotnet_build_produces_a_managed_ferrumweave_assembly() {
         assembly.is_file(),
         "dotnet build must produce the managed FerrumWeave assembly at the standard TargetPath"
     );
-    let bytes = fs::read(&assembly).expect("read managed build artifact");
+
+    let probe = temp.join("probe");
+    fs::create_dir_all(&probe).expect("create CLR inspection probe");
+    fs::write(
+        probe.join("Probe.csproj"),
+        r#"<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+"#,
+    )
+    .expect("write CLR inspection project");
+    fs::write(
+        probe.join("Program.cs"),
+        r#"using System.Reflection;
+var assembly = Assembly.LoadFrom(args[0]);
+var type = assembly.GetType("FerrumWeave.RustApi", throwOnError: true)!;
+var answer = type.GetMethod("Answer", BindingFlags.Public | BindingFlags.Static)!;
+Console.Write(answer.Invoke(null, null));
+"#,
+    )
+    .expect("write CLR inspection program");
+
+    let inspect = Command::new("dotnet")
+        .args(["run", "--project", "Probe.csproj", "--", assembly.to_str().unwrap()])
+        .current_dir(&probe)
+        .output()
+        .expect("CLR inspection probe must execute");
+
     assert!(
-        bytes.starts_with(b"MZ"),
-        "FerrumWeave build output must be a PE/CLI assembly, not a native Rust artifact or placeholder"
+        inspect.status.success(),
+        "build output must load as a managed FerrumWeave assembly:\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&inspect.stdout),
+        String::from_utf8_lossy(&inspect.stderr)
+    );
+    assert_eq!(
+        String::from_utf8_lossy(&inspect.stdout).trim(),
+        "42",
+        "dotnet build must expose FerrumWeave-emitted Rust API behavior, not an empty SDK placeholder assembly"
     );
 
     let _ = fs::remove_dir_all(temp);
