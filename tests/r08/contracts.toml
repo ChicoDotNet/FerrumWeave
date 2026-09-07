@@ -28,8 +28,8 @@ proof = "tests/r08_restore.rs runs real 'dotnet restore HelloFerrum.rsproj' with
 [[contracts]]
 id = "FW-R08-SDK-004"
 family = "dotnet build produces the managed FerrumWeave assembly"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r08_build.rs runs real 'dotnet build HelloFerrum.rsproj' through FerrumWeave.Sdk, requires the standard bin/Debug/net10.0/HelloFerrum.dll output, loads that assembly through CLR reflection, and verifies FerrumWeave.RustApi.Answer returns 42. Certified on Linux and Windows by Rust CI #236 and R04 CLR CTS Reflection #131 at 0307a83a2c21276f3894f0a452f129b9a47d6b56."
 
 [[contracts]]
 id = "FW-R08-SDK-005"
