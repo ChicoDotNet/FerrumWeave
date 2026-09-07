@@ -69,7 +69,7 @@ fn dotnet_build_produces_a_managed_ferrumweave_assembly() {
 var assembly = Assembly.LoadFrom(args[0]);
 var type = assembly.GetType("FerrumWeave.RustApi", throwOnError: true)!;
 var answer = type.GetMethod("Answer", BindingFlags.Public | BindingFlags.Static)!;
-Console.Write(answer.Invoke(null, null));
+System.Console.Write(answer.Invoke(null, null));
 "#,
     )
     .expect("write CLR inspection program");
