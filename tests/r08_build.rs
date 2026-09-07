@@ -75,7 +75,13 @@ Console.Write(answer.Invoke(null, null));
     .expect("write CLR inspection program");
 
     let inspect = Command::new("dotnet")
-        .args(["run", "--project", "Probe.csproj", "--", assembly.to_str().unwrap()])
+        .args([
+            "run",
+            "--project",
+            "Probe.csproj",
+            "--",
+            assembly.to_str().unwrap(),
+        ])
         .current_dir(&probe)
         .output()
         .expect("CLR inspection probe must execute");
