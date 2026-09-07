@@ -46,8 +46,8 @@ proof = "tests/r08_clean.rs performs the supported real build lifecycle, require
 [[contracts]]
 id = "FW-R08-SDK-007"
 family = "dotnet test has a documented supported hook or an explicit executable limitation"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r08_test.rs invokes real 'dotnet test HelloFerrum.rsproj --no-restore' through FerrumWeave.Sdk and requires the SDK-owned VSTest target to fail explicitly with the documented limitation that no Rust test adapter is provided yet. Certified on Linux and Windows by Rust CI #256 and R04 CLR CTS Reflection #151 at e4405558f1e3f89e673c6fcd7ecb2e1b1e47be5f."
 
 [[contracts]]
 id = "FW-R08-SDK-008"
