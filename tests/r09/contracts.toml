@@ -1,0 +1,61 @@
+milestone = "R09"
+status = "active"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R09 proves that FerrumWeave participates in a real mixed-language .NET solution.
+# The denominator is declared from the roadmap DoD before implementation begins.
+
+[[contracts]]
+id = "FW-R09-SLNX-001"
+family = "one .slnx contains Visual Basic, C#, F#, and FerrumWeave Rust projects"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R09-SLNX-002"
+family = "one normal .NET build workflow builds the supported mixed-language solution graph"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R09-SLNX-003"
+family = "an end-to-end business-style call path crosses existing .NET code to Rust to a managed .NET dependency and returns successfully"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R09-SLNX-004"
+family = "Visual Basic participates in the certified call path without migration to C#"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R09-SLNX-005"
+family = "F# compiles and interoperates as part of the certified solution"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R09-SLNX-006"
+family = "a real NuGet package is restored and consumed through the supported .NET dependency path"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R09-SLNX-007"
+family = "ProjectReference resolves the solution graph without manual assembly copying"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R09-SLNX-008"
+family = "the supported mixed solution works on Linux and Windows"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R09-SLNX-009"
+family = "functional contracts observe the language crossings rather than merely checking compilation"
+implemented = false
+proof = ""
