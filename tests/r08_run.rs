@@ -44,6 +44,13 @@ fn dotnet_run_executes_the_managed_ferrumweave_project() {
         String::from_utf8_lossy(&run.stderr)
     );
 
+    let stdout = String::from_utf8_lossy(&run.stdout);
+    assert_eq!(
+        stdout.trim(),
+        "Hello from FerrumWeave!",
+        "dotnet run must execute the Rust main observable rather than merely launching a placeholder CLR artifact"
+    );
+
     let assembly = temp.join("bin/Debug/net10.0/HelloFerrum.dll");
     assert!(
         assembly.is_file(),
