@@ -11,7 +11,7 @@ target_percent_when_done = 100.0
 id = "FW-R08-SDK-001"
 family = "dotnet new rust creates a structurally valid Rust/.NET project"
 implemented = true
-proof = "tests/r08_dotnet_new.rs installs the repository template through the real dotnet template engine, creates HelloFerrum with 'dotnet new rust', and verifies the generated .rsproj and Rust source. CI certification is still pending for this exact SHA."
+proof = "tests/r08_dotnet_new.rs installs the repository template through the real dotnet template engine, creates HelloFerrum with 'dotnet new rust', and verifies the generated .rsproj and Rust source. Certified on Linux and Windows by Rust CI #220 at d294ce796e81372ab49db36cc7f526d840410f01."
 
 [[contracts]]
 id = "FW-R08-SDK-002"
