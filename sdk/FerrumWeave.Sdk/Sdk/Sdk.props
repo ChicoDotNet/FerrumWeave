@@ -1,5 +1,8 @@
 <Project>
-  <Import Project="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/Sdk/Sdk.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'" />
+  <PropertyGroup>
+    <FerrumWeaveImportsMicrosoftNETSdk Condition="'$(UsingMicrosoftNETSdk)' != 'true'">true</FerrumWeaveImportsMicrosoftNETSdk>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/Sdk/Sdk.props" Condition="'$(FerrumWeaveImportsMicrosoftNETSdk)' == 'true'" />
   <PropertyGroup>
     <FerrumWeaveSdk>true</FerrumWeaveSdk>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
