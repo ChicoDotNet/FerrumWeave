@@ -9,6 +9,7 @@ fn normal_dotnet_build_builds_the_mixed_solution_graph() {
     let build = Command::new("dotnet")
         .args(["build", "Enterprise.slnx", "--nologo"])
         .current_dir(&fixture)
+        .env("MSBuildSDKsPath", repo.join("sdk"))
         .output()
         .expect("R09 requires the normal dotnet build workflow to execute");
 
