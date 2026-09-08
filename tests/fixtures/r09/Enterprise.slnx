@@ -1,6 +1,9 @@
 <Solution>
+  <Configurations>
+    <ProjectType Name="FerrumWeave.Rust" TypeId="0286bb52-5dce-5ef7-8109-d85e1a189b55" />
+  </Configurations>
   <Project Path="Legacy/Legacy.vbproj" />
   <Project Path="Domain/Domain.csproj" />
   <Project Path="Analytics/Analytics.fsproj" />
-  <Project Path="RiskEngine/RiskEngine.rsproj" />
+  <Project Path="RiskEngine/RiskEngine.rsproj" Type="0286bb52-5dce-5ef7-8109-d85e1a189b55" />
 </Solution>
