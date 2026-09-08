@@ -1,5 +1,5 @@
 milestone = "R09"
-status = "active"
+status = "done"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -45,17 +45,17 @@ proof = "tests/r09_nuget_call_path.rs performs a normal dotnet restore of Enterp
 [[contracts]]
 id = "FW-R09-SLNX-007"
 family = "ProjectReference resolves the solution graph without manual assembly copying"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r09_project_reference.rs requires C#, Visual Basic, and F# to reference RiskEngine.rsproj with real ProjectReference items, rejects fixture-level Copy/Exec assembly shims, performs dotnet clean followed by a normal Enterprise.slnx build, and requires RiskEngine.dll to arrive in every consumer output through MSBuild graph resolution. Exact SHA c6b74128e60f6dac7aa86d773559a79d6e5b054b completed GREEN in all seven checks: build + test on Ubuntu and Windows, fmt/clippy, functional coverage, code coverage, and emitted-assembly reflection on Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R09-SLNX-008"
 family = "the supported mixed solution works on Linux and Windows"
-implemented = false
-proof = ""
+implemented = true
+proof = "The same R09 executable contract suite runs unchanged in the Rust CI operating-system matrix. Exact SHA c6b74128e60f6dac7aa86d773559a79d6e5b054b completed GREEN in both build + test (ubuntu-latest) and build + test (windows-latest), while the independent emitted-assembly reflection jobs also passed on Ubuntu and Windows. This certifies the canonical mixed solution rather than a platform-specific substitute."
 
 [[contracts]]
 id = "FW-R09-SLNX-009"
 family = "functional contracts observe the language crossings rather than merely checking compilation"
-implemented = false
-proof = ""
+implemented = true
+proof = "R09 executable contracts observe crossings directly: tests/r09_call_path.rs requires C# -> FerrumWeave Rust -> System.Math.Abs and risk-score=42; tests/r09_vb_call_path.rs requires vb-risk-score=42; tests/r09_fsharp_call_path.rs requires fs-risk-score=42; tests/r09_nuget_call_path.rs requires restored Newtonsoft.Json consumption and the Rust-derived score; tests/r09_project_reference.rs proves MSBuild graph delivery without manual copying. The complete suite passed unchanged on Ubuntu and Windows at exact SHA c6b74128e60f6dac7aa86d773559a79d6e5b054b."
