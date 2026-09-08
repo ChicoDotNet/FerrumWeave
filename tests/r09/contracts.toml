@@ -39,8 +39,8 @@ proof = "tests/r09_fsharp_call_path.rs executes the canonical F# project directl
 [[contracts]]
 id = "FW-R09-SLNX-006"
 family = "a real NuGet package is restored and consumed through the supported .NET dependency path"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r09_nuget_call_path.rs performs a normal dotnet restore of Enterprise.slnx, requires Domain/obj/project.assets.json to contain Newtonsoft.Json/13.0.3, then executes the canonical C# entrypoint and observes nuget-risk-score={\"score\":42}, combining the Rust-produced value with the restored package at runtime. Exact SHA 7706b3aac8861abe784d8b63221e7a01f85424b3 completed GREEN in Rust CI #318, including build + integration on Ubuntu and Windows plus fmt/clippy, functional coverage, and code coverage; R04 CLR CTS Reflection #184 also completed GREEN on the same SHA."
 
 [[contracts]]
 id = "FW-R09-SLNX-007"
