@@ -21,8 +21,8 @@ proof = "tests/r09_build.rs executes the real normal workflow 'dotnet build Ente
 [[contracts]]
 id = "FW-R09-SLNX-003"
 family = "an end-to-end business-style call path crosses existing .NET code to Rust to a managed .NET dependency and returns successfully"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r09_call_path.rs executes the canonical Domain C# entrypoint, requires the observable result risk-score=42, inspects the emitted RiskEngine.dll, and proves FerrumWeave.RustApi.Answer calls the managed System.Math.Abs dependency instead of returning a baked constant. Exact SHA 2d1b55d9a250f9baeab1f9e2c62e1cf86588f254 completed GREEN in Rust CI #305, including fmt/clippy, functional coverage, code coverage, and build + integration on Ubuntu and Windows; the parallel R04 CLR CTS Reflection certification also completed GREEN on the same SHA."
 
 [[contracts]]
 id = "FW-R09-SLNX-004"
