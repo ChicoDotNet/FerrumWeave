@@ -27,8 +27,8 @@ proof = "tests/r09_call_path.rs executes the canonical Domain C# entrypoint, req
 [[contracts]]
 id = "FW-R09-SLNX-004"
 family = "Visual Basic participates in the certified call path without migration to C#"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r09_vb_call_path.rs executes the canonical Visual Basic project directly and requires vb-risk-score=42 through its ProjectReference to RiskEngine.rsproj. Exact SHA 000a0be7076c77399937ffbcd2e1c998e5de5a5a completed GREEN in Rust CI #309, including Ubuntu and Windows integration plus fmt/clippy, functional coverage, and code coverage; R04 CLR CTS Reflection #175 also completed GREEN on the same SHA."
 
 [[contracts]]
 id = "FW-R09-SLNX-005"
