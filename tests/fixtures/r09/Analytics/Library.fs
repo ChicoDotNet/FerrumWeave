@@ -1,4 +1,7 @@
 namespace Analytics
 
 module Marker =
-    let name = "Analytics"
+    [<EntryPoint>]
+    let main _ =
+        printfn "fs-risk-score=%d" (FerrumWeave.RustApi.Answer())
+        0
