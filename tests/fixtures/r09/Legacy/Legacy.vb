@@ -1,7 +1,7 @@
 Namespace Legacy
     Public Module Marker
-        Public Function Name() As String
-            Return "Legacy"
-        End Function
+        Public Sub Main()
+            System.Console.WriteLine("vb-risk-score=" & FerrumWeave.RustApi.Answer().ToString())
+        End Sub
     End Module
 End Namespace
