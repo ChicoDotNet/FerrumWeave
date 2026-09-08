@@ -9,8 +9,8 @@ target_percent_when_done = 100.0
 [[contracts]]
 id = "FW-R10-DX-001"
 family = "FerrumWeave SDK/tooling can be produced as a versioned 0.1-alpha release artifact"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r10_packaging.rs; Rust CI #329 certified dotnet pack and the versioned FerrumWeave.Sdk.0.1.0-alpha.1.nupkg on Ubuntu and Windows"
 
 [[contracts]]
 id = "FW-R10-DX-002"
