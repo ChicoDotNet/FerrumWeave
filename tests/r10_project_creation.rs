@@ -10,7 +10,10 @@ fn unique_temp_dir() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("system clock must be after Unix epoch")
         .as_nanos();
-    std::env::temp_dir().join(format!("ferrumweave-r10-create-{}-{nonce}", std::process::id()))
+    std::env::temp_dir().join(format!(
+        "ferrumweave-r10-create-{}-{nonce}",
+        std::process::id()
+    ))
 }
 
 #[test]
