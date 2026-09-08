@@ -15,8 +15,8 @@ proof = "tests/r09_slnx.rs requires tests/fixtures/r09/Enterprise.slnx to declar
 [[contracts]]
 id = "FW-R09-SLNX-002"
 family = "one normal .NET build workflow builds the supported mixed-language solution graph"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r09_build.rs executes the real normal workflow 'dotnet build Enterprise.slnx --nologo' against the canonical mixed-language fixture. Exact SHA 4a1a182d94cd7a818a78250f8e030646a7f645f0 completed GREEN in Rust CI #293: fmt/clippy, code coverage, functional coverage, and build + integration tests all passed, including Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R09-SLNX-003"
