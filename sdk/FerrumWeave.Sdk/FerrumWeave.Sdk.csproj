@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>FerrumWeave.Sdk</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Authors>FerrumWeave contributors</Authors>
+    <Description>MSBuild SDK for FerrumWeave Rust projects in .NET solutions.</Description>
+    <PackageTags>rust;dotnet;msbuild;sdk;ferrumweave</PackageTags>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Sdk/Sdk.props" Pack="true" PackagePath="Sdk/Sdk.props" />
+    <None Include="Sdk/Sdk.targets" Pack="true" PackagePath="Sdk/Sdk.targets" />
+  </ItemGroup>
+</Project>
