@@ -10,7 +10,9 @@ fn real_nuget_package_is_restored_and_observed_in_the_business_call_path() {
         .args(["restore", "Enterprise.slnx", "--nologo"])
         .current_dir(&fixture)
         .output()
-        .expect("R09 requires the canonical mixed solution to restore through normal dotnet tooling");
+        .expect(
+            "R09 requires the canonical mixed solution to restore through normal dotnet tooling",
+        );
 
     assert!(
         restore.status.success(),
