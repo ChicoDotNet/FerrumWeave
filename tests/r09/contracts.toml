@@ -33,8 +33,8 @@ proof = "tests/r09_vb_call_path.rs executes the canonical Visual Basic project d
 [[contracts]]
 id = "FW-R09-SLNX-005"
 family = "F# compiles and interoperates as part of the certified solution"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r09_fsharp_call_path.rs executes the canonical F# project directly and requires fs-risk-score=42 through its ProjectReference to RiskEngine.rsproj. Exact SHA 49347509aa0ae57efbcdc0b3999e05768b93fc79 completed GREEN in Rust CI #313: build + integration passed on Ubuntu and Windows, and fmt/clippy, functional coverage, and code coverage all passed; R04 CLR CTS Reflection #179 also completed GREEN on the same SHA."
 
 [[contracts]]
 id = "FW-R09-SLNX-006"
