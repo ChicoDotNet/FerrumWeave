@@ -15,8 +15,8 @@ proof = "tests/r10_packaging.rs; Rust CI #329 certified dotnet pack and the vers
 [[contracts]]
 id = "FW-R10-DX-002"
 family = "an external developer can install the alpha toolchain using only published instructions"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r10_installation.rs; Rust CI #334 certified the documented project-scoped NuGet.Config installation/restore path on Ubuntu and Windows at b7a7902098c5c6720aa2a7914e8e6a2fdffa5db8"
 
 [[contracts]]
 id = "FW-R10-DX-003"
