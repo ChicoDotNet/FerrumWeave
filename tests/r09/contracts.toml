@@ -1,0 +1,61 @@
+milestone = "R09"
+status = "done"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R09 proves that FerrumWeave participates in a real mixed-language .NET solution.
+# The denominator is declared from the roadmap DoD before implementation begins.
+
+[[contracts]]
+id = "FW-R09-SLNX-001"
+family = "one .slnx contains Visual Basic, C#, F#, and FerrumWeave Rust projects"
+implemented = true
+proof = "tests/r09_slnx.rs requires tests/fixtures/r09/Enterprise.slnx to declare Legacy/Legacy.vbproj, Domain/Domain.csproj, Analytics/Analytics.fsproj, and RiskEngine/RiskEngine.rsproj. Exact SHA ccd7f1f8039d3f721ef3ef848d02fc2b8bbfd92a completed GREEN in Rust CI #273, including fmt/clippy, code coverage, functional coverage, and integration on Ubuntu and Windows."
+
+[[contracts]]
+id = "FW-R09-SLNX-002"
+family = "one normal .NET build workflow builds the supported mixed-language solution graph"
+implemented = true
+proof = "tests/r09_build.rs executes the real normal workflow 'dotnet build Enterprise.slnx --nologo' against the canonical mixed-language fixture. Exact SHA 4a1a182d94cd7a818a78250f8e030646a7f645f0 completed GREEN in Rust CI #293: fmt/clippy, code coverage, functional coverage, and build + integration tests all passed, including Ubuntu and Windows."
+
+[[contracts]]
+id = "FW-R09-SLNX-003"
+family = "an end-to-end business-style call path crosses existing .NET code to Rust to a managed .NET dependency and returns successfully"
+implemented = true
+proof = "tests/r09_call_path.rs executes the canonical Domain C# entrypoint, requires the observable result risk-score=42, inspects the emitted RiskEngine.dll, and proves FerrumWeave.RustApi.Answer calls the managed System.Math.Abs dependency instead of returning a baked constant. Exact SHA 2d1b55d9a250f9baeab1f9e2c62e1cf86588f254 completed GREEN in Rust CI #305, including fmt/clippy, functional coverage, code coverage, and build + integration on Ubuntu and Windows; the parallel R04 CLR CTS Reflection certification also completed GREEN on the same SHA."
+
+[[contracts]]
+id = "FW-R09-SLNX-004"
+family = "Visual Basic participates in the certified call path without migration to C#"
+implemented = true
+proof = "tests/r09_vb_call_path.rs executes the canonical Visual Basic project directly and requires vb-risk-score=42 through its ProjectReference to RiskEngine.rsproj. Exact SHA 000a0be7076c77399937ffbcd2e1c998e5de5a5a completed GREEN in Rust CI #309, including Ubuntu and Windows integration plus fmt/clippy, functional coverage, and code coverage; R04 CLR CTS Reflection #175 also completed GREEN on the same SHA."
+
+[[contracts]]
+id = "FW-R09-SLNX-005"
+family = "F# compiles and interoperates as part of the certified solution"
+implemented = true
+proof = "tests/r09_fsharp_call_path.rs executes the canonical F# project directly and requires fs-risk-score=42 through its ProjectReference to RiskEngine.rsproj. Exact SHA 49347509aa0ae57efbcdc0b3999e05768b93fc79 completed GREEN in Rust CI #313: build + integration passed on Ubuntu and Windows, and fmt/clippy, functional coverage, and code coverage all passed; R04 CLR CTS Reflection #179 also completed GREEN on the same SHA."
+
+[[contracts]]
+id = "FW-R09-SLNX-006"
+family = "a real NuGet package is restored and consumed through the supported .NET dependency path"
+implemented = true
+proof = "tests/r09_nuget_call_path.rs performs a normal dotnet restore of Enterprise.slnx, requires Domain/obj/project.assets.json to contain Newtonsoft.Json/13.0.3, then executes the canonical C# entrypoint and observes nuget-risk-score={\"score\":42}, combining the Rust-produced value with the restored package at runtime. Exact SHA 7706b3aac8861abe784d8b63221e7a01f85424b3 completed GREEN in Rust CI #318, including build + integration on Ubuntu and Windows plus fmt/clippy, functional coverage, and code coverage; R04 CLR CTS Reflection #184 also completed GREEN on the same SHA."
+
+[[contracts]]
+id = "FW-R09-SLNX-007"
+family = "ProjectReference resolves the solution graph without manual assembly copying"
+implemented = true
+proof = "tests/r09_project_reference.rs requires C#, Visual Basic, and F# to reference RiskEngine.rsproj with real ProjectReference items, rejects fixture-level Copy/Exec assembly shims, performs dotnet clean followed by a normal Enterprise.slnx build, and requires RiskEngine.dll to arrive in every consumer output through MSBuild graph resolution. Exact SHA c6b74128e60f6dac7aa86d773559a79d6e5b054b completed GREEN in all seven checks: build + test on Ubuntu and Windows, fmt/clippy, functional coverage, code coverage, and emitted-assembly reflection on Ubuntu and Windows."
+
+[[contracts]]
+id = "FW-R09-SLNX-008"
+family = "the supported mixed solution works on Linux and Windows"
+implemented = true
+proof = "The same R09 executable contract suite runs unchanged in the Rust CI operating-system matrix. Exact SHA c6b74128e60f6dac7aa86d773559a79d6e5b054b completed GREEN in both build + test (ubuntu-latest) and build + test (windows-latest), while the independent emitted-assembly reflection jobs also passed on Ubuntu and Windows. This certifies the canonical mixed solution rather than a platform-specific substitute."
+
+[[contracts]]
+id = "FW-R09-SLNX-009"
+family = "functional contracts observe the language crossings rather than merely checking compilation"
+implemented = true
+proof = "R09 executable contracts observe crossings directly: tests/r09_call_path.rs requires C# -> FerrumWeave Rust -> System.Math.Abs and risk-score=42; tests/r09_vb_call_path.rs requires vb-risk-score=42; tests/r09_fsharp_call_path.rs requires fs-risk-score=42; tests/r09_nuget_call_path.rs requires restored Newtonsoft.Json consumption and the Rust-derived score; tests/r09_project_reference.rs proves MSBuild graph delivery without manual copying. The complete suite passed unchanged on Ubuntu and Windows at exact SHA c6b74128e60f6dac7aa86d773559a79d6e5b054b."

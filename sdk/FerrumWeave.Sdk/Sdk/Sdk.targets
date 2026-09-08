@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/Sdk/Sdk.targets" />
+  <Import Project="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/Sdk/Sdk.targets" Condition="'$(FerrumWeaveImportsMicrosoftNETSdk)' == 'true'" />
 
   <Target Name="CreateManifestResourceNames" />
 

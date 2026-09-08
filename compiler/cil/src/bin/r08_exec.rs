@@ -9,6 +9,7 @@ const SECTION_RVA: u32 = 0x2000;
 const CLR_HEADER_SIZE: usize = 0x48;
 const ENTRY_POINT_TOKEN: u32 = 0x0600_0002;
 const MEMBER_REF_TOKEN_CONSOLE_WRITELINE: u32 = 0x0A00_0001;
+const MEMBER_REF_TOKEN_MATH_ABS: u32 = 0x0A00_0002;
 const USER_STRING_TOKEN_MAIN_MESSAGE: u32 = 0x7000_0001;
 
 pub fn emit_console_assembly(assembly_name: &str, message: &str) -> Vec<u8> {
@@ -47,7 +48,15 @@ pub fn emit_console_assembly(assembly_name: &str, message: &str) -> Vec<u8> {
 }
 
 fn build_answer_body() -> Vec<u8> {
-    vec![0x0E, 0x1F, 42, 0x2A]
+    let mut body = Vec::with_capacity(9);
+    const CODE_SIZE: u8 = 8;
+    body.push((CODE_SIZE << 2) | 0b10);
+    body.push(0x1F); // ldc.i4.s
+    body.push(0xD6); // -42
+    body.push(0x28); // call int32 System.Math::Abs(int32)
+    push_u32(&mut body, MEMBER_REF_TOKEN_MATH_ABS);
+    body.push(0x2A); // ret
+    body
 }
 
 fn build_main_body() -> Vec<u8> {
@@ -66,6 +75,7 @@ fn build_metadata(assembly_name: &str, message: &str, answer_rva: u32, main_rva:
     let module_name = push_string(&mut strings, &format!("{assembly_name}.dll"));
     let object_name = push_string(&mut strings, "Object");
     let console_name = push_string(&mut strings, "Console");
+    let math_name = push_string(&mut strings, "Math");
     let system_namespace = push_string(&mut strings, "System");
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, "RustApi");
@@ -74,6 +84,7 @@ fn build_metadata(assembly_name: &str, message: &str, answer_rva: u32, main_rva:
     let answer_name = push_string(&mut strings, "Answer");
     let main_name = push_string(&mut strings, "Main");
     let write_line_name = push_string(&mut strings, "WriteLine");
+    let abs_name = push_string(&mut strings, "Abs");
     let assembly_name_index = push_string(&mut strings, assembly_name);
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
     let system_console_name = push_string(&mut strings, "System.Console");
@@ -93,6 +104,7 @@ fn build_metadata(assembly_name: &str, message: &str, answer_rva: u32, main_rva:
     let answer_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
     let main_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x01]);
     let write_line_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x01, 0x0E]);
+    let abs_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x08, 0x08]);
     let system_public_key_token = push_blob(
         &mut blobs,
         &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
@@ -112,7 +124,7 @@ fn build_metadata(assembly_name: &str, message: &str, answer_rva: u32, main_rva:
         | (1_u64 << 35);
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0);
-    for count in [1_u32, 2, 3, 2, 1, 1, 2] {
+    for count in [1_u32, 3, 3, 2, 2, 1, 2] {
         push_u32(&mut tables, count);
     }
 
@@ -131,6 +143,11 @@ fn build_metadata(assembly_name: &str, message: &str, answer_rva: u32, main_rva:
     // TypeRef row 2: [System.Console]System.Console.
     push_u16(&mut tables, 10);
     push_u16(&mut tables, console_name);
+    push_u16(&mut tables, system_namespace);
+
+    // TypeRef row 3: [System.Runtime]System.Math.
+    push_u16(&mut tables, 6);
+    push_u16(&mut tables, math_name);
     push_u16(&mut tables, system_namespace);
 
     // TypeDef row 1: <Module> owns no methods.
@@ -177,6 +194,11 @@ fn build_metadata(assembly_name: &str, message: &str, answer_rva: u32, main_rva:
     push_u16(&mut tables, 17);
     push_u16(&mut tables, write_line_name);
     push_u16(&mut tables, write_line_signature);
+
+    // MemberRef row 2: int32 [System.Runtime]System.Math::Abs(int32).
+    push_u16(&mut tables, 25);
+    push_u16(&mut tables, abs_name);
+    push_u16(&mut tables, abs_signature);
 
     // Assembly.
     push_u32(&mut tables, 0x0000_8004);
