@@ -62,12 +62,21 @@ fn published_alpha_instructions_install_sdk_into_clean_project() {
     )
     .expect("R10 clean consumer project must be writable");
 
+    let config = consumer.join("NuGet.Config");
+    fs::write(
+        &config,
+        format!(
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<configuration>\n  <packageSources>\n    <clear />\n    <add key=\"ferrumweave-local\" value=\"{}\" />\n  </packageSources>\n</configuration>\n",
+            feed.display()
+        ),
+    )
+    .expect("R10 project-scoped NuGet.Config must be writable");
+
     let restore = Command::new("dotnet")
         .arg("restore")
         .arg(&project)
         .arg("--nologo")
-        .arg("--source")
-        .arg(&feed)
+        .current_dir(&consumer)
         .output()
         .expect("R10 requires dotnet restore to execute the documented SDK installation path");
 
