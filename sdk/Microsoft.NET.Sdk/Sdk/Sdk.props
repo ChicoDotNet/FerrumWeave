@@ -1,0 +1,3 @@
+<Project>
+  <Import Project="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/Sdk/Sdk.props" />
+</Project>
