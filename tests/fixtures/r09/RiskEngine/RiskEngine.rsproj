@@ -1,8 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="../../../../sdk/FerrumWeave.Sdk/Sdk/Sdk.props" />
+<Project Sdk="FerrumWeave.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
-  <Import Project="../../../../sdk/FerrumWeave.Sdk/Sdk/Sdk.targets" />
 </Project>
