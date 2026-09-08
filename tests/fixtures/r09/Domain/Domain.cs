@@ -1,6 +1,3 @@
-namespace Domain;
+using System;
 
-public static class Marker
-{
-    public static string Name() => "Domain";
-}
+Console.WriteLine($"risk-score={FerrumWeave.RustApi.Answer()}");
