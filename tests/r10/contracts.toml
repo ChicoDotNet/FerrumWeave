@@ -1,0 +1,79 @@
+milestone = "R10"
+status = "in_progress"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R10 turns the certified compiler/solution capabilities into a distributable 0.1 alpha.
+# The denominator is declared from the roadmap DoD before implementation begins.
+
+[[contracts]]
+id = "FW-R10-DX-001"
+family = "FerrumWeave SDK/tooling can be produced as a versioned 0.1-alpha release artifact"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-002"
+family = "an external developer can install the alpha toolchain using only published instructions"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-003"
+family = "an external developer can create a FerrumWeave project from the installed toolchain"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-004"
+family = "editing supported Rust produces useful Rust diagnostics with source locations"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-005"
+family = "a created project can consume a supported .NET API and NuGet dependency"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-006"
+family = "a created project builds and runs through normal dotnet commands"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-007"
+family = "the canonical mixed .slnx example builds using the installed alpha toolchain"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-008"
+family = "the supported scenario provides basic source-level debugging"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-009"
+family = "published compatibility and limitation documentation distinguishes implemented and unsupported behavior"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-010"
+family = "release artifacts are reproducible and versioned"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-011"
+family = "the alpha packaging path uses NuGet where appropriate for SDK/tooling distribution"
+implemented = false
+proof = ""
+
+[[contracts]]
+id = "FW-R10-DX-012"
+family = "the documented getting-started path requires no unpublished maintainer knowledge and keeps alpha limitations visible"
+implemented = false
+proof = ""
