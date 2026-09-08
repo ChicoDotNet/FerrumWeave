@@ -1,3 +1,6 @@
 using System;
+using Newtonsoft.Json;
 
-Console.WriteLine($"risk-score={FerrumWeave.RustApi.Answer()}");
+var score = FerrumWeave.RustApi.Answer();
+Console.WriteLine($"risk-score={score}");
+Console.WriteLine($"nuget-risk-score={JsonConvert.SerializeObject(new { score })}");
