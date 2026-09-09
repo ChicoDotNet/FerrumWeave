@@ -1,5 +1,10 @@
-name: Managed consumption causality
+name: Managed consumption causality oracle
 
+# Historical/differential oracle only.
+# This workflow intentionally does not run on every pull-request synchronize:
+# passing it proves behavior through the pinned upstream backend, not through
+# FerrumWeave's product codegen path. Run it explicitly when oracle replay adds
+# diagnostic value or when its own characterization fixtures change on dev/main.
 on:
   push:
     branches:
@@ -9,33 +14,19 @@ on:
       - ".github/workflows/managed-consumption-causality.yml"
       - "eng/verification/verify_managed_static_call_causality.py"
       - "tests/fixtures/managed_static_call.rs"
-      - "tests/r05/contracts.toml"
       - "docs/upstream/rustc_codegen_clr.md"
-      - "docs/roadmap/README.md"
-  pull_request:
-    branches:
-      - dev
-      - main
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - ".github/workflows/managed-consumption-causality.yml"
-      - "eng/verification/verify_managed_static_call_causality.py"
-      - "tests/fixtures/managed_static_call.rs"
-      - "tests/r05/contracts.toml"
-      - "docs/upstream/rustc_codegen_clr.md"
-      - "docs/roadmap/README.md"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: managed-consumption-causality-${{ github.ref }}
+  group: managed-consumption-oracle-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  source-causality:
-    name: Rust source → managed static call (${{ matrix.os }})
+  source-causality-oracle:
+    name: Oracle: Rust source → managed static call (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -53,7 +44,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Checkout pinned rustc_codegen_clr upstream
+      - name: Checkout pinned characterization oracle
         uses: actions/checkout@v7.0.1
         with:
           repository: FractalFir/rustc_codegen_clr
@@ -65,7 +56,7 @@ jobs:
         with:
           dotnet-version: "10.0.400"
 
-      - name: Install pinned upstream Rust toolchain
+      - name: Install pinned oracle toolchain
         shell: bash
         run: |
           set -euo pipefail
@@ -83,7 +74,7 @@ jobs:
           sudo apt-get install -y mono-devel
           ilasm --help >/dev/null || true
 
-      - name: Build pinned upstream backend and linker
+      - name: Build pinned oracle backend and linker
         shell: bash
         run: |
           set -euo pipefail
@@ -96,7 +87,7 @@ jobs:
             --manifest-path .managed-causality/rustc_codegen_clr/cilly/Cargo.toml \
             --bin linker
 
-      - name: Certify Rust-source managed-call causality
+      - name: Replay source-causality characterization
         shell: bash
         run: |
           set -euo pipefail
