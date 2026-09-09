@@ -59,7 +59,7 @@ jobs:
           set -euo pipefail
           rustup toolchain install nightly-2025-10-14 \
             --profile minimal \
-            --component rustc-dev,rust-src
+            --component rustc-dev,rust-src,llvm-tools-preview
           rustc +nightly-2025-10-14 --version --verbose
 
       - name: Build FerrumWeave codegen backend
