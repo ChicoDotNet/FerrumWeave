@@ -80,8 +80,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     pad_vec(&mut strings, 4);
 
     let guid = vec![
-        0x46, 0x57, 0x53, 0x43, 0x41, 0x4C, 0x41, 0x52, 0x45, 0x58, 0x50, 0x4F, 0x52, 0x54,
-        0x30, 0x31,
+        0x46, 0x57, 0x53, 0x43, 0x41, 0x4C, 0x41, 0x52, 0x45, 0x58, 0x50, 0x4F, 0x52, 0x54, 0x30,
+        0x31,
     ];
 
     let mut blobs = vec![0_u8];
@@ -96,12 +96,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u32(&mut tables, 0); // reserved
     tables.extend_from_slice(&[2, 0, 0, 1]); // major, minor, heap sizes, reserved
 
-    let valid_tables = (1_u64 << 0)
-        | (1_u64 << 1)
-        | (1_u64 << 2)
-        | (1_u64 << 6)
-        | (1_u64 << 32)
-        | (1_u64 << 35);
+    let valid_tables =
+        (1_u64 << 0) | (1_u64 << 1) | (1_u64 << 2) | (1_u64 << 6) | (1_u64 << 32) | (1_u64 << 35);
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0); // sorted mask
 
@@ -365,7 +361,11 @@ mod tests {
 
         let first_body = [0x1A, 0x20, 137, 0, 0, 0, 0x2A];
         let second_body = [0x1A, 0x20, 211, 0, 0, 0, 0x2A];
-        assert!(first.windows(first_body.len()).any(|window| window == first_body));
+        assert!(
+            first
+                .windows(first_body.len())
+                .any(|window| window == first_body)
+        );
         let second = emit_i32_export_assembly(211);
         assert!(
             second
