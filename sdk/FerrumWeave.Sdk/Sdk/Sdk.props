@@ -8,6 +8,8 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <OutputType>Exe</OutputType>
-    <FerrumWeaveRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))</FerrumWeaveRepoRoot>
+    <FerrumWeaveSdkRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))</FerrumWeaveSdkRoot>
+    <FerrumWeaveCompilerManifest Condition="Exists('$(FerrumWeaveSdkRoot)/compiler/cil/Cargo.toml')">$(FerrumWeaveSdkRoot)/compiler/cil/Cargo.toml</FerrumWeaveCompilerManifest>
+    <FerrumWeaveCompilerManifest Condition="'$(FerrumWeaveCompilerManifest)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveSdkRoot)/../../compiler/cil/Cargo.toml'))</FerrumWeaveCompilerManifest>
   </PropertyGroup>
 </Project>
