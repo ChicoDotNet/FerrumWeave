@@ -12,6 +12,7 @@ on:
       - "projection/**"
       - "eng/verification/verify_codegen_backend_boundary.py"
       - "eng/verification/verify_managed_static_call_backend.py"
+      - "tests/r05/contracts.toml"
       - "Cargo.toml"
       - "docs/architecture/adr/0002-r02-isolated-upstream-codegen-lane.md"
   pull_request:
@@ -26,6 +27,7 @@ on:
       - "projection/**"
       - "eng/verification/verify_codegen_backend_boundary.py"
       - "eng/verification/verify_managed_static_call_backend.py"
+      - "tests/r05/contracts.toml"
       - "Cargo.toml"
       - "docs/architecture/adr/0002-r02-isolated-upstream-codegen-lane.md"
   workflow_dispatch:
