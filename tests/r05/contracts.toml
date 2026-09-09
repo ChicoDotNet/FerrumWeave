@@ -69,10 +69,10 @@ proof = "tests/functional.rs::r01_probe_has_no_native_implementation verifies IL
 [[contracts]]
 id = "FW-R05-DOTNET-009"
 family = "real Rust source causally selects and calls a public static System.* method"
-implemented = false
-evidence_level = "oracle-characterized"
-proof = "pending: reproduce the characterized behavior through FerrumWeave's own CodegenBackend and MIR lowering; source-only mutation must select/change the managed call and observable"
-oracle_proof = "Managed consumption causality oracle run #1 on SHA 54663e6f3bf095c07179bd26daac36721c8d74ef passed on ubuntu-22.04 and windows-latest through real rustc + pinned rustc_codegen_clr: source-only 137->211 changed managed output and WriteLine->Write removed the newline"
+implemented = true
+evidence_level = "source-causal-certified"
+proof = "FerrumWeave codegen backend convergence run #24 on implementation SHA 174abd02df162717e4b00f3d056b94f4cfa965d0 passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: Rust MIR selected System.Math.Abs vs System.Math.Sign, changing only the selected Rust marker changed the managed MemberRef and C# observable 137->1, and changing only the Rust argument 137->211 changed the managed observable 137->211"
+oracle_proof = "Earlier oracle run #1 on SHA 54663e6f3bf095c07179bd26daac36721c8d74ef characterized the feasibility through pinned rustc_codegen_clr; it is retained as historical/differential evidence and is no longer the product certification"
 
 [[contracts]]
 id = "FW-R05-DOTNET-010"
