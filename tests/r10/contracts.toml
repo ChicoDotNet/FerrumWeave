@@ -45,8 +45,8 @@ proof = "tests/r10_managed_dependency.rs; Rust CI #348 certified explicit dotnet
 [[contracts]]
 id = "FW-R10-DX-007"
 family = "the canonical mixed .slnx example builds using the installed alpha toolchain"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r10_mixed_slnx.rs; Rust CI #350 certified restore/build of the canonical mixed .slnx fixture through the packaged FerrumWeave.Sdk alpha on Ubuntu and Windows at 48bbf539fc5e63096b87871f3856b3d62a33f36e"
 
 [[contracts]]
 id = "FW-R10-DX-008"
