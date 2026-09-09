@@ -71,8 +71,10 @@ jobs:
         if: failure() && steps.formatting.outcome == 'failure'
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: rustfmt-diff
-          path: target/quality/rustfmt.diff
+          name: rustfmt-diagnostic
+          path: |
+            target/quality/rustfmt.diff
+            compiler/cil/src/*.rs
           if-no-files-found: error
           retention-days: 3
       - name: Clippy
