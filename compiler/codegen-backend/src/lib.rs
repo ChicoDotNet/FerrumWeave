@@ -18,9 +18,10 @@ extern crate rustc_span;
 use std::{any::Any, collections::HashMap, fs};
 
 use ferrumweave_cil::{
-    I32ArithmeticOp, I32ZeroPredicate, SystemMathMethod, emit_i32_argument_export_assembly,
-    emit_i32_arithmetic_export_assembly, emit_i32_control_flow_export_assembly,
-    emit_i32_direct_call_export_assembly, emit_i32_export_assembly,
+    I32ArithmeticOp, I32ZeroPredicate, ManagedConstructor, SystemMathMethod,
+    emit_i32_argument_export_assembly, emit_i32_arithmetic_export_assembly,
+    emit_i32_control_flow_export_assembly, emit_i32_direct_call_export_assembly,
+    emit_i32_export_assembly, emit_i32_export_with_managed_construction,
     emit_i32_export_with_system_math_call,
 };
 use rustc_codegen_ssa::{
@@ -46,6 +47,9 @@ use rustc_span::{Symbol, sym};
 const EXPORT_SYMBOL: &str = "answer";
 const SYSTEM_MATH_ABS_MARKER: &str = "ferrumweave_system_math_abs";
 const SYSTEM_MATH_SIGN_MARKER: &str = "ferrumweave_system_math_sign";
+const SYSTEM_OBJECT_NEW_MARKER: &str = "ferrumweave_system_object_new";
+const SYSTEM_TEXT_STRING_BUILDER_NEW_MARKER: &str =
+    "ferrumweave_system_text_string_builder_new";
 
 enum LoweredI32Export {
     Constant(i32),
@@ -60,6 +64,10 @@ enum LoweredI32Export {
     SystemMath {
         method: SystemMathMethod,
         argument: i32,
+    },
+    ManagedConstruction {
+        constructor: ManagedConstructor,
+        payload: i32,
     },
 }
 
@@ -97,6 +105,10 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
             LoweredI32Export::SystemMath { method, argument } => {
                 emit_i32_export_with_system_math_call(method, argument)
             }
+            LoweredI32Export::ManagedConstruction {
+                constructor,
+                payload,
+            } => emit_i32_export_with_managed_construction(constructor, payload),
         };
         Box::new(GeneratedArtifact {
             image,
@@ -331,6 +343,24 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
                     return Ok(LoweredI32Export::SystemMath { method, argument });
                 }
 
+                let managed_constructor = match callee_name.as_ref() {
+                    SYSTEM_OBJECT_NEW_MARKER => Some(ManagedConstructor::Object),
+                    SYSTEM_TEXT_STRING_BUILDER_NEW_MARKER => Some(ManagedConstructor::StringBuilder),
+                    _ => None,
+                };
+                if let Some(constructor) = managed_constructor {
+                    if args.len() != 1 {
+                        return Err(format!(
+                            "{EXPORT_SYMBOL} managed construction marker requires exactly one i32 payload"
+                        ));
+                    }
+                    let payload = lower_i32_constant_operand(tcx, &args[0].node)?;
+                    return Ok(LoweredI32Export::ManagedConstruction {
+                        constructor,
+                        payload,
+                    });
+                }
+
                 if !def_id.is_local() {
                     return Err(format!(
                         "unsupported non-local Rust call target `{callee_name}` in {EXPORT_SYMBOL}"
@@ -366,7 +396,7 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
             }
 
             return Err(format!(
-                "{EXPORT_SYMBOL} MIR contains neither a supported constant return, simple i32 argument flow, i32 arithmetic, i32 control flow, direct Rust call, nor managed static call"
+                "{EXPORT_SYMBOL} MIR contains neither a supported constant return, simple i32 argument flow, i32 arithmetic, i32 control flow, direct Rust call, managed static call, nor managed construction"
             ));
         }
     }
