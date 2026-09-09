@@ -229,7 +229,7 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
 }
 
 fn argument_index<'tcx>(mir: &rustc_middle::mir::Body<'tcx>, operand: &Operand<'tcx>) -> Result<usize, String> {
-    let Operand::Copy(place) | Operand::Move(place) = operand else {
+    let (Operand::Copy(place) | Operand::Move(place)) = operand else {
         return Err(format!("expected i32 argument operand, found {operand:?}"));
     };
     if !place.projection.is_empty() {
