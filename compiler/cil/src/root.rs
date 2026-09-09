@@ -10,6 +10,9 @@ pub use scalar_export::*;
 mod argument_export;
 pub use argument_export::*;
 
+mod arithmetic_export;
+pub use arithmetic_export::*;
+
 mod managed_static_export;
 pub use managed_static_export::*;
 
