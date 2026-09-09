@@ -2,9 +2,10 @@
 """Falsify FerrumWeave i32 control-flow lowering through rustc MIR.
 
 The C# consumer and all arguments stay fixed. Only the Rust branch predicate
-changes from equality to inequality. The contract can pass only when
-FerrumWeave's own CodegenBackend follows Rust MIR control flow into the
-managed method body.
+changes from equality to inequality. Each produced assembly is exercised with
+both selector outcomes so an emitter cannot pass by baking the expected branch.
+The contract can pass only when FerrumWeave's own CodegenBackend preserves Rust
+MIR control flow in the managed method body.
 """
 
 from __future__ import annotations
@@ -66,8 +67,14 @@ def compile_source(toolchain: str, backend: Path, work: Path, label: str, predic
     return artifact
 
 
-def execute_from_csharp(artifact: Path, expected: int, root: Path, label: str) -> None:
-    consumer = root / f"consumer_{label}"
+def execute_from_csharp(
+    artifact: Path,
+    selector: int,
+    expected: int,
+    root: Path,
+    label: str,
+) -> None:
+    consumer = root / f"consumer_{label}_{selector}"
     consumer.mkdir()
     shutil.copyfile(artifact, consumer / ASSEMBLY_FILE)
     (consumer / "Consumer.csproj").write_text(
@@ -86,7 +93,7 @@ def execute_from_csharp(artifact: Path, expected: int, root: Path, label: str) -
         encoding="utf-8",
     )
     (consumer / "Program.cs").write_text(
-        'System.Console.WriteLine(FerrumWeave.RustApi.Answer(0, 137, 211));\n',
+        f'System.Console.WriteLine(FerrumWeave.RustApi.Answer({selector}, 137, 211));\n',
         encoding="utf-8",
     )
     run = subprocess.run(
@@ -97,12 +104,14 @@ def execute_from_csharp(artifact: Path, expected: int, root: Path, label: str) -
     )
     if run.returncode != 0:
         raise AssertionError(
-            f"C# consumer failed for Rust control flow {label}:\n{run.stdout}\n{run.stderr}"
+            f"C# consumer failed for Rust control flow {label}, selector={selector}:\n"
+            f"{run.stdout}\n{run.stderr}"
         )
     observed = run.stdout.strip().splitlines()[-1] if run.stdout.strip() else ""
     if observed != str(expected):
         raise AssertionError(
-            f"Rust control flow {label} expected managed observable {expected}, got {observed!r}"
+            f"Rust control flow {label}, selector={selector} expected managed observable "
+            f"{expected}, got {observed!r}"
         )
 
 
@@ -123,8 +132,10 @@ def main() -> int:
             eq_artifact = compile_source(args.toolchain, backend, work, "eq", "==")
             ne_artifact = compile_source(args.toolchain, backend, work, "ne", "!=")
 
-            execute_from_csharp(eq_artifact, 137, work, "eq")
-            execute_from_csharp(ne_artifact, 211, work, "ne")
+            execute_from_csharp(eq_artifact, 0, 137, work, "eq")
+            execute_from_csharp(eq_artifact, 1, 211, work, "eq")
+            execute_from_csharp(ne_artifact, 0, 211, work, "ne")
+            execute_from_csharp(ne_artifact, 1, 137, work, "ne")
 
             eq_hash = hashlib.sha256(eq_artifact.read_bytes()).hexdigest()
             ne_hash = hashlib.sha256(ne_artifact.read_bytes()).hexdigest()
@@ -137,9 +148,9 @@ def main() -> int:
         return 1
 
     print("GREEN: FerrumWeave source-causally lowers i32 control flow")
-    print("  Fixed C# call: Answer(0, 137, 211)")
     print("  Rust-only mutation: selector == 0 -> selector != 0")
-    print("  Managed observable: 137 -> 211")
+    print("  Each artifact is exercised with selector=0 and selector=1")
+    print("  Equal observable: 137, 211; not-equal observable: 211, 137")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
 
