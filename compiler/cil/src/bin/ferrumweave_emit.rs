@@ -5,6 +5,7 @@ mod r08_exec;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = std::env::args_os().skip(1);
@@ -21,13 +22,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         .and_then(|value| value.into_string().ok())
         .ok_or("expected assembly name")?;
 
+    if let Some(parent) = output.parent() {
+        fs::create_dir_all(parent)?;
+        let syntax = Command::new("rustc")
+            .args(["--crate-type", "bin", "--emit", "metadata", "--out-dir"])
+            .arg(parent)
+            .arg(&source)
+            .output()?;
+        if !syntax.status.success() {
+            eprint!("{}", String::from_utf8_lossy(&syntax.stderr));
+            std::process::exit(syntax.status.code().unwrap_or(1));
+        }
+    }
+
     let source_text = fs::read_to_string(&source)?;
     let message = parse_single_println(&source_text)
         .ok_or("R08 currently requires main to contain one println!(\"literal\") observable")?;
 
-    if let Some(parent) = output.parent() {
-        fs::create_dir_all(parent)?;
-    }
     fs::write(
         output,
         r08_exec::emit_console_assembly(&assembly_name, message),
