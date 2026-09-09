@@ -39,8 +39,8 @@ proof = "tests/r10_managed_dependency.rs; Rust CI #346 certified real PackageRef
 [[contracts]]
 id = "FW-R10-DX-006"
 family = "a created project builds and runs through normal dotnet commands"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r10_managed_dependency.rs; Rust CI #348 certified explicit dotnet build followed by dotnet run --no-build --no-restore on Ubuntu and Windows at 25c0a1e8303894f554c9c23ad0d97a87d99ee782"
 
 [[contracts]]
 id = "FW-R10-DX-007"
