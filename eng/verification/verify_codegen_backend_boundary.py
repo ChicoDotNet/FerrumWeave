@@ -23,10 +23,7 @@ ASSEMBLY_FILE = "FerrumWeave.Generated.dll"
 
 
 def rust_source(value: int) -> str:
-    return (
-        '#[no_mangle]\n'
-        f'pub extern "C" fn answer() -> i32 {{ {value} }}\n'
-    )
+    return '#[no_mangle]\n' f'pub extern "C" fn answer() -> i32 {{ {value} }}\n'
 
 
 def invalid_rust_source() -> str:
@@ -85,19 +82,19 @@ def execute_from_csharp(artifact: Path, expected: int, root: Path) -> None:
     shutil.copyfile(artifact, referenced)
 
     (consumer / "Consumer.csproj").write_text(
-        """<Project Sdk=\"Microsoft.NET.Sdk\">\n"
-        "  <PropertyGroup>\n"
-        "    <OutputType>Exe</OutputType>\n"
-        "    <TargetFramework>net10.0</TargetFramework>\n"
-        "    <ImplicitUsings>enable</ImplicitUsings>\n"
-        "  </PropertyGroup>\n"
-        "  <ItemGroup>\n"
-        "    <Reference Include=\"FerrumWeave.Generated\">\n"
-        "      <HintPath>FerrumWeave.Generated.dll</HintPath>\n"
-        "      <Private>true</Private>\n"
-        "    </Reference>\n"
-        "  </ItemGroup>\n"
-        "</Project>\n""",
+        '<Project Sdk="Microsoft.NET.Sdk">\n'
+        '  <PropertyGroup>\n'
+        '    <OutputType>Exe</OutputType>\n'
+        '    <TargetFramework>net10.0</TargetFramework>\n'
+        '    <ImplicitUsings>enable</ImplicitUsings>\n'
+        '  </PropertyGroup>\n'
+        '  <ItemGroup>\n'
+        '    <Reference Include="FerrumWeave.Generated">\n'
+        '      <HintPath>FerrumWeave.Generated.dll</HintPath>\n'
+        '      <Private>true</Private>\n'
+        '    </Reference>\n'
+        '  </ItemGroup>\n'
+        '</Project>\n',
         encoding="utf-8",
     )
     (consumer / "Program.cs").write_text(
