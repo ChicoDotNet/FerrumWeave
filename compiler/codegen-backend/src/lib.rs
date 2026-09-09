@@ -2,10 +2,10 @@
 
 //! rustc-facing adapter for the FerrumWeave CLR backend.
 //!
-//! This crate owns the compiler-private integration boundary. The first product
-//! slice deliberately lowers only one mechanically falsifiable MIR shape: an
-//! exported `answer() -> i32` whose return place is assigned an integer constant.
-//! The value is read from MIR and passed into FerrumWeave's managed emitter.
+//! This crate owns the compiler-private integration boundary. FerrumWeave reads
+//! semantics from MIR and passes a small lowered operation into its own CIL
+//! emitter. No source parsing or upstream CLR backend participates in product
+//! code generation.
 
 extern crate rustc_codegen_ssa;
 extern crate rustc_data_structures;
@@ -17,7 +17,9 @@ extern crate rustc_span;
 
 use std::{any::Any, fs};
 
-use ferrumweave_cil::emit_i32_export_assembly;
+use ferrumweave_cil::{
+    SystemMathMethod, emit_i32_export_assembly, emit_i32_export_with_system_math_call,
+};
 use rustc_codegen_ssa::{
     CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig,
     traits::CodegenBackend,
@@ -26,8 +28,11 @@ use rustc_data_structures::fx::FxIndexMap;
 use rustc_metadata::EncodedMetadata;
 use rustc_middle::{
     dep_graph::{WorkProduct, WorkProductId},
-    mir::{ConstValue, Operand, Rvalue, StatementKind, RETURN_PLACE, mono::MonoItem},
-    ty::{TyCtxt, TypingEnv},
+    mir::{
+        ConstValue, Operand, Rvalue, StatementKind, TerminatorKind, RETURN_PLACE,
+        mono::MonoItem,
+    },
+    ty::{self, TyCtxt, TypingEnv},
 };
 use rustc_session::{
     Session,
@@ -36,6 +41,16 @@ use rustc_session::{
 use rustc_span::{Symbol, sym};
 
 const EXPORT_SYMBOL: &str = "answer";
+const SYSTEM_MATH_ABS_MARKER: &str = "ferrumweave_system_math_abs";
+const SYSTEM_MATH_SIGN_MARKER: &str = "ferrumweave_system_math_sign";
+
+enum LoweredI32Export {
+    Constant(i32),
+    SystemMath {
+        method: SystemMathMethod,
+        argument: i32,
+    },
+}
 
 struct GeneratedArtifact {
     image: Vec<u8>,
@@ -54,10 +69,15 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
     }
 
     fn codegen_crate<'a>(&self, tcx: TyCtxt<'_>) -> Box<dyn Any> {
-        let value = lower_exported_i32_constant(tcx).unwrap_or_else(|message| {
+        let lowered = lower_exported_i32(tcx).unwrap_or_else(|message| {
             panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}")
         });
-        let image = emit_i32_export_assembly(value);
+        let image = match lowered {
+            LoweredI32Export::Constant(value) => emit_i32_export_assembly(value),
+            LoweredI32Export::SystemMath { method, argument } => {
+                emit_i32_export_with_system_math_call(method, argument)
+            }
+        };
 
         Box::new(GeneratedArtifact {
             image,
@@ -67,7 +87,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
 
     fn target_config(&self, sess: &Session) -> TargetConfig {
         let target_features = if sess.target.arch == "x86_64" && sess.target.os != "none" {
-            vec![sym::sse, Symbol::intern("x87")]
+            vec![sym::sse, sym::sse2, Symbol::intern("x87")]
         } else {
             vec![]
         };
@@ -134,7 +154,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
     }
 }
 
-fn lower_exported_i32_constant(tcx: TyCtxt<'_>) -> Result<i32, String> {
+fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
     let codegen_units = tcx.collect_and_partition_mono_items(());
 
     for cgu in codegen_units.codegen_units {
@@ -147,6 +167,7 @@ fn lower_exported_i32_constant(tcx: TyCtxt<'_>) -> Result<i32, String> {
             }
 
             let mir = tcx.instance_mir(instance.def);
+
             for block in mir.basic_blocks.iter() {
                 for statement in &block.statements {
                     let StatementKind::Assign(assignment) = &statement.kind else {
@@ -156,31 +177,53 @@ fn lower_exported_i32_constant(tcx: TyCtxt<'_>) -> Result<i32, String> {
                     if place.local != RETURN_PLACE || !place.projection.is_empty() {
                         continue;
                     }
-                    let Rvalue::Use(Operand::Constant(constant)) = rvalue else {
-                        return Err(format!(
-                            "{EXPORT_SYMBOL} return value is not a constant MIR operand: {rvalue:?}"
-                        ));
-                    };
-
-                    let evaluated = constant
-                        .const_
-                        .eval(tcx, TypingEnv::fully_monomorphized(), constant.span)
-                        .map_err(|_| {
-                            format!("could not evaluate {EXPORT_SYMBOL} return constant from MIR")
-                        })?;
-                    let ConstValue::Scalar(scalar) = evaluated else {
-                        return Err(format!(
-                            "{EXPORT_SYMBOL} return constant is not a scalar: {evaluated:?}"
-                        ));
-                    };
-                    return scalar.to_i32().report_err().map_err(|_| {
-                        format!("{EXPORT_SYMBOL} return scalar is not a valid i32")
-                    });
+                    if let Rvalue::Use(operand) = rvalue
+                        && let Ok(value) = lower_i32_constant_operand(tcx, operand)
+                    {
+                        return Ok(LoweredI32Export::Constant(value));
+                    }
                 }
+
+                let TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } = &block.terminator().kind
+                else {
+                    continue;
+                };
+                if destination.local != RETURN_PLACE || !destination.projection.is_empty() {
+                    continue;
+                }
+                if args.len() != 1 {
+                    return Err(format!(
+                        "{EXPORT_SYMBOL} managed static marker requires exactly one i32 argument"
+                    ));
+                }
+
+                let func_ty = func.ty(&mir.local_decls, tcx);
+                let ty::FnDef(def_id, _) = *func_ty.kind() else {
+                    return Err(format!(
+                        "{EXPORT_SYMBOL} call target is not a direct Rust function: {func_ty:?}"
+                    ));
+                };
+                let marker_name = tcx.item_name(def_id).as_str();
+                let method = match marker_name.as_ref() {
+                    SYSTEM_MATH_ABS_MARKER => SystemMathMethod::Abs,
+                    SYSTEM_MATH_SIGN_MARKER => SystemMathMethod::Sign,
+                    _ => {
+                        return Err(format!(
+                            "unsupported MIR call target `{marker_name}` in {EXPORT_SYMBOL}"
+                        ));
+                    }
+                };
+                let argument = lower_i32_constant_operand(tcx, &args[0].node)?;
+                return Ok(LoweredI32Export::SystemMath { method, argument });
             }
 
             return Err(format!(
-                "{EXPORT_SYMBOL} MIR never assigns a constant to the return place"
+                "{EXPORT_SYMBOL} MIR contains neither a supported constant return nor managed static call"
             ));
         }
     }
@@ -188,6 +231,24 @@ fn lower_exported_i32_constant(tcx: TyCtxt<'_>) -> Result<i32, String> {
     Err(format!(
         "no monomorphized `{EXPORT_SYMBOL}` export reached FerrumWeave codegen"
     ))
+}
+
+fn lower_i32_constant_operand(tcx: TyCtxt<'_>, operand: &Operand<'_>) -> Result<i32, String> {
+    let Operand::Constant(constant) = operand else {
+        return Err(format!("expected constant i32 MIR operand, found {operand:?}"));
+    };
+
+    let evaluated = constant
+        .const_
+        .eval(tcx, TypingEnv::fully_monomorphized(), constant.span)
+        .map_err(|_| "could not evaluate i32 constant from MIR".to_owned())?;
+    let ConstValue::Scalar(scalar) = evaluated else {
+        return Err(format!("MIR constant is not a scalar: {evaluated:?}"));
+    };
+    scalar
+        .to_i32()
+        .report_err()
+        .map_err(|_| "MIR scalar is not a valid i32".to_owned())
 }
 
 #[no_mangle]
