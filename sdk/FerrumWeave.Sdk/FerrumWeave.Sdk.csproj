@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>FerrumWeave.Sdk</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Authors>FerrumWeave contributors</Authors>
+    <Description>MSBuild SDK and project templates for FerrumWeave Rust projects in .NET solutions.</Description>
+    <PackageTags>rust;dotnet;msbuild;sdk;templates;ferrumweave</PackageTags>
+    <PackageType>Template</PackageType>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Sdk/Sdk.props" Pack="true" PackagePath="Sdk/Sdk.props" />
+    <None Include="Sdk/Sdk.targets" Pack="true" PackagePath="Sdk/Sdk.targets" />
+    <None Include="../templates/rust/**/*" Pack="true" PackagePath="content/rust/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="../../compiler/cil/**/*" Pack="true" PackagePath="compiler/cil/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
