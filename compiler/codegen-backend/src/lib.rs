@@ -251,6 +251,24 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
                             "{EXPORT_SYMBOL} control-flow discriminator projection is unsupported: {condition:?}"
                         ));
                     }
+
+                    if mir.args_iter().position(|argument| argument == condition.local) == Some(0) {
+                        let zero_target = targets
+                            .iter()
+                            .find_map(|(value, target)| (value == 0).then_some(target))
+                            .ok_or_else(|| {
+                                format!(
+                                    "{EXPORT_SYMBOL} selector SwitchInt does not expose a zero target"
+                                )
+                            })?;
+                        let nonzero_target = targets.otherwise();
+                        return Ok(LoweredI32Export::ControlFlow {
+                            predicate: I32ZeroPredicate::Equal,
+                            true_argument: branch_result_argument(mir, zero_target)?,
+                            false_argument: branch_result_argument(mir, nonzero_target)?,
+                        });
+                    }
+
                     if let Some(predicate) = comparison_locals.get(&condition.local).copied() {
                         let false_target = targets
                             .iter()
