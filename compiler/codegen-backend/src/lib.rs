@@ -177,10 +177,10 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
                     if place.local != RETURN_PLACE || !place.projection.is_empty() {
                         continue;
                     }
-                    if let Rvalue::Use(operand) = rvalue
-                        && let Ok(value) = lower_i32_constant_operand(tcx, operand)
-                    {
-                        return Ok(LoweredI32Export::Constant(value));
+                    if let Rvalue::Use(operand) = rvalue {
+                        if let Ok(value) = lower_i32_constant_operand(tcx, operand) {
+                            return Ok(LoweredI32Export::Constant(value));
+                        }
                     }
                 }
 
@@ -208,7 +208,8 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
                         "{EXPORT_SYMBOL} call target is not a direct Rust function: {func_ty:?}"
                     ));
                 };
-                let marker_name = tcx.item_name(def_id).as_str();
+                let marker_symbol = tcx.item_name(def_id);
+                let marker_name = marker_symbol.as_str();
                 let method = match marker_name.as_ref() {
                     SYSTEM_MATH_ABS_MARKER => SystemMathMethod::Abs,
                     SYSTEM_MATH_SIGN_MARKER => SystemMathMethod::Sign,
@@ -233,7 +234,10 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
     ))
 }
 
-fn lower_i32_constant_operand(tcx: TyCtxt<'_>, operand: &Operand<'_>) -> Result<i32, String> {
+fn lower_i32_constant_operand<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    operand: &Operand<'tcx>,
+) -> Result<i32, String> {
     let Operand::Constant(constant) = operand else {
         return Err(format!("expected constant i32 MIR operand, found {operand:?}"));
     };
