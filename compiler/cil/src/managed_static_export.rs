@@ -42,10 +42,7 @@ impl SystemMathMethod {
 /// The method body loads `argument`, calls the selected public static
 /// `System.Math` method, and returns that managed result.
 #[must_use]
-pub fn emit_i32_export_with_system_math_call(
-    method: SystemMathMethod,
-    argument: i32,
-) -> Vec<u8> {
+pub fn emit_i32_export_with_system_math_call(method: SystemMathMethod, argument: i32) -> Vec<u8> {
     let method_body = build_method_body(argument);
     let method_offset = CLR_HEADER_SIZE;
     let method_rva = SECTION_RVA + to_u32(method_offset);
@@ -133,24 +130,20 @@ fn build_metadata(method_rva: u32, method: SystemMathMethod) -> Vec<u8> {
         push_u32(&mut tables, count);
     }
 
-    // Module.
     push_u16(&mut tables, 0);
     push_u16(&mut tables, module_name);
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0);
 
-    // TypeRef row 1: [System.Runtime]System.Object.
     push_u16(&mut tables, 6);
     push_u16(&mut tables, object_name);
     push_u16(&mut tables, system_namespace);
 
-    // TypeRef row 2: [System.Runtime]System.Math.
     push_u16(&mut tables, 6);
     push_u16(&mut tables, math_name);
     push_u16(&mut tables, system_namespace);
 
-    // TypeDef row 1: global <Module>.
     push_u32(&mut tables, 0);
     push_u16(&mut tables, module_type_name);
     push_u16(&mut tables, 0);
@@ -158,15 +151,13 @@ fn build_metadata(method_rva: u32, method: SystemMathMethod) -> Vec<u8> {
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // TypeDef row 2: public FerrumWeave.RustApi : System.Object.
     push_u32(&mut tables, 0x0010_0001);
     push_u16(&mut tables, rust_api_name);
     push_u16(&mut tables, ferrumweave_namespace);
-    push_u16(&mut tables, 5); // TypeRef row 1, TypeDefOrRef tag 1
+    push_u16(&mut tables, 5);
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 1: public static int32 Answer().
     push_u32(&mut tables, method_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0096);
@@ -174,12 +165,10 @@ fn build_metadata(method_rva: u32, method: SystemMathMethod) -> Vec<u8> {
     push_u16(&mut tables, answer_signature);
     push_u16(&mut tables, 1);
 
-    // MemberRef row 1: int32 [System.Runtime]System.Math::<selected>(int32).
-    push_u16(&mut tables, 17); // (TypeRef row 2 << 3) | TypeRef tag 1
+    push_u16(&mut tables, 17);
     push_u16(&mut tables, managed_method_name);
     push_u16(&mut tables, math_signature);
 
-    // Assembly: FerrumWeave.Generated, version 1.0.0.0.
     push_u32(&mut tables, 0x0000_8004);
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 0);
@@ -190,7 +179,6 @@ fn build_metadata(method_rva: u32, method: SystemMathMethod) -> Vec<u8> {
     push_u16(&mut tables, assembly_name);
     push_u16(&mut tables, 0);
 
-    // AssemblyRef row 1: System.Runtime 10.0.0.0.
     push_u16(&mut tables, 10);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0);
@@ -265,7 +253,6 @@ fn write_clr_header(header: &mut [u8], metadata_rva: u32, metadata_size: u32) {
 fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_size: u32) {
     headers[0..2].copy_from_slice(b"MZ");
     write_u32_at(headers, 0x3C, to_u32(PE_OFFSET));
-
     headers[PE_OFFSET..PE_OFFSET + 4].copy_from_slice(b"PE\0\0");
     let coff = PE_OFFSET + 4;
     write_u16_at(headers, coff, 0x014C);
@@ -285,8 +272,11 @@ fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_s
     write_u32_at(headers, optional + 36, to_u32(FILE_ALIGNMENT));
     write_u16_at(headers, optional + 40, 4);
     write_u16_at(headers, optional + 48, 4);
-    let image_size = align_u32(SECTION_RVA + section_virtual_size, SECTION_ALIGNMENT);
-    write_u32_at(headers, optional + 56, image_size);
+    write_u32_at(
+        headers,
+        optional + 56,
+        align_u32(SECTION_RVA + section_virtual_size, SECTION_ALIGNMENT),
+    );
     write_u32_at(headers, optional + 60, to_u32(HEADERS_SIZE));
     write_u16_at(headers, optional + 68, 3);
     write_u16_at(headers, optional + 70, 0x0100);
@@ -383,7 +373,6 @@ mod tests {
         let abs_137 = emit_i32_export_with_system_math_call(SystemMathMethod::Abs, 137);
         let abs_211 = emit_i32_export_with_system_math_call(SystemMathMethod::Abs, 211);
         let sign_137 = emit_i32_export_with_system_math_call(SystemMathMethod::Sign, 137);
-
         assert_ne!(abs_137, abs_211);
         assert_ne!(abs_137, sign_137);
 
@@ -394,10 +383,6 @@ mod tests {
                     .any(|window| window == expected.as_bytes())
             );
         }
-        assert!(
-            sign_137
-                .windows(4)
-                .any(|window| window == b"Sign")
-        );
+        assert!(sign_137.windows(4).any(|window| window == b"Sign"));
     }
 }
