@@ -440,7 +440,7 @@ fn direct_argument_index<'tcx>(
     mir: &rustc_middle::mir::Body<'tcx>,
     operand: &Operand<'tcx>,
 ) -> Option<usize> {
-    let Operand::Copy(place) | Operand::Move(place) = operand else {
+    let (Operand::Copy(place) | Operand::Move(place)) = operand else {
         return None;
     };
     if !place.projection.is_empty() {
