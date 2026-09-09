@@ -53,6 +53,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "10.0.400"
+
       - name: Install pinned rustc-private toolchain
         shell: bash
         run: |
@@ -67,6 +71,7 @@ jobs:
         run: |
           set -euo pipefail
           cargo +nightly-2025-10-14 build \
+            --ignore-rust-version \
             --release \
             --manifest-path compiler/codegen-backend/Cargo.toml
 
