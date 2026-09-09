@@ -5,7 +5,7 @@
 
   <Target Name="CoreCompile">
     <MakeDir Directories="$(IntermediateOutputPath)" />
-    <Exec Command="cargo run --quiet --manifest-path &quot;$(FerrumWeaveRepoRoot)/compiler/cil/Cargo.toml&quot; --bin ferrumweave_emit -- &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot; &quot;$(MSBuildProjectDirectory)/src/main.rs&quot; &quot;$(TargetName)&quot;" />
+    <Exec Command="cargo run --quiet --manifest-path &quot;$(FerrumWeaveCompilerManifest)&quot; --bin ferrumweave_emit -- &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot; &quot;$(MSBuildProjectDirectory)/src/main.rs&quot; &quot;$(TargetName)&quot;" />
   </Target>
 
   <Target Name="VSTest">
