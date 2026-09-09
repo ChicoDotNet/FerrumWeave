@@ -16,6 +16,9 @@ pub use arithmetic_export::*;
 mod control_flow_export;
 pub use control_flow_export::*;
 
+mod direct_call_export;
+pub use direct_call_export::*;
+
 mod managed_static_export;
 pub use managed_static_export::*;
 

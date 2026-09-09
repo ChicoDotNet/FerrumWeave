@@ -20,7 +20,8 @@ use std::{any::Any, collections::HashMap, fs};
 use ferrumweave_cil::{
     I32ArithmeticOp, I32ZeroPredicate, SystemMathMethod, emit_i32_argument_export_assembly,
     emit_i32_arithmetic_export_assembly, emit_i32_control_flow_export_assembly,
-    emit_i32_export_assembly, emit_i32_export_with_system_math_call,
+    emit_i32_direct_call_export_assembly, emit_i32_export_assembly,
+    emit_i32_export_with_system_math_call,
 };
 use rustc_codegen_ssa::{
     CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig,
@@ -55,6 +56,7 @@ enum LoweredI32Export {
         true_argument: u8,
         false_argument: u8,
     },
+    DirectRustCall(I32ArithmeticOp),
     SystemMath {
         method: SystemMathMethod,
         argument: i32,
@@ -89,6 +91,9 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
                 true_argument,
                 false_argument,
             } => emit_i32_control_flow_export_assembly(predicate, true_argument, false_argument),
+            LoweredI32Export::DirectRustCall(operation) => {
+                emit_i32_direct_call_export_assembly(operation)
+            }
             LoweredI32Export::SystemMath { method, argument } => {
                 emit_i32_export_with_system_math_call(method, argument)
             }
@@ -301,30 +306,45 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
                 if destination.local != RETURN_PLACE || !destination.projection.is_empty() {
                     continue;
                 }
-                if args.len() != 1 {
-                    return Err(format!(
-                        "{EXPORT_SYMBOL} managed static marker requires exactly one i32 argument"
-                    ));
-                }
+
                 let func_ty = func.ty(&mir.local_decls, tcx);
                 let ty::FnDef(def_id, _) = *func_ty.kind() else {
                     return Err(format!(
                         "{EXPORT_SYMBOL} call target is not a direct Rust function: {func_ty:?}"
                     ));
                 };
-                let marker_symbol = tcx.item_name(def_id);
-                let marker_name = marker_symbol.as_str();
-                let method = match marker_name.as_ref() {
-                    SYSTEM_MATH_ABS_MARKER => SystemMathMethod::Abs,
-                    SYSTEM_MATH_SIGN_MARKER => SystemMathMethod::Sign,
-                    _ => {
+                let callee_symbol = tcx.item_name(def_id);
+                let callee_name = callee_symbol.as_str();
+
+                let managed_method = match callee_name.as_ref() {
+                    SYSTEM_MATH_ABS_MARKER => Some(SystemMathMethod::Abs),
+                    SYSTEM_MATH_SIGN_MARKER => Some(SystemMathMethod::Sign),
+                    _ => None,
+                };
+                if let Some(method) = managed_method {
+                    if args.len() != 1 {
                         return Err(format!(
-                            "unsupported MIR call target `{marker_name}` in {EXPORT_SYMBOL}"
+                            "{EXPORT_SYMBOL} managed static marker requires exactly one i32 argument"
                         ));
                     }
-                };
-                let argument = lower_i32_constant_operand(tcx, &args[0].node)?;
-                return Ok(LoweredI32Export::SystemMath { method, argument });
+                    let argument = lower_i32_constant_operand(tcx, &args[0].node)?;
+                    return Ok(LoweredI32Export::SystemMath { method, argument });
+                }
+
+                if !def_id.is_local() {
+                    return Err(format!(
+                        "unsupported non-local Rust call target `{callee_name}` in {EXPORT_SYMBOL}"
+                    ));
+                }
+                if args.len() != 2 {
+                    return Err(format!(
+                        "{EXPORT_SYMBOL} direct Rust call currently requires exactly two i32 arguments"
+                    ));
+                }
+                require_binary_argument_order(mir, &args[0].node, &args[1].node)?;
+                let callee_mir = tcx.instance_mir(ty::InstanceKind::Item(def_id));
+                let operation = lower_direct_i32_callee(callee_mir)?;
+                return Ok(LoweredI32Export::DirectRustCall(operation));
             }
 
             if mir.arg_count == 2 {
@@ -346,13 +366,80 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
             }
 
             return Err(format!(
-                "{EXPORT_SYMBOL} MIR contains neither a supported constant return, simple i32 argument flow, i32 arithmetic, i32 control flow, nor managed static call"
+                "{EXPORT_SYMBOL} MIR contains neither a supported constant return, simple i32 argument flow, i32 arithmetic, i32 control flow, direct Rust call, nor managed static call"
             ));
         }
     }
     Err(format!(
         "no monomorphized `{EXPORT_SYMBOL}` export reached FerrumWeave codegen"
     ))
+}
+
+fn lower_direct_i32_callee<'tcx>(
+    mir: &rustc_middle::mir::Body<'tcx>,
+) -> Result<I32ArithmeticOp, String> {
+    if mir.arg_count != 2 {
+        return Err("direct Rust callee currently requires exactly two i32 arguments".to_owned());
+    }
+
+    let mut local_aliases = HashMap::new();
+    let mut arithmetic_locals = HashMap::new();
+    for block in mir.basic_blocks.iter() {
+        for statement in &block.statements {
+            let StatementKind::Assign(assignment) = &statement.kind else {
+                continue;
+            };
+            let (place, rvalue) = assignment.as_ref();
+            if !place.projection.is_empty() {
+                continue;
+            }
+            match rvalue {
+                Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) => {
+                    if source.projection.is_empty() {
+                        local_aliases.insert(place.local, source.local);
+                    } else if source.projection.len() == 1 {
+                        if let ProjectionElem::Field(field, _) = source.projection[0] {
+                            if field.index() == 0 {
+                                if let Some(operation) =
+                                    arithmetic_locals.get(&source.local).copied()
+                                {
+                                    arithmetic_locals.insert(place.local, operation);
+                                }
+                            }
+                        }
+                    }
+                }
+                Rvalue::BinaryOp(operation, operands) => {
+                    let (left, right) = operands.as_ref();
+                    require_binary_argument_order(mir, left, right)?;
+                    let operation = match operation {
+                        BinOp::Add | BinOp::AddWithOverflow => I32ArithmeticOp::Add,
+                        BinOp::Sub | BinOp::SubWithOverflow => I32ArithmeticOp::Subtract,
+                        other => {
+                            return Err(format!(
+                                "direct Rust callee uses unsupported i32 operation {other:?}"
+                            ));
+                        }
+                    };
+                    arithmetic_locals.insert(place.local, operation);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let mut local = RETURN_PLACE;
+    for _ in 0..=mir.local_decls.len() {
+        if let Some(operation) = arithmetic_locals.get(&local) {
+            return Ok(*operation);
+        }
+        let Some(next) = local_aliases.get(&local) else {
+            break;
+        };
+        local = *next;
+    }
+
+    Err("direct Rust callee return is not causally sourced from supported i32 arithmetic".to_owned())
 }
 
 fn lower_zero_comparison<'tcx>(
