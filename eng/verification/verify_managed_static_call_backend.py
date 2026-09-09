@@ -133,10 +133,14 @@ def main() -> int:
         print(f"ERROR: FerrumWeave backend was not built: {backend}")
         return 2
 
+    # Positive constants keep this slice focused on MIR Call lowering rather than
+    # also requiring UnaryOp lowering. Abs still distinguishes argument mutation,
+    # while switching only the Rust-selected marker to Sign changes the managed
+    # method and observable from 137 to 1.
     cases = [
-        ("abs_137", "ferrumweave_system_math_abs", -137, "Abs", 137),
-        ("abs_211", "ferrumweave_system_math_abs", -211, "Abs", 211),
-        ("sign_137", "ferrumweave_system_math_sign", -137, "Sign", -1),
+        ("abs_137", "ferrumweave_system_math_abs", 137, "Abs", 137),
+        ("abs_211", "ferrumweave_system_math_abs", 211, "Abs", 211),
+        ("sign_137", "ferrumweave_system_math_sign", 137, "Sign", 1),
     ]
 
     with tempfile.TemporaryDirectory(prefix="ferrumweave-managed-static-") as temp:
@@ -172,15 +176,15 @@ def main() -> int:
             images[name] = artifact.read_bytes()
 
         if images["abs_137"] == images["abs_211"]:
-            print("RED: changing only the Rust call argument -137 -> -211 did not change the assembly")
+            print("RED: changing only the Rust call argument 137 -> 211 did not change the assembly")
             return 1
         if images["abs_137"] == images["sign_137"]:
             print("RED: changing only the Rust-selected method Abs -> Sign did not change the assembly")
             return 1
 
     print("GREEN: FerrumWeave source-causally lowers a managed static System.* call")
-    print("  MIR-selected method: Math.Abs -> Math.Sign changes MemberRef and observable")
-    print("  MIR-selected argument: -137 -> -211 changes managed observable 137 -> 211")
+    print("  MIR-selected method: Math.Abs -> Math.Sign changes MemberRef and observable 137 -> 1")
+    print("  MIR-selected argument: 137 -> 211 changes managed observable 137 -> 211")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
 
