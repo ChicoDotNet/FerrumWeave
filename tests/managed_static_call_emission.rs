@@ -13,8 +13,9 @@ fn resolved_public_static_member_ref_is_the_call_target_in_emitted_il() {
 
     let entry = resolve_public_static_method(&image, "", "<Module>", "Main")
         .expect("managed call emission should resolve the managed entry point");
-    let target = resolve_public_static_member_ref(&image, "System", "Console", "WriteLine")
-        .expect("managed call emission should resolve System.Console.WriteLine through CLR metadata");
+    let target = resolve_public_static_member_ref(&image, "System", "Console", "WriteLine").expect(
+        "managed call emission should resolve System.Console.WriteLine through CLR metadata",
+    );
 
     assert_eq!(target.namespace, "System");
     assert_eq!(target.type_name, "Console");
