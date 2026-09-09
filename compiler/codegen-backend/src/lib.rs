@@ -31,8 +31,8 @@ use rustc_metadata::EncodedMetadata;
 use rustc_middle::{
     dep_graph::{WorkProduct, WorkProductId},
     mir::{
-        BinOp, ConstValue, Operand, Rvalue, StatementKind, TerminatorKind, RETURN_PLACE,
-        mono::MonoItem,
+        BinOp, ConstValue, Operand, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
+        RETURN_PLACE, mono::MonoItem,
     },
     ty::{self, TyCtxt, TypingEnv},
 };
@@ -149,14 +149,25 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
                     let (place, rvalue) = assignment.as_ref();
                     if place.projection.is_empty() {
                         match rvalue {
-                            Rvalue::Use(Operand::Copy(source) | Operand::Move(source))
-                                if source.projection.is_empty() => {
+                            Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) => {
+                                if source.projection.is_empty() {
                                     local_aliases.insert(place.local, source.local);
+                                } else if source.projection.len() == 1 {
+                                    if let ProjectionElem::Field(field, _) = source.projection[0] {
+                                        if field.index() == 0 {
+                                            if let Some(operation) =
+                                                arithmetic_locals.get(&source.local).copied()
+                                            {
+                                                arithmetic_locals.insert(place.local, operation);
+                                            }
+                                        }
+                                    }
                                 }
+                            }
                             Rvalue::BinaryOp(operation, operands) => {
                                 let operation = match operation {
-                                    BinOp::Add => I32ArithmeticOp::Add,
-                                    BinOp::Sub => I32ArithmeticOp::Subtract,
+                                    BinOp::Add | BinOp::AddWithOverflow => I32ArithmeticOp::Add,
+                                    BinOp::Sub | BinOp::SubWithOverflow => I32ArithmeticOp::Subtract,
                                     other => return Err(format!(
                                         "unsupported i32 binary operation {other:?} in {EXPORT_SYMBOL}"
                                     )),
