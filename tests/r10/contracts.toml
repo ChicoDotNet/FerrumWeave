@@ -27,8 +27,8 @@ proof = "tests/r10_project_creation.rs; Rust CI #337 certified package install p
 [[contracts]]
 id = "FW-R10-DX-004"
 family = "editing supported Rust produces useful Rust diagnostics with source locations"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r10_diagnostics.rs; Rust CI #344 certified source-located Rust diagnostics through normal dotnet build on Ubuntu and Windows at 898282b39f8b5f04f345bbb019864dae4df8baf2"
 
 [[contracts]]
 id = "FW-R10-DX-005"
