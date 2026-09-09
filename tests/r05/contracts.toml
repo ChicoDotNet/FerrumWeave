@@ -6,7 +6,9 @@ target_percent_when_done = 100.0
 # R05 preserves the managed-metadata and IL-emission primitives already proven,
 # but artifact-level emission is intentionally tracked separately from behavior
 # caused by real Rust source. A family is not source-causally certified until a
-# source-only mutation changes the managed observable through rustc/codegen.
+# source-only mutation changes the managed observable through the FerrumWeave
+# codegen backend. Upstream/oracle evidence is preserved but cannot certify a
+# FerrumWeave product claim.
 
 [[contracts]]
 id = "FW-R05-DOTNET-001"
@@ -67,34 +69,35 @@ proof = "tests/functional.rs::r01_probe_has_no_native_implementation verifies IL
 [[contracts]]
 id = "FW-R05-DOTNET-009"
 family = "real Rust source causally selects and calls a public static System.* method"
-implemented = true
-evidence_level = "source-causal-certified"
-proof = "Managed consumption causality run #1 on SHA 54663e6f3bf095c07179bd26daac36721c8d74ef passed on ubuntu-22.04 and windows-latest: tests/fixtures/managed_static_call.rs compiled through real rustc + pinned rustc_codegen_clr; source-only 137->211 changed managed output and WriteLine->Write removed the newline"
+implemented = false
+evidence_level = "oracle-characterized"
+proof = "pending: reproduce the characterized behavior through FerrumWeave's own CodegenBackend and MIR lowering; source-only mutation must select/change the managed call and observable"
+oracle_proof = "Managed consumption causality oracle run #1 on SHA 54663e6f3bf095c07179bd26daac36721c8d74ef passed on ubuntu-22.04 and windows-latest through real rustc + pinned rustc_codegen_clr: source-only 137->211 changed managed output and WriteLine->Write removed the newline"
 
 [[contracts]]
 id = "FW-R05-DOTNET-010"
 family = "real Rust source causally constructs a supported public .NET type"
 implemented = false
 evidence_level = "source-causal-required"
-proof = "pending: real Rust source -> rustc/codegen -> managed constructor with mutation or independent observation proving source causality"
+proof = "pending: real Rust source -> rustc -> FerrumWeave CodegenBackend -> managed constructor with mutation or independent observation proving source causality"
 
 [[contracts]]
 id = "FW-R05-DOTNET-011"
 family = "real Rust source causally calls a supported public instance method"
 implemented = false
 evidence_level = "source-causal-required"
-proof = "pending: real Rust source -> rustc/codegen -> managed instance method with source-only falsification"
+proof = "pending: real Rust source -> rustc -> FerrumWeave CodegenBackend -> managed instance method with source-only falsification"
 
 [[contracts]]
 id = "FW-R05-DOTNET-012"
 family = "real Rust source causally reads and writes a supported public .NET property"
 implemented = false
 evidence_level = "source-causal-required"
-proof = "pending: real Rust source -> rustc/codegen -> managed property getter/setter with source-only falsification"
+proof = "pending: real Rust source -> rustc -> FerrumWeave CodegenBackend -> managed property getter/setter with source-only falsification"
 
 [[contracts]]
 id = "FW-R05-DOTNET-013"
 family = "real Rust source causally consumes an independently compiled user-defined C# assembly"
 implemented = false
 evidence_level = "source-causal-required"
-proof = "pending: independently compile managed fixture, then real Rust source must select/call its API through rustc/codegen and observable mutations must follow Rust source"
+proof = "pending: independently compile managed fixture, then real Rust source must select/call its API through FerrumWeave CodegenBackend and observable mutations must follow Rust source"
