@@ -114,8 +114,12 @@ fn build_metadata(answer_rva: u32, helper_rva: u32) -> Vec<u8> {
     let mut tables = Vec::new();
     push_u32(&mut tables, 0);
     tables.extend_from_slice(&[2, 0, 0, 1]);
-    let valid_tables =
-        (1_u64 << 0) | (1_u64 << 1) | (1_u64 << 2) | (1_u64 << 6) | (1_u64 << 32) | (1_u64 << 35);
+    let valid_tables = (1_u64 << 0)
+        | (1_u64 << 1)
+        | (1_u64 << 2)
+        | (1_u64 << 6)
+        | (1_u64 << 32)
+        | (1_u64 << 35);
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0);
     for count in [1_u32, 1, 2, 2, 1, 1] {
@@ -219,7 +223,10 @@ fn build_metadata(answer_rva: u32, helper_rva: u32) -> Vec<u8> {
     push_u32(&mut metadata, to_u32(version.len()));
     metadata.extend_from_slice(version);
     push_u16(&mut metadata, 0);
-    push_u16(&mut metadata, u16::try_from(streams.len()).expect("stream count fits u16"));
+    push_u16(
+        &mut metadata,
+        u16::try_from(streams.len()).expect("stream count fits u16"),
+    );
 
     for ((name, data), offset) in streams.iter().zip(offsets.iter()) {
         push_u32(&mut metadata, to_u32(*offset));
