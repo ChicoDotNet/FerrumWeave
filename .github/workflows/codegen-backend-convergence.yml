@@ -1,0 +1,88 @@
+name: FerrumWeave codegen backend convergence
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - ".github/workflows/codegen-backend-convergence.yml"
+      - "compiler/codegen-backend/**"
+      - "compiler/cil/**"
+      - "projection/**"
+      - "eng/verification/verify_codegen_backend_boundary.py"
+      - "Cargo.toml"
+      - "docs/architecture/adr/0002-r02-isolated-upstream-codegen-lane.md"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - ".github/workflows/codegen-backend-convergence.yml"
+      - "compiler/codegen-backend/**"
+      - "compiler/cil/**"
+      - "projection/**"
+      - "eng/verification/verify_codegen_backend_boundary.py"
+      - "Cargo.toml"
+      - "docs/architecture/adr/0002-r02-isolated-upstream-codegen-lane.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codegen-backend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-boundary:
+    name: FerrumWeave rustc boundary (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            backend: libferrumweave_codegen_backend.so
+          - os: windows-latest
+            backend: ferrumweave_codegen_backend.dll
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned rustc-private toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2025-10-14 \
+            --profile minimal \
+            --component rustc-dev,rust-src
+          rustc +nightly-2025-10-14 --version --verbose
+
+      - name: Build FerrumWeave codegen backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +nightly-2025-10-14 build \
+            --release \
+            --manifest-path compiler/codegen-backend/Cargo.toml
+
+      - name: Certify rustc loads FerrumWeave
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_codegen_backend_boundary.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave-owned MIR lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_codegen_backend_boundary.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}" \
+            --require-artifact
