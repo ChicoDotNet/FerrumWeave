@@ -21,8 +21,8 @@ proof = "tests/r10_installation.rs; Rust CI #334 certified the documented projec
 [[contracts]]
 id = "FW-R10-DX-003"
 family = "an external developer can create a FerrumWeave project from the installed toolchain"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r10_project_creation.rs; Rust CI #337 certified package install plus dotnet new rust project creation on Ubuntu and Windows at 5a79ba39f9a681c5ef404bb8a20c7cf756aeddb9"
 
 [[contracts]]
 id = "FW-R10-DX-004"
