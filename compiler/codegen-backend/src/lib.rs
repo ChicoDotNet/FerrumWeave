@@ -8,6 +8,7 @@
 
 extern crate rustc_codegen_ssa;
 extern crate rustc_data_structures;
+extern crate rustc_driver;
 extern crate rustc_metadata;
 extern crate rustc_middle;
 extern crate rustc_session;
@@ -15,9 +16,7 @@ extern crate rustc_span;
 
 use std::any::Any;
 
-use rustc_codegen_ssa::{
-    traits::CodegenBackend, CodegenResults, TargetConfig,
-};
+use rustc_codegen_ssa::{traits::CodegenBackend, CodegenResults, TargetConfig};
 use rustc_data_structures::fx::FxIndexMap;
 use rustc_metadata::EncodedMetadata;
 use rustc_middle::{
