@@ -380,7 +380,7 @@ mod tests {
         assert_eq!(image[method + 3], 0x28);
         assert_eq!(
             &image[method + 4..method + 8],
-            &HELPER_METHOD_TOKEN.to_le_bytes()
+            &HELPER_METHOD_TOKEN.to_le_bytes(),
         );
     }
 }
