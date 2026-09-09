@@ -18,7 +18,8 @@ extern crate rustc_span;
 use std::{any::Any, collections::HashMap, fs};
 
 use ferrumweave_cil::{
-    SystemMathMethod, emit_i32_argument_export_assembly, emit_i32_export_assembly,
+    I32ArithmeticOp, SystemMathMethod, emit_i32_argument_export_assembly,
+    emit_i32_arithmetic_export_assembly, emit_i32_export_assembly,
     emit_i32_export_with_system_math_call,
 };
 use rustc_codegen_ssa::{
@@ -30,7 +31,7 @@ use rustc_metadata::EncodedMetadata;
 use rustc_middle::{
     dep_graph::{WorkProduct, WorkProductId},
     mir::{
-        ConstValue, Operand, Rvalue, StatementKind, TerminatorKind, RETURN_PLACE,
+        BinOp, ConstValue, Operand, Rvalue, StatementKind, TerminatorKind, RETURN_PLACE,
         mono::MonoItem,
     },
     ty::{self, TyCtxt, TypingEnv},
@@ -48,6 +49,7 @@ const SYSTEM_MATH_SIGN_MARKER: &str = "ferrumweave_system_math_sign";
 enum LoweredI32Export {
     Constant(i32),
     Argument(u8),
+    Arithmetic(I32ArithmeticOp),
     SystemMath {
         method: SystemMathMethod,
         argument: i32,
@@ -62,26 +64,20 @@ struct GeneratedArtifact {
 struct FerrumWeaveCodegenBackend;
 
 impl CodegenBackend for FerrumWeaveCodegenBackend {
-    fn name(&self) -> &'static str {
-        "ferrumweave"
-    }
-
-    fn locale_resource(&self) -> &'static str {
-        ""
-    }
+    fn name(&self) -> &'static str { "ferrumweave" }
+    fn locale_resource(&self) -> &'static str { "" }
 
     fn codegen_crate<'a>(&self, tcx: TyCtxt<'_>) -> Box<dyn Any> {
-        let lowered = lower_exported_i32(tcx).unwrap_or_else(|message| {
-            panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}")
-        });
+        let lowered = lower_exported_i32(tcx)
+            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
         let image = match lowered {
             LoweredI32Export::Constant(value) => emit_i32_export_assembly(value),
             LoweredI32Export::Argument(index) => emit_i32_argument_export_assembly(index),
+            LoweredI32Export::Arithmetic(operation) => emit_i32_arithmetic_export_assembly(operation),
             LoweredI32Export::SystemMath { method, argument } => {
                 emit_i32_export_with_system_math_call(method, argument)
             }
         };
-
         Box::new(GeneratedArtifact {
             image,
             crate_info: CrateInfo::new(tcx, "ferrumweave".to_owned()),
@@ -91,10 +87,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
     fn target_config(&self, sess: &Session) -> TargetConfig {
         let target_features = if sess.target.arch == "x86_64" && sess.target.os != "none" {
             vec![sym::sse, sym::sse2, Symbol::intern("x87")]
-        } else {
-            vec![]
-        };
-
+        } else { vec![] };
         TargetConfig {
             unstable_target_features: target_features.clone(),
             target_features,
@@ -114,29 +107,14 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         let GeneratedArtifact { image, crate_info } = *ongoing_codegen
             .downcast::<GeneratedArtifact>()
             .expect("FerrumWeave ongoing codegen state has the wrong type");
-
         let object = outputs.temp_path_for_cgu(OutputType::Object, "ferrumweave", None);
         fs::write(&object, image).expect("FerrumWeave could not write its managed codegen artifact");
-
         let modules = vec![CompiledModule {
-            name: "ferrumweave".into(),
-            kind: ModuleKind::Regular,
-            object: Some(object),
-            bytecode: None,
-            dwarf_object: None,
-            llvm_ir: None,
-            assembly: None,
+            name: "ferrumweave".into(), kind: ModuleKind::Regular, object: Some(object),
+            bytecode: None, dwarf_object: None, llvm_ir: None, assembly: None,
             links_from_incr_cache: Vec::new(),
         }];
-
-        (
-            CodegenResults {
-                modules,
-                allocator_module: None,
-                crate_info,
-            },
-            FxIndexMap::default(),
-        )
+        (CodegenResults { modules, allocator_module: None, crate_info }, FxIndexMap::default())
     }
 
     fn link(
@@ -146,10 +124,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         _metadata: EncodedMetadata,
         outputs: &OutputFilenames,
     ) {
-        let source = codegen_results
-            .modules
-            .iter()
-            .find_map(|module| module.object.as_ref())
+        let source = codegen_results.modules.iter().find_map(|module| module.object.as_ref())
             .expect("FerrumWeave link phase did not receive a managed artifact");
         let destination = outputs.path(OutputType::Exe);
         fs::copy(source, destination.as_path())
@@ -159,76 +134,71 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
 
 fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
     let codegen_units = tcx.collect_and_partition_mono_items(());
-
     for cgu in codegen_units.codegen_units {
         for (item, _data) in cgu.items() {
-            let MonoItem::Fn(instance) = *item else {
-                continue;
-            };
-            if tcx.symbol_name(instance).name != EXPORT_SYMBOL {
-                continue;
-            }
+            let MonoItem::Fn(instance) = *item else { continue; };
+            if tcx.symbol_name(instance).name != EXPORT_SYMBOL { continue; }
 
             let mir = tcx.instance_mir(instance.def);
             let mut local_aliases = HashMap::new();
+            let mut arithmetic_locals = HashMap::new();
 
             for block in mir.basic_blocks.iter() {
                 for statement in &block.statements {
-                    let StatementKind::Assign(assignment) = &statement.kind else {
-                        continue;
-                    };
+                    let StatementKind::Assign(assignment) = &statement.kind else { continue; };
                     let (place, rvalue) = assignment.as_ref();
                     if place.projection.is_empty() {
-                        if let Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) = rvalue {
-                            if source.projection.is_empty() {
-                                local_aliases.insert(place.local, source.local);
+                        match rvalue {
+                            Rvalue::Use(Operand::Copy(source) | Operand::Move(source))
+                                if source.projection.is_empty() => {
+                                    local_aliases.insert(place.local, source.local);
+                                }
+                            Rvalue::BinaryOp(operation, operands) => {
+                                let operation = match operation {
+                                    BinOp::Add => I32ArithmeticOp::Add,
+                                    BinOp::Sub => I32ArithmeticOp::Subtract,
+                                    other => return Err(format!(
+                                        "unsupported i32 binary operation {other:?} in {EXPORT_SYMBOL}"
+                                    )),
+                                };
+                                let (left, right) = operands.as_ref();
+                                let left_index = argument_index(mir, left)?;
+                                let right_index = argument_index(mir, right)?;
+                                if left_index != 0 || right_index != 1 {
+                                    return Err(format!(
+                                        "{EXPORT_SYMBOL} arithmetic currently requires left/right argument order"
+                                    ));
+                                }
+                                arithmetic_locals.insert(place.local, operation);
+                            }
+                            _ => {}
+                        }
+                    }
+                    if place.local == RETURN_PLACE && place.projection.is_empty() {
+                        if let Rvalue::Use(operand) = rvalue {
+                            if let Ok(value) = lower_i32_constant_operand(tcx, operand) {
+                                return Ok(LoweredI32Export::Constant(value));
                             }
                         }
                     }
-                    if place.local != RETURN_PLACE || !place.projection.is_empty() {
-                        continue;
-                    }
-                    if let Rvalue::Use(operand) = rvalue {
-                        if let Ok(value) = lower_i32_constant_operand(tcx, operand) {
-                            return Ok(LoweredI32Export::Constant(value));
-                        }
-                    }
                 }
 
-                let TerminatorKind::Call {
-                    func,
-                    args,
-                    destination,
-                    ..
-                } = &block.terminator().kind
-                else {
-                    continue;
-                };
-                if destination.local != RETURN_PLACE || !destination.projection.is_empty() {
-                    continue;
-                }
+                let TerminatorKind::Call { func, args, destination, .. } = &block.terminator().kind
+                else { continue; };
+                if destination.local != RETURN_PLACE || !destination.projection.is_empty() { continue; }
                 if args.len() != 1 {
-                    return Err(format!(
-                        "{EXPORT_SYMBOL} managed static marker requires exactly one i32 argument"
-                    ));
+                    return Err(format!("{EXPORT_SYMBOL} managed static marker requires exactly one i32 argument"));
                 }
-
                 let func_ty = func.ty(&mir.local_decls, tcx);
                 let ty::FnDef(def_id, _) = *func_ty.kind() else {
-                    return Err(format!(
-                        "{EXPORT_SYMBOL} call target is not a direct Rust function: {func_ty:?}"
-                    ));
+                    return Err(format!("{EXPORT_SYMBOL} call target is not a direct Rust function: {func_ty:?}"));
                 };
                 let marker_symbol = tcx.item_name(def_id);
                 let marker_name = marker_symbol.as_str();
                 let method = match marker_name.as_ref() {
                     SYSTEM_MATH_ABS_MARKER => SystemMathMethod::Abs,
                     SYSTEM_MATH_SIGN_MARKER => SystemMathMethod::Sign,
-                    _ => {
-                        return Err(format!(
-                            "unsupported MIR call target `{marker_name}` in {EXPORT_SYMBOL}"
-                        ));
-                    }
+                    _ => return Err(format!("unsupported MIR call target `{marker_name}` in {EXPORT_SYMBOL}")),
                 };
                 let argument = lower_i32_constant_operand(tcx, &args[0].node)?;
                 return Ok(LoweredI32Export::SystemMath { method, argument });
@@ -237,48 +207,50 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
             if mir.arg_count == 2 {
                 let mut local = RETURN_PLACE;
                 for _ in 0..=mir.local_decls.len() {
+                    if let Some(operation) = arithmetic_locals.get(&local) {
+                        return Ok(LoweredI32Export::Arithmetic(*operation));
+                    }
                     if let Some(index) = mir.args_iter().position(|argument| argument == local) {
                         return Ok(LoweredI32Export::Argument(
                             u8::try_from(index).expect("two i32 arguments fit u8"),
                         ));
                     }
-                    let Some(next) = local_aliases.get(&local) else {
-                        break;
-                    };
+                    let Some(next) = local_aliases.get(&local) else { break; };
                     local = *next;
                 }
             }
 
             return Err(format!(
-                "{EXPORT_SYMBOL} MIR contains neither a supported constant return, simple i32 argument flow, nor managed static call"
+                "{EXPORT_SYMBOL} MIR contains neither a supported constant return, simple i32 argument flow, i32 arithmetic, nor managed static call"
             ));
         }
     }
+    Err(format!("no monomorphized `{EXPORT_SYMBOL}` export reached FerrumWeave codegen"))
+}
 
-    Err(format!(
-        "no monomorphized `{EXPORT_SYMBOL}` export reached FerrumWeave codegen"
-    ))
+fn argument_index<'tcx>(mir: &rustc_middle::mir::Body<'tcx>, operand: &Operand<'tcx>) -> Result<usize, String> {
+    let Operand::Copy(place) | Operand::Move(place) = operand else {
+        return Err(format!("expected i32 argument operand, found {operand:?}"));
+    };
+    if !place.projection.is_empty() {
+        return Err(format!("projected arithmetic operands are not yet supported: {place:?}"));
+    }
+    mir.args_iter().position(|argument| argument == place.local)
+        .ok_or_else(|| format!("arithmetic operand is not a direct argument: {place:?}"))
 }
 
 fn lower_i32_constant_operand<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    operand: &Operand<'tcx>,
+    tcx: TyCtxt<'tcx>, operand: &Operand<'tcx>,
 ) -> Result<i32, String> {
     let Operand::Constant(constant) = operand else {
         return Err(format!("expected constant i32 MIR operand, found {operand:?}"));
     };
-
-    let evaluated = constant
-        .const_
-        .eval(tcx, TypingEnv::fully_monomorphized(), constant.span)
+    let evaluated = constant.const_.eval(tcx, TypingEnv::fully_monomorphized(), constant.span)
         .map_err(|_| "could not evaluate i32 constant from MIR".to_owned())?;
     let ConstValue::Scalar(scalar) = evaluated else {
         return Err(format!("MIR constant is not a scalar: {evaluated:?}"));
     };
-    scalar
-        .to_i32()
-        .report_err()
-        .map_err(|_| "MIR scalar is not a valid i32".to_owned())
+    scalar.to_i32().report_err().map_err(|_| "MIR scalar is not a valid i32".to_owned())
 }
 
 #[no_mangle]
