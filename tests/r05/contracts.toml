@@ -77,16 +77,16 @@ oracle_proof = "Earlier oracle run #1 on SHA 54663e6f3bf095c07179bd26daac36721c8
 [[contracts]]
 id = "FW-R05-DOTNET-010"
 family = "real Rust source causally constructs a supported public .NET type"
-implemented = false
-evidence_level = "source-causal-required"
-proof = "pending: real Rust source -> rustc -> FerrumWeave CodegenBackend -> managed constructor with mutation or independent observation proving source causality"
+implemented = true
+evidence_level = "source-causal-certified"
+proof = "FerrumWeave codegen backend convergence run #61 on SHA 15b901bfbb313b01de7b382117c93dd0a6aced4d passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: Rust MIR selected System.Object vs System.Text.StringBuilder construction, payload mutation 137->211 changed the executable observable, constructor mutation changed managed metadata/artifact bytes, and emitted CLR newobj executed under CoreCLR"
 
 [[contracts]]
 id = "FW-R05-DOTNET-011"
 family = "real Rust source causally calls a supported public instance method"
-implemented = false
-evidence_level = "source-causal-required"
-proof = "pending: real Rust source -> rustc -> FerrumWeave CodegenBackend -> managed instance method with source-only falsification"
+implemented = true
+evidence_level = "source-causal-certified"
+proof = "FerrumWeave codegen backend convergence run #66 on SHA 3e7fdb126d6620b79fa97bc90a609d0a63cdc302 passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: Rust MIR selected Object::ToString vs StringBuilder::ToString, payload mutation 137->211 changed the executable observable, receiver mutation changed managed metadata/artifact bytes, and Answer contained a real CLR callvirt executed under CoreCLR"
 
 [[contracts]]
 id = "FW-R05-DOTNET-012"
