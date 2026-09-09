@@ -1,56 +1,73 @@
 milestone = "R05"
-status = "done"
+status = "needs_recertification"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
-# R05 declares the managed-consumption denominator before implementation.
-# Contracts remain false until executable evidence proves the corresponding
-# Rust -> managed metadata capability; CI must not treat declarations as proof.
+# R05 preserves the managed-metadata and IL-emission primitives already proven,
+# but the milestone is reopened because those primitives do not by themselves
+# prove that real Rust source caused the managed API consumption. The new
+# source-causality contract enters the denominator immediately; Done is blocked
+# until that contract is independently executable through rustc/codegen.
 
 [[contracts]]
 id = "FW-R05-DOTNET-001"
 family = "resolve and call a public static .NET method through managed metadata"
 implemented = true
-proof = "tests/r05_static_call.rs resolves System.Console.WriteLine to a CLR MemberRef token and verifies Rust-emitted managed IL calls that exact token; Rust CI certified Ubuntu and Windows"
+evidence_level = "artifact-proven"
+proof = "tests/managed_static_call_emission.rs resolves System.Console.WriteLine to a CLR MemberRef token and verifies emitted managed IL calls that exact token; this proves the emission primitive, not Rust-source causality"
 
 [[contracts]]
 id = "FW-R05-DOTNET-002"
 family = "construct a supported public .NET type"
 implemented = true
-proof = "tests/r05_construct.rs resolves System.Object::.ctor to a CLR MemberRef token and verifies Rust-emitted managed IL uses newobj with that exact token; Rust CI #109 certified Ubuntu and Windows and R04 CLR CTS Reflection #21 remained GREEN"
+evidence_level = "artifact-proven"
+proof = "tests/r05_construct.rs resolves System.Object::.ctor to a CLR MemberRef token and verifies emitted managed IL uses newobj with that exact token; Rust CI #109 certified Ubuntu and Windows and R04 CLR CTS Reflection #21 remained GREEN"
 
 [[contracts]]
 id = "FW-R05-DOTNET-003"
 family = "call a supported public instance method"
 implemented = true
-proof = "tests/r05_instance_call.rs resolves System.Object.ToString to a CLR MemberRef token and verifies Rust-emitted managed IL uses callvirt with that exact token; Rust CI #117 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #29 remained GREEN"
+evidence_level = "artifact-proven"
+proof = "tests/r05_instance_call.rs resolves System.Object.ToString to a CLR MemberRef token and verifies emitted managed IL uses callvirt with that exact token; Rust CI #117 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #29 remained GREEN"
 
 [[contracts]]
 id = "FW-R05-DOTNET-004"
 family = "read and write a supported public property"
 implemented = true
-proof = "tests/r05_property.rs resolves System.Environment.CurrentDirectory getter/setter MemberRefs and verifies Rust-emitted managed IL calls both exact tokens; Rust CI #127 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #39 remained GREEN"
+evidence_level = "artifact-proven"
+proof = "tests/r05_property.rs resolves System.Environment.CurrentDirectory getter/setter MemberRefs and verifies emitted managed IL calls both exact tokens; Rust CI #127 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #39 remained GREEN"
 
 [[contracts]]
 id = "FW-R05-DOTNET-005"
 family = "consume at least one System.* API"
 implemented = true
-proof = "tests/functional.rs::r01_probe_executes_on_coreclr executes Rust-emitted IL calling System.Console.WriteLine"
+evidence_level = "artifact-proven"
+proof = "tests/functional.rs::r01_probe_executes_on_coreclr executes emitted IL calling System.Console.WriteLine; this proves CLR API consumption by the emitted artifact, not yet by real Rust source"
 
 [[contracts]]
 id = "FW-R05-DOTNET-006"
 family = "consume a user-defined C# assembly compiled independently from FerrumWeave"
 implemented = true
-proof = "tests/r05_user_assembly.rs independently compiles FerrumWeave.UserFixture.dll, resolves UserFixture.Api.Greeting through managed metadata, emits AssemblyRef/TypeRef/MemberRef/call from Rust, and executes the consumer under CoreCLR; Rust CI #134 certified fmt/clippy, functional/code coverage, Ubuntu and Windows and R04 CLR CTS Reflection #46 remained GREEN"
+evidence_level = "artifact-proven"
+proof = "tests/r05_user_assembly.rs independently compiles FerrumWeave.UserFixture.dll, resolves UserFixture.Api.Greeting through managed metadata, emits AssemblyRef/TypeRef/MemberRef/call, and executes the consumer under CoreCLR; source causality remains a separate gate"
 
 [[contracts]]
 id = "FW-R05-DOTNET-007"
 family = "managed API consumption is certified on Linux and Windows"
 implemented = true
+evidence_level = "artifact-proven"
 proof = "Rust CI build + test matrix executes the managed probe on ubuntu-latest and windows-latest"
 
 [[contracts]]
 id = "FW-R05-DOTNET-008"
 family = "managed interoperability does not use P/Invoke or native FFI as its implementation"
 implemented = true
+evidence_level = "artifact-proven"
 proof = "tests/functional.rs::r01_probe_has_no_native_implementation verifies IL-only CLR entry point with no native PE entry point/import directory"
+
+[[contracts]]
+id = "FW-R05-DOTNET-009"
+family = "real Rust source compiled through rustc/codegen causally consumes a managed .NET API"
+implemented = false
+evidence_level = "source-causal-required"
+proof = "pending: executable .rs -> rustc -> CLR codegen -> managed API call evidence with a source-only mutation that changes the observed managed behavior"
