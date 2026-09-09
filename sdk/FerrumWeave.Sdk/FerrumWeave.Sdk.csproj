@@ -16,5 +16,6 @@
     <None Include="Sdk/Sdk.props" Pack="true" PackagePath="Sdk/Sdk.props" />
     <None Include="Sdk/Sdk.targets" Pack="true" PackagePath="Sdk/Sdk.targets" />
     <None Include="../templates/rust/**/*" Pack="true" PackagePath="content/rust/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="../../compiler/cil/**/*" Pack="true" PackagePath="compiler/cil/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
