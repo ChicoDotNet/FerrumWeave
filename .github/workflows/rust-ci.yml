@@ -56,7 +56,25 @@ jobs:
       - name: Toolchain
         run: rustup show
       - name: Formatting
-        run: cargo fmt --all --check
+        id: formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p target/quality
+          cargo fmt --all
+          git diff -- . > target/quality/rustfmt.diff
+          if [[ -s target/quality/rustfmt.diff ]]; then
+            cat target/quality/rustfmt.diff
+            exit 1
+          fi
+      - name: Upload rustfmt diagnostic
+        if: failure() && steps.formatting.outcome == 'failure'
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: rustfmt-diff
+          path: target/quality/rustfmt.diff
+          if-no-files-found: error
+          retention-days: 3
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
