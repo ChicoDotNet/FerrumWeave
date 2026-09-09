@@ -33,8 +33,8 @@ proof = "tests/r10_diagnostics.rs; Rust CI #344 certified source-located Rust di
 [[contracts]]
 id = "FW-R10-DX-005"
 family = "a created project can consume a supported .NET API and NuGet dependency"
-implemented = false
-proof = ""
+implemented = true
+proof = "tests/r10_managed_dependency.rs; Rust CI #346 certified real PackageReference restore plus supported managed console output through normal dotnet tooling on Ubuntu and Windows at 3c23caef7eb292608bc7b11e9ecdded44196c66a"
 
 [[contracts]]
 id = "FW-R10-DX-006"
