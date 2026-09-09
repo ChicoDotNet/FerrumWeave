@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed until every R05 managed-consumption family is source-causal."""
+"""Fail closed until every R05 managed-consumption family is FerrumWeave source-causal."""
 
 from __future__ import annotations
 
@@ -45,7 +45,13 @@ def main() -> int:
 
         if not implemented:
             uncovered.append(contract_id)
-            print(f"RED       {contract_id}: source-causal evidence is still missing")
+            if evidence_level == "oracle-characterized":
+                print(
+                    f"ORACLE    {contract_id}: behavior characterized upstream; "
+                    "FerrumWeave product causality is still missing"
+                )
+            else:
+                print(f"RED       {contract_id}: FerrumWeave source-causal evidence is still missing")
             continue
         if evidence_level != "source-causal-certified":
             return fail(
@@ -54,7 +60,7 @@ def main() -> int:
             )
         if not proof or proof.startswith("pending:"):
             return fail(f"{contract_id} is implemented without replayable proof")
-        print(f"COVERED   {contract_id}: source-causal evidence is certified")
+        print(f"COVERED   {contract_id}: FerrumWeave source-causal evidence is certified")
 
     if status == "done" and uncovered:
         return fail(
@@ -64,12 +70,12 @@ def main() -> int:
 
     if uncovered:
         print(
-            "Preserved evidence: artifact-level metadata/IL proofs remain valid; "
-            "R05 stays open until every advertised managed-consumption family is causal."
+            "Preserved evidence: artifact-level metadata/IL proofs and oracle characterization "
+            "remain valid; R05 stays open until FerrumWeave itself is causal for every advertised family."
         )
         return 1
 
-    print("COVERED   R05 managed-consumption source causality is complete")
+    print("COVERED   R05 FerrumWeave managed-consumption source causality is complete")
     return 0
 
 
