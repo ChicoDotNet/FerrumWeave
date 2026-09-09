@@ -88,10 +88,9 @@ fn created_project_restores_a_real_nuget_dependency_and_uses_a_supported_dotnet_
         "created FerrumWeave project must participate in the real NuGet dependency graph"
     );
 
-    let run = Command::new("dotnet")
+    let build = Command::new("dotnet")
         .args([
-            "run",
-            "--project",
+            "build",
             "ManagedConsumer.rsproj",
             "--configuration",
             "Debug",
@@ -100,10 +99,31 @@ fn created_project_restores_a_real_nuget_dependency_and_uses_a_supported_dotnet_
         ])
         .current_dir(&project)
         .output()
-        .expect("normal dotnet run must execute the created FerrumWeave project");
+        .expect("normal dotnet build must execute for the created project");
+    assert!(
+        build.status.success(),
+        "created FerrumWeave project must build through normal dotnet tooling:\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&build.stdout),
+        String::from_utf8_lossy(&build.stderr),
+    );
+
+    let run = Command::new("dotnet")
+        .args([
+            "run",
+            "--project",
+            "ManagedConsumer.rsproj",
+            "--configuration",
+            "Debug",
+            "--no-build",
+            "--no-restore",
+            "--nologo",
+        ])
+        .current_dir(&project)
+        .output()
+        .expect("normal dotnet run must execute the already-built FerrumWeave project");
     assert!(
         run.status.success(),
-        "created FerrumWeave project must build and execute after NuGet restore:\nstdout:\n{}\nstderr:\n{}",
+        "created FerrumWeave project must execute after an explicit normal dotnet build:\nstdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&run.stdout),
         String::from_utf8_lossy(&run.stderr),
     );
