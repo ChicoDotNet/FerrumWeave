@@ -137,7 +137,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
 fn lower_exported_i32_constant(tcx: TyCtxt<'_>) -> Result<i32, String> {
     let codegen_units = tcx.collect_and_partition_mono_items(());
 
-    for cgu in &codegen_units.codegen_units {
+    for cgu in codegen_units.codegen_units {
         for (item, _data) in cgu.items() {
             let MonoItem::Fn(instance) = *item else {
                 continue;
@@ -173,7 +173,7 @@ fn lower_exported_i32_constant(tcx: TyCtxt<'_>) -> Result<i32, String> {
                             "{EXPORT_SYMBOL} return constant is not a scalar: {evaluated:?}"
                         ));
                     };
-                    return scalar.to_i32().map_err(|_| {
+                    return scalar.to_i32().report_err().map_err(|_| {
                         format!("{EXPORT_SYMBOL} return scalar is not a valid i32")
                     });
                 }
