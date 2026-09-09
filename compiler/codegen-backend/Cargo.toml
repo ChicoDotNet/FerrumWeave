@@ -9,4 +9,7 @@ description = "rustc codegen adapter for the FerrumWeave CLR backend"
 [lib]
 crate-type = ["dylib"]
 
+[dependencies]
+ferrumweave-cil = { path = "../cil" }
+
 [workspace]
