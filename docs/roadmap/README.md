@@ -14,13 +14,13 @@ A milestone is complete only when it changes a technical fact about the project 
 | R01 — CLR artifact probe | **Done** | FerrumWeave can produce and execute a valid managed .NET assembly. |
 | R02 — Rust → CLR vertical slice | **Done** | Real Rust source passes through `rustc` and executes as managed code on CoreCLR. |
 | R03 — Core Rust semantics | **Done** | 11/11 declared safe-Rust semantic and negative contracts are certified on Linux and Windows with native/CLR differential evidence. |
-| R04 — CLR / CTS foundation | **Done** | 11/11 declared CTS contracts are certified, including independent emitted-signature reflection on Linux and Windows. |
-| R05 — Rust consumes .NET | **Next** | Rust can consume existing managed assemblies and .NET APIs. |
-| R06 — .NET consumes Rust | Planned | C# and Visual Basic can consume public managed APIs implemented in Rust. |
-| R07 — Semantic interoperability | Planned | Ownership, GC, errors, nullability, resources, and other cross-runtime semantics have principled contracts. |
-| R08 — `.rsproj` and FerrumWeave SDK | Planned | Rust becomes a first-class SDK-style project in the `dotnet` toolchain. |
-| R09 — Mixed `.slnx` proof | Planned | C#, Visual Basic, F#, Rust, ProjectReference, and NuGet participate in one real .NET solution. |
-| R10 — Developer experience / 0.1 alpha | Planned | An external developer can install, edit, diagnose, build, debug, and run FerrumWeave without understanding its internals. |
+| R04 — CLR / CTS foundation | **Done — re-audited** | CTS mapping/reflection evidence remains valid at its declared artifact/type-system scope; it does not claim managed API consumption from Rust source. |
+| R05 — Rust consumes .NET | **Re-certifying** | Managed metadata resolution and IL-emission primitives are preserved, but real Rust-source causality is now an explicit missing contract. |
+| R06 — .NET consumes Rust | **Needs re-certification** | Existing managed-consumer evidence must be replayed after public behavior is proven to originate from Rust source. |
+| R07 — Semantic interoperability | **Needs re-certification** | Existing semantic artifacts remain evidence candidates; source-causal crossings must be replayed after R05/R06. |
+| R08 — `.rsproj` and FerrumWeave SDK | **Needs re-certification** | SDK/project-system work exists, but normal `.rsproj` build must be reconnected to the real `rustc` → CLR path before this milestone can be trusted. |
+| R09 — Mixed `.slnx` proof | **Needs re-certification** | Solution/ProjectReference/NuGet integration evidence exists, but the advertised .NET → Rust → managed dependency call path must become source-causal. |
+| R10 — Developer experience / 0.1 alpha | **Paused as release milestone** | Draft DX work is preserved, but R10 cannot be promoted until R05-R09 are causally re-certified. |
 
 ---
 
@@ -278,7 +278,7 @@ All of these conditions are satisfied by the certified R03 milestone. Broader Ru
 
 # R04 — CLR / CTS foundation
 
-**Status: Done. Certified in CI — 11/11 R04 contracts with independent CLR reflection across Linux and Windows.**
+**Status: Done. Prior certification remains valid at the declared CTS/artifact scope after causal re-audit.**
 
 ## Goal
 
@@ -311,6 +311,8 @@ All of these conditions are satisfied by the certified R04 milestone. The mappin
 
 # R05 — Rust consumes .NET
 
+**Status: Re-certifying. Existing managed metadata and IL-emission primitives remain valid evidence, but real Rust-source causality is not yet certified.**
+
 ## Goal
 
 Allow Rust to consume APIs that already exist in managed assemblies.
@@ -328,13 +330,16 @@ R05 is Done when Rust can, through managed metadata:
 - use at least one `System.*` API;
 - consume a user-defined C# assembly compiled independently from FerrumWeave tests;
 - perform all of the above on Linux and Windows;
-- do so without P/Invoke/FFI being the implementation of managed interoperability.
+- do so without P/Invoke/FFI being the implementation of managed interoperability;
+- demonstrate that the managed call is causally produced from real Rust source compiled through `rustc`/the CLR codegen path rather than injected by an emitter or fixture.
 
 The first projection should favor **CLR-shaped, mechanically predictable semantics** over prematurely clever Rust wrappers. More idiomatic abstractions can be layered later without obscuring the underlying CLR contract.
 
 ---
 
 # R06 — .NET consumes Rust
+
+**Status: Needs re-certification after the R05 source-causality gate is restored.**
 
 ## Goal
 
@@ -362,6 +367,8 @@ R06 is Done when:
 ---
 
 # R07 — Semantic interoperability
+
+**Status: Needs re-certification after R05/R06 source causality is restored.**
 
 ## Goal
 
@@ -406,6 +413,8 @@ Evidence may cause the dedicated unsafe milestone to move earlier, but support m
 
 # R08 — `.rsproj` and FerrumWeave SDK
 
+**Status: Needs re-certification. The normal `.rsproj` build must use the real `rustc` → CLR codegen path before this developer workflow can be called Done.**
+
 ## Goal
 
 Make a Rust project feel native to the .NET SDK experience after the compiler/interoperability core is real enough to deserve that shell.
@@ -425,7 +434,7 @@ R08 is Done when, from a clean machine/environment with documented prerequisites
 - `dotnet new rust` creates a valid Rust/.NET project;
 - `.rsproj` is an SDK-style project owned by `FerrumWeave.Sdk`;
 - `dotnet restore` performs the supported restore responsibilities;
-- `dotnet build` produces the managed FerrumWeave assembly;
+- `dotnet build` produces the managed FerrumWeave assembly through the real supported Rust compiler/codegen path;
 - `dotnet run` executes it;
 - `dotnet clean` behaves predictably;
 - supported testing hooks have a documented `dotnet test` story or an explicitly documented limitation;
@@ -435,6 +444,8 @@ R08 is Done when, from a clean machine/environment with documented prerequisites
 ---
 
 # R09 — Mixed `.slnx` proof
+
+**Status: Needs re-certification. Solution integration evidence is preserved, but the business call path must be source-causal.**
 
 ## Goal
 
@@ -474,6 +485,7 @@ R09 is Done when:
 - one `.slnx` contains the four project-language families above;
 - a single normal .NET build workflow can build the supported solution graph;
 - at least one end-to-end business-style call path crosses existing .NET code → Rust → managed .NET dependency and returns successfully;
+- changing only the relevant Rust source changes the .NET-observed business result without changing the emitter, consumer, fixture, or expected-value logic;
 - Visual Basic can participate in the path without migration to C#;
 - F# compiles and interoperates as part of the certified solution, not as a screenshot/demo-only project;
 - a real NuGet package is restored and consumed;
@@ -488,6 +500,8 @@ This is the canonical **0.1 proof moment**:
 ---
 
 # R10 — Developer experience / 0.1 alpha
+
+**Status: Paused as a release milestone while R05-R09 are causally re-certified. Existing draft work should be preserved and replayed, not discarded.**
 
 ## Goal
 
