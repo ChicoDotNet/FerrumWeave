@@ -83,7 +83,7 @@ def execute_from_csharp(artifact: Path, expected: int, root: Path, label: str) -
         encoding="utf-8",
     )
     (consumer / "Program.cs").write_text(
-        'Console.WriteLine(FerrumWeave.RustApi.Answer(137, 211));\n',
+        'System.Console.WriteLine(FerrumWeave.RustApi.Answer(137, 211));\n',
         encoding="utf-8",
     )
     run = subprocess.run(
