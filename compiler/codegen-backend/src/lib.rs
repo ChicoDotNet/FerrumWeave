@@ -15,10 +15,11 @@ extern crate rustc_middle;
 extern crate rustc_session;
 extern crate rustc_span;
 
-use std::{any::Any, fs};
+use std::{any::Any, collections::HashMap, fs};
 
 use ferrumweave_cil::{
-    SystemMathMethod, emit_i32_export_assembly, emit_i32_export_with_system_math_call,
+    SystemMathMethod, emit_i32_argument_export_assembly, emit_i32_export_assembly,
+    emit_i32_export_with_system_math_call,
 };
 use rustc_codegen_ssa::{
     CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig,
@@ -46,6 +47,7 @@ const SYSTEM_MATH_SIGN_MARKER: &str = "ferrumweave_system_math_sign";
 
 enum LoweredI32Export {
     Constant(i32),
+    Argument(u8),
     SystemMath {
         method: SystemMathMethod,
         argument: i32,
@@ -74,6 +76,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         });
         let image = match lowered {
             LoweredI32Export::Constant(value) => emit_i32_export_assembly(value),
+            LoweredI32Export::Argument(index) => emit_i32_argument_export_assembly(index),
             LoweredI32Export::SystemMath { method, argument } => {
                 emit_i32_export_with_system_math_call(method, argument)
             }
@@ -167,6 +170,7 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
             }
 
             let mir = tcx.instance_mir(instance.def);
+            let mut local_aliases = HashMap::new();
 
             for block in mir.basic_blocks.iter() {
                 for statement in &block.statements {
@@ -174,6 +178,13 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
                         continue;
                     };
                     let (place, rvalue) = assignment.as_ref();
+                    if place.projection.is_empty() {
+                        if let Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) = rvalue {
+                            if source.projection.is_empty() {
+                                local_aliases.insert(place.local, source.local);
+                            }
+                        }
+                    }
                     if place.local != RETURN_PLACE || !place.projection.is_empty() {
                         continue;
                     }
@@ -223,8 +234,23 @@ fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, String> {
                 return Ok(LoweredI32Export::SystemMath { method, argument });
             }
 
+            if mir.arg_count == 2 {
+                let mut local = RETURN_PLACE;
+                for _ in 0..=mir.local_decls.len() {
+                    if let Some(index) = mir.args_iter().position(|argument| argument == local) {
+                        return Ok(LoweredI32Export::Argument(
+                            u8::try_from(index).expect("two i32 arguments fit u8"),
+                        ));
+                    }
+                    let Some(next) = local_aliases.get(&local) else {
+                        break;
+                    };
+                    local = *next;
+                }
+            }
+
             return Err(format!(
-                "{EXPORT_SYMBOL} MIR contains neither a supported constant return nor managed static call"
+                "{EXPORT_SYMBOL} MIR contains neither a supported constant return, simple i32 argument flow, nor managed static call"
             ));
         }
     }
