@@ -20,10 +20,9 @@ use std::{any::Any, fs};
 use ferrumweave_cil::{
     emit_i32_argument_export_assembly, emit_i32_arithmetic_export_assembly,
     emit_i32_control_flow_export_assembly, emit_i32_direct_call_export_assembly,
-    emit_i32_export_assembly, emit_i32_export_with_external_managed_transform,
-    emit_i32_export_with_managed_construction, emit_i32_export_with_managed_instance_call,
-    emit_i32_export_with_named_system_math_call,
-    emit_i32_export_with_string_builder_length_property,
+    emit_i32_export_with_external_managed_transform, emit_i32_export_with_managed_construction,
+    emit_i32_export_with_managed_instance_call, emit_i32_export_with_named_system_math_call,
+    emit_i32_export_with_string_builder_length_property, emit_named_i32_export_assembly,
 };
 use rustc_codegen_ssa::{
     CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig,
@@ -63,6 +62,12 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
     }
 
     fn codegen_crate<'a>(&self, tcx: TyCtxt<'_>) -> Box<dyn Any> {
+        let assembly_name = tcx
+            .sess
+            .opts
+            .crate_name
+            .as_deref()
+            .unwrap_or("FerrumWeave.Generated");
         let external_payload = lower_external_managed_transform(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
         let image = if let Some(payload) = external_payload {
@@ -71,7 +76,9 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
             let lowered = lower_exported_i32(tcx)
                 .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
             match lowered {
-                LoweredI32Export::Constant(value) => emit_i32_export_assembly(value),
+                LoweredI32Export::Constant(value) => {
+                    emit_named_i32_export_assembly(assembly_name, value)
+                }
                 LoweredI32Export::Argument(index) => emit_i32_argument_export_assembly(index),
                 LoweredI32Export::Arithmetic(operation) => {
                     emit_i32_arithmetic_export_assembly(operation)
@@ -89,12 +96,6 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
                     emit_i32_direct_call_export_assembly(operation)
                 }
                 LoweredI32Export::SystemMath { method, argument } => {
-                    let assembly_name = tcx
-                        .sess
-                        .opts
-                        .crate_name
-                        .as_deref()
-                        .unwrap_or("FerrumWeave.Generated");
                     emit_i32_export_with_named_system_math_call(assembly_name, method, argument)
                 }
                 LoweredI32Export::ManagedConstruction {
