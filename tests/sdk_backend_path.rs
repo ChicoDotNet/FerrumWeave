@@ -15,7 +15,7 @@ fn unique_temp_dir() -> PathBuf {
 }
 
 #[test]
-fn rsproj_build_rejects_invalid_rust_before_managed_artifact_emission() {
+fn rsproj_build_rejects_invalid_rust_in_rustc_before_managed_artifact_emission() {
     let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let template = repo.join("sdk/templates/rust/HelloFerrum.rsproj");
     let temp = unique_temp_dir();
@@ -23,9 +23,9 @@ fn rsproj_build_rejects_invalid_rust_before_managed_artifact_emission() {
     fs::create_dir_all(&source_dir).expect("create isolated sdk backend-path test directory");
     fs::copy(template, temp.join("HelloFerrum.rsproj")).expect("copy canonical rsproj");
 
-    // Deliberately malformed Rust that still contains the literal shape accepted by the
-    // legacy ferrumweave_emit source parser. A real .rsproj -> rustc -> FerrumWeave
-    // CodegenBackend path must reject this before any managed artifact can be published.
+    // Deliberately malformed Rust that the legacy source parser accepted. A real
+    // .rsproj -> rustc -> FerrumWeave CodegenBackend path must reject it in the
+    // Rust frontend before any managed artifact can be published.
     fs::write(
         source_dir.join("main.rs"),
         "fn main() { println!(\"legacy emitter must not accept this\"); let broken = ; }\n",
@@ -39,13 +39,24 @@ fn rsproj_build_rejects_invalid_rust_before_managed_artifact_emission() {
         .output()
         .expect("dotnet build must execute");
 
-    assert!(
-        !build.status.success(),
-        ".rsproj must be gated by rustc; invalid Rust unexpectedly produced a successful build.\nstdout:\n{}\nstderr:\n{}",
+    let combined = format!(
+        "{}\n{}",
         String::from_utf8_lossy(&build.stdout),
         String::from_utf8_lossy(&build.stderr),
     );
 
+    assert!(
+        !build.status.success(),
+        ".rsproj must be gated by rustc; invalid Rust unexpectedly produced a successful build.\n{combined}",
+    );
+    assert!(
+        combined.contains("expected expression") && combined.contains("src/main.rs"),
+        ".rsproj failed, but not because rustc rejected the malformed Rust source; this must not become a false GREEN.\n{combined}",
+    );
+    assert!(
+        !combined.contains("ferrumweave_emit"),
+        "legacy ferrumweave_emit must not remain in the product compilation path.\n{combined}",
+    );
     assert!(
         !temp.join("bin/Debug/net10.0/HelloFerrum.dll").exists(),
         "invalid Rust must not leave a valid managed product artifact",
