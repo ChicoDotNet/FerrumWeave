@@ -56,7 +56,9 @@ fn dotnet_new_rust_creates_rsproj_and_rust_source() {
 
     let source =
         fs::read_to_string(output.join("src/main.rs")).expect("template must generate Rust source");
-    assert!(source.contains("fn main()"));
+    assert!(source.contains("#[no_mangle]"));
+    assert!(source.contains("pub extern \"C\" fn answer() -> i32"));
+    assert!(source.contains("42"));
 
     let _ = fs::remove_dir_all(temp);
 }
