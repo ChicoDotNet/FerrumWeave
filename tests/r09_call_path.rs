@@ -56,7 +56,9 @@ fn existing_dotnet_code_calls_rust_and_returns_from_managed_dependency() {
             let mut encoded_call = vec![0x28];
             encoded_call.extend_from_slice(&managed_dependency.token.to_le_bytes());
             assert!(
-                image.windows(encoded_call.len()).any(|window| window == encoded_call),
+                image
+                    .windows(encoded_call.len())
+                    .any(|window| window == encoded_call),
                 "R09 emitted image must contain a CLR call to the resolved System.Math.Abs MemberRef"
             );
         }
