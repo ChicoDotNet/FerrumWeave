@@ -15,8 +15,7 @@ const SECTION_RVA: u32 = 0x2000;
 const CLR_HEADER_SIZE: usize = 0x48;
 const MEMBER_REF_TOKEN_SYSTEM_MATH: u32 = 0x0A00_0001;
 
-const ASSEMBLY_NAME: &str = "FerrumWeave.Generated";
-const ASSEMBLY_FILE: &str = "FerrumWeave.Generated.dll";
+const DEFAULT_ASSEMBLY_NAME: &str = "FerrumWeave.Generated";
 const NAMESPACE: &str = "FerrumWeave";
 const TYPE_NAME: &str = "RustApi";
 const METHOD_NAME: &str = "Answer";
@@ -39,15 +38,31 @@ impl SystemMathMethod {
 
 /// Emits an IL-only managed library exposing `FerrumWeave.RustApi.Answer()`.
 ///
+/// This compatibility entrypoint keeps the historical deterministic assembly
+/// identity used by emitter-level tests. Product codegen should use
+/// [`emit_i32_export_with_named_system_math_call`] so the emitted CLR identity
+/// follows the Rust crate/MSBuild project identity.
+#[must_use]
+pub fn emit_i32_export_with_system_math_call(method: SystemMathMethod, argument: i32) -> Vec<u8> {
+    emit_i32_export_with_named_system_math_call(DEFAULT_ASSEMBLY_NAME, method, argument)
+}
+
+/// Emits an IL-only managed library whose CLR assembly/module identity is supplied by rustc.
+///
 /// The method body loads `argument`, calls the selected public static
 /// `System.Math` method, and returns that managed result.
 #[must_use]
-pub fn emit_i32_export_with_system_math_call(method: SystemMathMethod, argument: i32) -> Vec<u8> {
+pub fn emit_i32_export_with_named_system_math_call(
+    assembly_name: &str,
+    method: SystemMathMethod,
+    argument: i32,
+) -> Vec<u8> {
+    assert!(!assembly_name.is_empty(), "managed assembly identity must not be empty");
     let method_body = build_method_body(argument);
     let method_offset = CLR_HEADER_SIZE;
     let method_rva = SECTION_RVA + to_u32(method_offset);
 
-    let metadata = build_metadata(method_rva, method);
+    let metadata = build_metadata(method_rva, method, assembly_name);
     let metadata_offset = align_usize(method_offset + method_body.len(), 4);
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
@@ -84,9 +99,10 @@ fn build_method_body(argument: i32) -> Vec<u8> {
     body
 }
 
-fn build_metadata(method_rva: u32, method: SystemMathMethod) -> Vec<u8> {
+fn build_metadata(method_rva: u32, method: SystemMathMethod, assembly_name: &str) -> Vec<u8> {
     let mut strings = vec![0_u8];
-    let module_name = push_string(&mut strings, ASSEMBLY_FILE);
+    let assembly_file = format!("{assembly_name}.dll");
+    let module_name = push_string(&mut strings, &assembly_file);
     let object_name = push_string(&mut strings, "Object");
     let math_name = push_string(&mut strings, "Math");
     let system_namespace = push_string(&mut strings, "System");
@@ -95,7 +111,7 @@ fn build_metadata(method_rva: u32, method: SystemMathMethod) -> Vec<u8> {
     let ferrumweave_namespace = push_string(&mut strings, NAMESPACE);
     let answer_name = push_string(&mut strings, METHOD_NAME);
     let managed_method_name = push_string(&mut strings, method.managed_name());
-    let assembly_name = push_string(&mut strings, ASSEMBLY_NAME);
+    let assembly_name = push_string(&mut strings, assembly_name);
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
     pad_vec(&mut strings, 4);
 
@@ -384,5 +400,21 @@ mod tests {
             );
         }
         assert!(sign_137.windows(4).any(|window| window == b"Sign"));
+    }
+
+    #[test]
+    fn named_managed_static_export_owns_assembly_identity() {
+        let image = emit_i32_export_with_named_system_math_call(
+            "RiskEngine",
+            SystemMathMethod::Abs,
+            42,
+        );
+        assert!(image.windows(10).any(|window| window == b"RiskEngine"));
+        assert!(
+            image
+                .windows(14)
+                .any(|window| window == b"RiskEngine.dll")
+        );
+        assert!(!image.windows(21).any(|window| window == b"FerrumWeave.Generated"));
     }
 }
