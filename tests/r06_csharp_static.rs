@@ -111,7 +111,10 @@ fn csharp_calls_rust_source_causal_public_static_behavior() {
             String::from_utf8_lossy(&build.stderr),
         );
         let assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
-        assert!(assembly.is_file(), "R06 Rust source did not produce managed DLL");
+        assert!(
+            assembly.is_file(),
+            "R06 Rust source did not produce managed DLL"
+        );
 
         let bytes = fs::read(&assembly).expect("read R06 managed artifact");
         if let Some(previous) = &previous_artifact {
@@ -123,7 +126,8 @@ fn csharp_calls_rust_source_causal_public_static_behavior() {
         previous_artifact = Some(bytes);
 
         let consumer_assembly = consumer.join("RustLibrary.dll");
-        fs::copy(&assembly, &consumer_assembly).expect("place Rust-produced assembly beside C# consumer");
+        fs::copy(&assembly, &consumer_assembly)
+            .expect("place Rust-produced assembly beside C# consumer");
         let run = build_and_run_consumer(&consumer, "RustLibrary.dll");
         assert!(
             run.status.success(),
