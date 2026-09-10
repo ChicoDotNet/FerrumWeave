@@ -57,7 +57,10 @@ pub fn emit_i32_export_with_named_system_math_call(
     method: SystemMathMethod,
     argument: i32,
 ) -> Vec<u8> {
-    assert!(!assembly_name.is_empty(), "managed assembly identity must not be empty");
+    assert!(
+        !assembly_name.is_empty(),
+        "managed assembly identity must not be empty"
+    );
     let method_body = build_method_body(argument);
     let method_offset = CLR_HEADER_SIZE;
     let method_rva = SECTION_RVA + to_u32(method_offset);
@@ -404,17 +407,14 @@ mod tests {
 
     #[test]
     fn named_managed_static_export_owns_assembly_identity() {
-        let image = emit_i32_export_with_named_system_math_call(
-            "RiskEngine",
-            SystemMathMethod::Abs,
-            42,
-        );
+        let image =
+            emit_i32_export_with_named_system_math_call("RiskEngine", SystemMathMethod::Abs, 42);
         assert!(image.windows(10).any(|window| window == b"RiskEngine"));
+        assert!(image.windows(14).any(|window| window == b"RiskEngine.dll"));
         assert!(
-            image
-                .windows(14)
-                .any(|window| window == b"RiskEngine.dll")
+            !image
+                .windows(21)
+                .any(|window| window == b"FerrumWeave.Generated")
         );
-        assert!(!image.windows(21).any(|window| window == b"FerrumWeave.Generated"));
     }
 }
