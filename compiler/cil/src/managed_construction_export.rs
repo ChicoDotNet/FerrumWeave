@@ -59,10 +59,18 @@ pub fn emit_i32_export_with_managed_construction(
     let mut section = vec![0_u8; section_raw_size];
     section[method_offset..method_offset + method_body.len()].copy_from_slice(&method_body);
     section[metadata_offset..metadata_offset + metadata.len()].copy_from_slice(&metadata);
-    write_clr_header(&mut section[..CLR_HEADER_SIZE], metadata_rva, to_u32(metadata.len()));
+    write_clr_header(
+        &mut section[..CLR_HEADER_SIZE],
+        metadata_rva,
+        to_u32(metadata.len()),
+    );
 
     let mut image = vec![0_u8; HEADERS_SIZE];
-    write_pe_headers(&mut image, to_u32(section_virtual_size), to_u32(section_raw_size));
+    write_pe_headers(
+        &mut image,
+        to_u32(section_virtual_size),
+        to_u32(section_raw_size),
+    );
     image.extend_from_slice(&section);
     image
 }
@@ -97,8 +105,8 @@ fn build_metadata(method_rva: u32, constructor: ManagedConstructor) -> Vec<u8> {
     pad_vec(&mut strings, 4);
 
     let guid = vec![
-        0x46, 0x57, 0x43, 0x4F, 0x4E, 0x53, 0x54, 0x52,
-        0x55, 0x43, 0x54, 0x30, 0x30, 0x30, 0x30, 0x31,
+        0x46, 0x57, 0x43, 0x4F, 0x4E, 0x53, 0x54, 0x52, 0x55, 0x43, 0x54, 0x30, 0x30, 0x30, 0x30,
+        0x31,
     ];
 
     let mut blobs = vec![0_u8];
@@ -222,7 +230,10 @@ fn build_metadata(method_rva: u32, constructor: ManagedConstructor) -> Vec<u8> {
     push_u32(&mut metadata, to_u32(version.len()));
     metadata.extend_from_slice(version);
     push_u16(&mut metadata, 0);
-    push_u16(&mut metadata, u16::try_from(streams.len()).expect("stream count fits u16"));
+    push_u16(
+        &mut metadata,
+        u16::try_from(streams.len()).expect("stream count fits u16"),
+    );
     for ((name, data), offset) in streams.iter().zip(offsets.iter()) {
         push_u32(&mut metadata, to_u32(*offset));
         push_u32(&mut metadata, to_u32(data.len()));
@@ -268,7 +279,11 @@ fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_s
     write_u32_at(headers, optional + 36, to_u32(FILE_ALIGNMENT));
     write_u16_at(headers, optional + 40, 4);
     write_u16_at(headers, optional + 48, 4);
-    write_u32_at(headers, optional + 56, align_u32(SECTION_RVA + section_virtual_size, SECTION_ALIGNMENT));
+    write_u32_at(
+        headers,
+        optional + 56,
+        align_u32(SECTION_RVA + section_virtual_size, SECTION_ALIGNMENT),
+    );
     write_u32_at(headers, optional + 60, to_u32(HEADERS_SIZE));
     write_u16_at(headers, optional + 68, 3);
     write_u16_at(headers, optional + 70, 0x0100);
@@ -350,10 +365,15 @@ mod tests {
     fn construction_export_is_payload_and_constructor_sensitive() {
         let object_137 = emit_i32_export_with_managed_construction(ManagedConstructor::Object, 137);
         let object_211 = emit_i32_export_with_managed_construction(ManagedConstructor::Object, 211);
-        let builder_137 = emit_i32_export_with_managed_construction(ManagedConstructor::StringBuilder, 137);
+        let builder_137 =
+            emit_i32_export_with_managed_construction(ManagedConstructor::StringBuilder, 137);
         assert_ne!(object_137, object_211);
         assert_ne!(object_137, builder_137);
         assert!(object_137.windows(5).any(|window| window == b".ctor"));
-        assert!(builder_137.windows(13).any(|window| window == b"StringBuilder"));
+        assert!(
+            builder_137
+                .windows(13)
+                .any(|window| window == b"StringBuilder")
+        );
     }
 }

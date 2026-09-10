@@ -38,10 +38,18 @@ pub fn emit_i32_export_with_string_builder_length_property(payload: i32) -> Vec<
     let mut section = vec![0_u8; section_raw_size];
     section[method_offset..method_offset + method_body.len()].copy_from_slice(&method_body);
     section[metadata_offset..metadata_offset + metadata.len()].copy_from_slice(&metadata);
-    write_clr_header(&mut section[..CLR_HEADER_SIZE], metadata_rva, to_u32(metadata.len()));
+    write_clr_header(
+        &mut section[..CLR_HEADER_SIZE],
+        metadata_rva,
+        to_u32(metadata.len()),
+    );
 
     let mut image = vec![0_u8; HEADERS_SIZE];
-    write_pe_headers(&mut image, to_u32(section_virtual_size), to_u32(section_raw_size));
+    write_pe_headers(
+        &mut image,
+        to_u32(section_virtual_size),
+        to_u32(section_raw_size),
+    );
     image.extend_from_slice(&section);
     image
 }
@@ -82,8 +90,8 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     pad_vec(&mut strings, 4);
 
     let guid = vec![
-        0x46, 0x57, 0x50, 0x52, 0x4F, 0x50, 0x45, 0x52,
-        0x54, 0x59, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31,
+        0x46, 0x57, 0x50, 0x52, 0x4F, 0x50, 0x45, 0x52, 0x54, 0x59, 0x30, 0x30, 0x30, 0x30, 0x30,
+        0x31,
     ];
 
     let mut blobs = vec![0_u8];
@@ -216,7 +224,10 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u32(&mut metadata, to_u32(version.len()));
     metadata.extend_from_slice(version);
     push_u16(&mut metadata, 0);
-    push_u16(&mut metadata, u16::try_from(streams.len()).expect("stream count fits u16"));
+    push_u16(
+        &mut metadata,
+        u16::try_from(streams.len()).expect("stream count fits u16"),
+    );
     for ((name, data), offset) in streams.iter().zip(offsets.iter()) {
         push_u32(&mut metadata, to_u32(*offset));
         push_u32(&mut metadata, to_u32(data.len()));
@@ -262,7 +273,11 @@ fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_s
     write_u32_at(headers, optional + 36, to_u32(FILE_ALIGNMENT));
     write_u16_at(headers, optional + 40, 4);
     write_u16_at(headers, optional + 48, 4);
-    write_u32_at(headers, optional + 56, align_u32(SECTION_RVA + section_virtual_size, SECTION_ALIGNMENT));
+    write_u32_at(
+        headers,
+        optional + 56,
+        align_u32(SECTION_RVA + section_virtual_size, SECTION_ALIGNMENT),
+    );
     write_u32_at(headers, optional + 60, to_u32(HEADERS_SIZE));
     write_u16_at(headers, optional + 68, 3);
     write_u16_at(headers, optional + 70, 0x0100);
@@ -363,10 +378,21 @@ mod tests {
     fn property_emission_is_deterministic_and_payload_causal() {
         let three = emit_i32_export_with_string_builder_length_property(3);
         let seven = emit_i32_export_with_string_builder_length_property(7);
-        assert_eq!(three, emit_i32_export_with_string_builder_length_property(3));
+        assert_eq!(
+            three,
+            emit_i32_export_with_string_builder_length_property(3)
+        );
         assert_ne!(three, seven);
-        assert!(three.windows("set_Length".len()).any(|w| w == b"set_Length"));
-        assert!(three.windows("get_Length".len()).any(|w| w == b"get_Length"));
+        assert!(
+            three
+                .windows("set_Length".len())
+                .any(|w| w == b"set_Length")
+        );
+        assert!(
+            three
+                .windows("get_Length".len())
+                .any(|w| w == b"get_Length")
+        );
         assert!(three.iter().filter(|&&b| b == 0x6F).count() >= 2);
     }
 }
