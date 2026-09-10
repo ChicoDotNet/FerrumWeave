@@ -1,5 +1,5 @@
 milestone = "R05"
-status = "needs_recertification"
+status = "done"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -9,6 +9,12 @@ target_percent_when_done = 100.0
 # source-only mutation changes the managed observable through the FerrumWeave
 # codegen backend. Upstream/oracle evidence is preserved but cannot certify a
 # FerrumWeave product claim.
+#
+# Final re-certification baseline: exact SHA
+# 60756627ca1617b517fbcbbb0654b1c2c23cb71b passed FerrumWeave codegen backend
+# convergence #106 and Rust CI #469, including fmt, clippy, coverage, and
+# Ubuntu/Windows build + unit + integration. The source-causal contracts below
+# are FerrumWeave-backend-proven; rustc_codegen_clr remains oracle evidence only.
 
 [[contracts]]
 id = "FW-R05-DOTNET-001"
