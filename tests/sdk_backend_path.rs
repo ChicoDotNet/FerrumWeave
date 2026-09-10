@@ -103,9 +103,7 @@ fn rsproj_build_uses_rustc_and_ferrumweave_backend_causally() {
     for value in [137, 211] {
         fs::write(
             source_dir.join("main.rs"),
-            format!(
-                "#[no_mangle]\npub extern \"C\" fn answer() -> i32 {{ {value} }}\n"
-            ),
+            format!("#[no_mangle]\npub extern \"C\" fn answer() -> i32 {{ {value} }}\n"),
         )
         .expect("write valid source-causal Rust input");
 
