@@ -28,6 +28,9 @@ pub use managed_construction_export::*;
 mod managed_instance_export;
 pub use managed_instance_export::*;
 
+mod managed_property_export;
+pub use managed_property_export::*;
+
 mod r06;
 pub use r06::*;
 
