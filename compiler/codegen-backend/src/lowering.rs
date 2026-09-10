@@ -246,7 +246,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                     return Ok(LoweredI32Export::ManagedInstance { receiver, payload });
                 }
 
-                if callee_name.as_ref() == SYSTEM_TEXT_STRING_BUILDER_LENGTH_MARKER {
+                if callee_name == SYSTEM_TEXT_STRING_BUILDER_LENGTH_MARKER {
                     if args.len() != 1 {
                         return Err(format!(
                             "{EXPORT_SYMBOL} managed property marker requires exactly one i32 payload"
