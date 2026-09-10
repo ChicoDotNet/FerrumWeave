@@ -31,6 +31,9 @@ pub use managed_instance_export::*;
 mod managed_property_export;
 pub use managed_property_export::*;
 
+mod managed_external_export;
+pub use managed_external_export::*;
+
 mod r06;
 pub use r06::*;
 
