@@ -98,6 +98,6 @@ proof = "FerrumWeave codegen backend convergence run #74 on SHA 3add9b7fcdfb9b47
 [[contracts]]
 id = "FW-R05-DOTNET-013"
 family = "real Rust source causally consumes an independently compiled user-defined C# assembly"
-implemented = false
-evidence_level = "source-causal-required"
-proof = "pending: independently compile managed fixture, then real Rust source must select/call its API through FerrumWeave CodegenBackend and observable mutations must follow Rust source"
+implemented = true
+evidence_level = "source-causal-certified"
+proof = "FerrumWeave codegen backend convergence run #89 on exact SHA e651829d147b46ad08573e44b72ca65ee8c60703 passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: an independently compiled fixed External.Managed.dll exposed ExternalManaged.ExternalApi.Transform(int) => value + 1000; changing only Rust payload 137->211 changed FerrumWeave-produced assembly bytes and executable CoreCLR observable 1137->1211, while emitted metadata retained External.Managed/ExternalManaged/ExternalApi/Transform references and Answer contained a real CLR call opcode"
