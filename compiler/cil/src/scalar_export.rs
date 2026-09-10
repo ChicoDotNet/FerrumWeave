@@ -27,11 +27,20 @@ pub const SCALAR_EXPORT_METHOD_NAME: &str = "Answer";
 /// responsible for deriving that value from Rust semantics.
 #[must_use]
 pub fn emit_i32_export_assembly(value: i32) -> Vec<u8> {
+    emit_named_i32_export_assembly(SCALAR_EXPORT_ASSEMBLY_NAME, value)
+}
+
+/// Emit the scalar export with an explicit CLR assembly identity.
+///
+/// rustc-facing callers should pass the crate name so the managed metadata identity
+/// agrees with the artifact that the compiler/SDK publishes.
+#[must_use]
+pub fn emit_named_i32_export_assembly(assembly_name: &str, value: i32) -> Vec<u8> {
     let method_body = build_i32_return_body(value);
     let method_offset = CLR_HEADER_SIZE;
     let method_rva = SECTION_RVA + to_u32(method_offset);
 
-    let metadata = build_metadata(method_rva);
+    let metadata = build_metadata(method_rva, assembly_name);
     let metadata_offset = align_usize(method_offset + method_body.len(), 4);
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
@@ -66,16 +75,17 @@ fn build_i32_return_body(value: i32) -> Vec<u8> {
     body
 }
 
-fn build_metadata(method_rva: u32) -> Vec<u8> {
+fn build_metadata(method_rva: u32, assembly_identity: &str) -> Vec<u8> {
     let mut strings = vec![0_u8];
-    let module_name = push_string(&mut strings, SCALAR_EXPORT_ASSEMBLY_FILE);
+    let module_file = format!("{assembly_identity}.dll");
+    let module_name = push_string(&mut strings, &module_file);
     let object_name = push_string(&mut strings, "Object");
     let system_namespace = push_string(&mut strings, "System");
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, SCALAR_EXPORT_TYPE_NAME);
     let ferrumweave_namespace = push_string(&mut strings, SCALAR_EXPORT_NAMESPACE);
     let answer_name = push_string(&mut strings, SCALAR_EXPORT_METHOD_NAME);
-    let assembly_name = push_string(&mut strings, SCALAR_EXPORT_ASSEMBLY_NAME);
+    let assembly_name = push_string(&mut strings, assembly_identity);
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
     pad_vec(&mut strings, 4);
 
@@ -141,7 +151,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, answer_signature);
     push_u16(&mut tables, 1); // first parameter, one-past-empty table
 
-    // Assembly (0x20): FerrumWeave.Generated, version 1.0.0.0.
+    // Assembly (0x20): caller-owned identity, version 1.0.0.0.
     push_u32(&mut tables, 0x0000_8004); // SHA-1 assembly hash algorithm id
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 0);
@@ -372,5 +382,20 @@ mod tests {
                 .windows(second_body.len())
                 .any(|window| window == second_body)
         );
+    }
+
+    #[test]
+    fn named_scalar_export_uses_the_requested_clr_identity() {
+        let image = emit_named_i32_export_assembly("RustLibrary", 137);
+        for expected in ["RustLibrary", "RustLibrary.dll"] {
+            assert!(
+                image
+                    .windows(expected.len())
+                    .any(|window| window == expected.as_bytes())
+            );
+        }
+        assert!(!image.windows(SCALAR_EXPORT_ASSEMBLY_NAME.len()).any(|window| {
+            window == SCALAR_EXPORT_ASSEMBLY_NAME.as_bytes()
+        }));
     }
 }
