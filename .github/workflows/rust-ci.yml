@@ -98,6 +98,8 @@ jobs:
           dotnet-version: "10.0.400"
       - name: Toolchain
         run: rustup show
+      - name: Provision pinned rustc backend components
+        run: rustup component add --toolchain nightly-2025-10-14 rustc-dev rust-src llvm-tools-preview
       - name: Build
         run: cargo build --workspace --all-targets --locked
       - name: Unit tests
@@ -117,6 +119,8 @@ jobs:
           dotnet-version: "10.0.400"
       - name: Toolchain
         run: rustup show
+      - name: Provision pinned rustc backend components
+        run: rustup component add --toolchain nightly-2025-10-14 rustc-dev rust-src llvm-tools-preview
       - name: Install pinned cargo-llvm-cov
         shell: bash
         run: cargo install --locked --force --version 0.8.7 cargo-llvm-cov
