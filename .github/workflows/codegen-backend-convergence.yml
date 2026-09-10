@@ -20,6 +20,7 @@ on:
       - "eng/verification/verify_managed_construction_backend.py"
       - "eng/verification/verify_managed_instance_call_backend.py"
       - "eng/verification/verify_managed_property_backend.py"
+      - "eng/verification/verify_external_managed_assembly_backend.py"
       - "tests/r05/contracts.toml"
       - "Cargo.toml"
       - "docs/architecture/adr/0002-r02-isolated-upstream-codegen-lane.md"
@@ -43,6 +44,7 @@ on:
       - "eng/verification/verify_managed_construction_backend.py"
       - "eng/verification/verify_managed_instance_call_backend.py"
       - "eng/verification/verify_managed_property_backend.py"
+      - "eng/verification/verify_external_managed_assembly_backend.py"
       - "tests/r05/contracts.toml"
       - "Cargo.toml"
       - "docs/architecture/adr/0002-r02-isolated-upstream-codegen-lane.md"
@@ -181,5 +183,13 @@ jobs:
         run: |
           set -euo pipefail
           python eng/verification/verify_managed_property_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave external managed assembly consumption
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_external_managed_assembly_backend.py \
             --toolchain nightly-2025-10-14 \
             --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
