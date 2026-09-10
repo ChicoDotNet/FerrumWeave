@@ -15,7 +15,7 @@ A milestone is complete only when it changes a technical fact about the project 
 | R02 — Rust → CLR vertical slice | **Done** | Real Rust source passes through `rustc` and executes as managed code on CoreCLR. |
 | R03 — Core Rust semantics | **Done** | 11/11 declared safe-Rust semantic and negative contracts are certified on Linux and Windows with native/CLR differential evidence. |
 | R04 — CLR / CTS foundation | **Done — re-audited** | CTS mapping/reflection evidence remains valid at its declared artifact/type-system scope; it does not claim managed API consumption from Rust source. |
-| R05 — Rust consumes .NET | **Re-certifying** | Managed metadata resolution and IL-emission primitives are preserved, but real Rust-source causality is now an explicit missing contract. |
+| R05 — Rust consumes .NET | **Done — FerrumWeave backend re-certified** | Required managed-call families are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; upstream remains oracle-only. |
 | R06 — .NET consumes Rust | **Needs re-certification** | Existing managed-consumer evidence must be replayed after public behavior is proven to originate from Rust source. |
 | R07 — Semantic interoperability | **Needs re-certification** | Existing semantic artifacts remain evidence candidates; source-causal crossings must be replayed after R05/R06. |
 | R08 — `.rsproj` and FerrumWeave SDK | **Needs re-certification** | SDK/project-system work exists, but normal `.rsproj` build must be reconnected to the real `rustc` → CLR path before this milestone can be trusted. |
@@ -135,7 +135,7 @@ Given FerrumWeave's R01 emitter, when it produces the probe artifact, then the r
 
 ### `FW-R01-CLR-002` — CLR execution
 
-Given the generated probe assembly, when it is executed with `dotnet`, then it exits successfully and prints exactly:
+Given the generated managed assembly, when it is executed with `dotnet`, then it exits successfully and prints exactly:
 
 ```text
 Hello FerrumWeave
@@ -311,7 +311,7 @@ All of these conditions are satisfied by the certified R04 milestone. The mappin
 
 # R05 — Rust consumes .NET
 
-**Status: Re-certifying. Existing managed metadata and IL-emission primitives remain valid evidence, but real Rust-source causality is not yet certified.**
+**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend.**
 
 ## Goal
 
@@ -332,6 +332,8 @@ R05 is Done when Rust can, through managed metadata:
 - perform all of the above on Linux and Windows;
 - do so without P/Invoke/FFI being the implementation of managed interoperability;
 - demonstrate that the managed call is causally produced from real Rust source compiled through `rustc`/the CLR codegen path rather than injected by an emitter or fixture.
+
+The re-certification closes that causal gate using FerrumWeave-owned codegen rather than `rustc_codegen_clr`: real Rust source reaches FerrumWeave `codegen_crate`, MIR selects each managed-call family, FerrumWeave emits the CIL/metadata, and CoreCLR executes the result. Static call, construction, instance call, property access, and independently compiled external managed assembly consumption each have source-only falsification. Exact implementation baseline `60756627ca1617b517fbcbbb0654b1c2c23cb71b` passed FerrumWeave codegen backend convergence #106 and Rust CI #469, including fmt, clippy, coverage, and Linux/Windows integration. `rustc_codegen_clr` is retained only as historical/differential oracle evidence.
 
 The first projection should favor **CLR-shaped, mechanically predictable semantics** over prematurely clever Rust wrappers. More idiomatic abstractions can be layered later without obscuring the underlying CLR contract.
 
