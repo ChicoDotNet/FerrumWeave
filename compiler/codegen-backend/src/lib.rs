@@ -22,7 +22,8 @@ use ferrumweave_cil::{
     emit_i32_control_flow_export_assembly, emit_i32_direct_call_export_assembly,
     emit_i32_export_assembly, emit_i32_export_with_external_managed_transform,
     emit_i32_export_with_managed_construction, emit_i32_export_with_managed_instance_call,
-    emit_i32_export_with_string_builder_length_property, emit_i32_export_with_system_math_call,
+    emit_i32_export_with_named_system_math_call,
+    emit_i32_export_with_string_builder_length_property,
 };
 use rustc_codegen_ssa::{
     CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig,
@@ -88,7 +89,13 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
                     emit_i32_direct_call_export_assembly(operation)
                 }
                 LoweredI32Export::SystemMath { method, argument } => {
-                    emit_i32_export_with_system_math_call(method, argument)
+                    let assembly_name = tcx
+                        .sess
+                        .opts
+                        .crate_name
+                        .as_deref()
+                        .unwrap_or("FerrumWeave.Generated");
+                    emit_i32_export_with_named_system_math_call(assembly_name, method, argument)
                 }
                 LoweredI32Export::ManagedConstruction {
                     constructor,
