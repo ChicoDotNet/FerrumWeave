@@ -35,7 +35,7 @@ fn run_managed_consumer(project: &Path, artifact: &Path) -> String {
     .expect("write C# consumer project");
     fs::write(
         consumer.join("Program.cs"),
-        "Console.WriteLine(FerrumWeave.RustApi.Answer());\n",
+        "System.Console.WriteLine(FerrumWeave.RustApi.Answer());\n",
     )
     .expect("write C# consumer source");
 
