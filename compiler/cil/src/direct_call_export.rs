@@ -98,8 +98,8 @@ fn build_metadata(answer_rva: u32, helper_rva: u32) -> Vec<u8> {
     pad_vec(&mut strings, 4);
 
     let guid = vec![
-        0x46, 0x57, 0x44, 0x49, 0x52, 0x43, 0x41, 0x4C, 0x4C, 0x30, 0x30, 0x30, 0x30, 0x30,
-        0x30, 0x31,
+        0x46, 0x57, 0x44, 0x49, 0x52, 0x43, 0x41, 0x4C, 0x4C, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+        0x31,
     ];
 
     let mut blobs = vec![0_u8];
@@ -114,12 +114,8 @@ fn build_metadata(answer_rva: u32, helper_rva: u32) -> Vec<u8> {
     let mut tables = Vec::new();
     push_u32(&mut tables, 0);
     tables.extend_from_slice(&[2, 0, 0, 1]);
-    let valid_tables = (1_u64 << 0)
-        | (1_u64 << 1)
-        | (1_u64 << 2)
-        | (1_u64 << 6)
-        | (1_u64 << 32)
-        | (1_u64 << 35);
+    let valid_tables =
+        (1_u64 << 0) | (1_u64 << 1) | (1_u64 << 2) | (1_u64 << 6) | (1_u64 << 32) | (1_u64 << 35);
     push_u64(&mut tables, valid_tables);
     push_u64(&mut tables, 0);
     for count in [1_u32, 1, 2, 2, 1, 1] {

@@ -24,7 +24,10 @@ const METHOD_NAME: &str = "Answer";
 /// the two incoming arguments selected by Rust MIR lowering.
 #[must_use]
 pub fn emit_i32_argument_export_assembly(argument_index: u8) -> Vec<u8> {
-    assert!(argument_index < 2, "i32 argument export supports exactly two arguments");
+    assert!(
+        argument_index < 2,
+        "i32 argument export supports exactly two arguments"
+    );
 
     let method_body = build_method_body(argument_index);
     let method_offset = CLR_HEADER_SIZE;
@@ -185,7 +188,10 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u32(&mut metadata, to_u32(version.len()));
     metadata.extend_from_slice(version);
     push_u16(&mut metadata, 0);
-    push_u16(&mut metadata, u16::try_from(streams.len()).expect("stream count fits u16"));
+    push_u16(
+        &mut metadata,
+        u16::try_from(streams.len()).expect("stream count fits u16"),
+    );
 
     for ((name, data), offset) in streams.iter().zip(offsets.iter()) {
         push_u32(&mut metadata, to_u32(*offset));

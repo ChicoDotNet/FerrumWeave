@@ -239,7 +239,10 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u32(&mut metadata, to_u32(version.len()));
     metadata.extend_from_slice(version);
     push_u16(&mut metadata, 0);
-    push_u16(&mut metadata, u16::try_from(streams.len()).expect("stream count fits u16"));
+    push_u16(
+        &mut metadata,
+        u16::try_from(streams.len()).expect("stream count fits u16"),
+    );
 
     for ((name, data), offset) in streams.iter().zip(offsets.iter()) {
         push_u32(&mut metadata, to_u32(*offset));
@@ -385,10 +388,16 @@ mod tests {
         let not_equal = emit_i32_control_flow_export_assembly(I32ZeroPredicate::NotEqual, 1, 2);
         assert_ne!(equal, not_equal);
         assert!(equal.windows(11).any(|window| {
-            window == [0x2A, 0x02, 0x16, 0xFE, 0x01, 0x2C, 0x02, 0x03, 0x2A, 0x04, 0x2A]
+            window
+                == [
+                    0x2A, 0x02, 0x16, 0xFE, 0x01, 0x2C, 0x02, 0x03, 0x2A, 0x04, 0x2A,
+                ]
         }));
         assert!(not_equal.windows(11).any(|window| {
-            window == [0x2A, 0x02, 0x16, 0xFE, 0x01, 0x2D, 0x02, 0x03, 0x2A, 0x04, 0x2A]
+            window
+                == [
+                    0x2A, 0x02, 0x16, 0xFE, 0x01, 0x2D, 0x02, 0x03, 0x2A, 0x04, 0x2A,
+                ]
         }));
     }
 }

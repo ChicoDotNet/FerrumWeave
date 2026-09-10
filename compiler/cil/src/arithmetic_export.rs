@@ -38,7 +38,8 @@ pub fn emit_i32_arithmetic_export_assembly(operation: I32ArithmeticOp) -> Vec<u8
     const OPTIONAL_HEADER_SIZE: usize = 0xE0;
 
     let clr = HEADERS_SIZE;
-    let metadata_size = u32::from_le_bytes(image[clr + 0x0c..clr + 0x10].try_into().unwrap()) as usize;
+    let metadata_size =
+        u32::from_le_bytes(image[clr + 0x0c..clr + 0x10].try_into().unwrap()) as usize;
     let old_start = HEADERS_SIZE + OLD_METADATA_OFFSET;
     let new_start = HEADERS_SIZE + NEW_METADATA_OFFSET;
     image.copy_within(old_start..old_start + metadata_size, new_start);
