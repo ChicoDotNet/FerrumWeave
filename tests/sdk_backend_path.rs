@@ -26,11 +26,11 @@ fn dotnet_build(repo: &Path, project: &Path) -> Output {
 fn run_managed_consumer(project: &Path, artifact: &Path) -> String {
     let consumer = project.join("consumer");
     fs::create_dir_all(&consumer).expect("create managed consumer directory");
-    fs::copy(artifact, consumer.join("FerrumWeave.Generated.dll"))
+    fs::copy(artifact, consumer.join("HelloFerrum.dll"))
         .expect("copy generated managed assembly for consumer");
     fs::write(
         consumer.join("Consumer.csproj"),
-        "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net10.0</TargetFramework>\n  </PropertyGroup>\n  <ItemGroup>\n    <Reference Include=\"FerrumWeave.Generated\">\n      <HintPath>FerrumWeave.Generated.dll</HintPath>\n      <Private>true</Private>\n    </Reference>\n  </ItemGroup>\n</Project>\n",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net10.0</TargetFramework>\n  </PropertyGroup>\n  <ItemGroup>\n    <Reference Include=\"HelloFerrum\">\n      <HintPath>HelloFerrum.dll</HintPath>\n      <Private>true</Private>\n    </Reference>\n  </ItemGroup>\n</Project>\n",
     )
     .expect("write C# consumer project");
     fs::write(
