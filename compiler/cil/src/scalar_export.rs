@@ -394,8 +394,10 @@ mod tests {
                     .any(|window| window == expected.as_bytes())
             );
         }
-        assert!(!image.windows(SCALAR_EXPORT_ASSEMBLY_NAME.len()).any(|window| {
-            window == SCALAR_EXPORT_ASSEMBLY_NAME.as_bytes()
-        }));
+        assert!(
+            !image
+                .windows(SCALAR_EXPORT_ASSEMBLY_NAME.len())
+                .any(|window| { window == SCALAR_EXPORT_ASSEMBLY_NAME.as_bytes() })
+        );
     }
 }
