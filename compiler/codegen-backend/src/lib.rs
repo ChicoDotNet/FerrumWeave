@@ -3,9 +3,9 @@
 //! rustc-facing adapter for the FerrumWeave CLR backend.
 //!
 //! This crate owns the compiler-private integration boundary. MIR semantics are
-//! lowered in `lowering` and translated only through FerrumWeave-owned CIL
-//! emitters. No source parsing or upstream CLR backend participates in product
-//! code generation.
+//! lowered in responsibility-specific modules and translated only through
+//! FerrumWeave-owned CIL emitters. No source parsing or upstream CLR backend
+//! participates in product code generation.
 
 extern crate rustc_codegen_ssa;
 extern crate rustc_data_structures;
@@ -20,10 +20,9 @@ use std::{any::Any, fs};
 use ferrumweave_cil::{
     emit_i32_argument_export_assembly, emit_i32_arithmetic_export_assembly,
     emit_i32_control_flow_export_assembly, emit_i32_direct_call_export_assembly,
-    emit_i32_export_assembly, emit_i32_export_with_managed_construction,
-    emit_i32_export_with_managed_instance_call,
-    emit_i32_export_with_string_builder_length_property,
-    emit_i32_export_with_system_math_call,
+    emit_i32_export_assembly, emit_i32_export_with_external_managed_transform,
+    emit_i32_export_with_managed_construction, emit_i32_export_with_managed_instance_call,
+    emit_i32_export_with_string_builder_length_property, emit_i32_export_with_system_math_call,
 };
 use rustc_codegen_ssa::{
     CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig,
@@ -31,14 +30,19 @@ use rustc_codegen_ssa::{
 };
 use rustc_data_structures::fx::FxIndexMap;
 use rustc_metadata::EncodedMetadata;
-use rustc_middle::{dep_graph::{WorkProduct, WorkProductId}, ty::TyCtxt};
+use rustc_middle::{
+    dep_graph::{WorkProduct, WorkProductId},
+    ty::TyCtxt,
+};
 use rustc_session::{
     Session,
     config::{OutputFilenames, OutputType},
 };
 use rustc_span::{Symbol, sym};
 
+mod external_managed_lowering;
 mod lowering;
+use external_managed_lowering::lower_external_managed_transform;
 use lowering::{LoweredI32Export, lower_exported_i32};
 
 struct GeneratedArtifact {
@@ -58,32 +62,44 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
     }
 
     fn codegen_crate<'a>(&self, tcx: TyCtxt<'_>) -> Box<dyn Any> {
-        let lowered = lower_exported_i32(tcx)
+        let external_payload = lower_external_managed_transform(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-        let image = match lowered {
-            LoweredI32Export::Constant(value) => emit_i32_export_assembly(value),
-            LoweredI32Export::Argument(index) => emit_i32_argument_export_assembly(index),
-            LoweredI32Export::Arithmetic(operation) => emit_i32_arithmetic_export_assembly(operation),
-            LoweredI32Export::ControlFlow {
-                predicate,
-                true_argument,
-                false_argument,
-            } => emit_i32_control_flow_export_assembly(predicate, true_argument, false_argument),
-            LoweredI32Export::DirectRustCall(operation) => {
-                emit_i32_direct_call_export_assembly(operation)
-            }
-            LoweredI32Export::SystemMath { method, argument } => {
-                emit_i32_export_with_system_math_call(method, argument)
-            }
-            LoweredI32Export::ManagedConstruction {
-                constructor,
-                payload,
-            } => emit_i32_export_with_managed_construction(constructor, payload),
-            LoweredI32Export::ManagedInstance { receiver, payload } => {
-                emit_i32_export_with_managed_instance_call(receiver, payload)
-            }
-            LoweredI32Export::ManagedStringBuilderLength { payload } => {
-                emit_i32_export_with_string_builder_length_property(payload)
+        let image = if let Some(payload) = external_payload {
+            emit_i32_export_with_external_managed_transform(payload)
+        } else {
+            let lowered = lower_exported_i32(tcx)
+                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            match lowered {
+                LoweredI32Export::Constant(value) => emit_i32_export_assembly(value),
+                LoweredI32Export::Argument(index) => emit_i32_argument_export_assembly(index),
+                LoweredI32Export::Arithmetic(operation) => {
+                    emit_i32_arithmetic_export_assembly(operation)
+                }
+                LoweredI32Export::ControlFlow {
+                    predicate,
+                    true_argument,
+                    false_argument,
+                } => emit_i32_control_flow_export_assembly(
+                    predicate,
+                    true_argument,
+                    false_argument,
+                ),
+                LoweredI32Export::DirectRustCall(operation) => {
+                    emit_i32_direct_call_export_assembly(operation)
+                }
+                LoweredI32Export::SystemMath { method, argument } => {
+                    emit_i32_export_with_system_math_call(method, argument)
+                }
+                LoweredI32Export::ManagedConstruction {
+                    constructor,
+                    payload,
+                } => emit_i32_export_with_managed_construction(constructor, payload),
+                LoweredI32Export::ManagedInstance { receiver, payload } => {
+                    emit_i32_export_with_managed_instance_call(receiver, payload)
+                }
+                LoweredI32Export::ManagedStringBuilderLength { payload } => {
+                    emit_i32_export_with_string_builder_length_property(payload)
+                }
             }
         };
         Box::new(GeneratedArtifact {
