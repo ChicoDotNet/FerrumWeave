@@ -91,9 +91,9 @@ proof = "FerrumWeave codegen backend convergence run #66 on SHA 3e7fdb126d6620b7
 [[contracts]]
 id = "FW-R05-DOTNET-012"
 family = "real Rust source causally reads and writes a supported public .NET property"
-implemented = false
-evidence_level = "source-causal-required"
-proof = "pending: real Rust source -> rustc -> FerrumWeave CodegenBackend -> managed property getter/setter with source-only falsification"
+implemented = true
+evidence_level = "source-causal-certified"
+proof = "FerrumWeave codegen backend convergence run #74 on SHA 3add9b7fcdfb9b478a6d89e16b860f22c49b3e4a passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: Rust MIR selected the StringBuilder.Length marker, Rust-only payload mutation 3->7 changed artifact bytes and executable observable, emitted metadata contained set_Length/get_Length, Answer contained at least two CLR callvirt opcodes, and the resulting managed assemblies executed under CoreCLR"
 
 [[contracts]]
 id = "FW-R05-DOTNET-013"
