@@ -16,8 +16,9 @@ use ferrumweave_cil::{
     emit_i32_direct_call_export_assembly, emit_i32_export_with_external_managed_transform,
     emit_i32_export_with_managed_construction, emit_i32_export_with_managed_instance_call,
     emit_i32_export_with_named_system_math_call, emit_i32_export_with_string_builder_length_property,
-    emit_named_i32_export_assembly, emit_named_i32_method_export_assembly,
-    emit_option_reference_export_assembly, emit_option_value_export_assembly,
+    emit_i32_invalid_operation_export_assembly, emit_named_i32_export_assembly,
+    emit_named_i32_method_export_assembly, emit_option_reference_export_assembly,
+    emit_option_value_export_assembly,
 };
 use rustc_codegen_ssa::{CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig, traits::CodegenBackend};
 use rustc_data_structures::fx::FxIndexMap;
@@ -52,19 +53,16 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         let assembly_name = tcx.sess.opts.crate_name.as_deref().unwrap_or("FerrumWeave.Generated");
         let result_failure = lower_result_failure(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-        if let Some(result) = result_failure {
-            panic!(
-                "FERRUMWEAVE_CIL_EMISSION_FAILED: Result Err export `{}` lowered payload {} but managed exception emission is not implemented",
-                result.method_name,
-                result.value
-            );
-        }
-        let result_success = lower_result_success(tcx)
-            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-        let option_value = if result_success.is_none() {
+        let result_success = if result_failure.is_none() {
+            lower_result_success(tcx)
+                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
+        } else {
+            None
+        };
+        let option_value = if result_failure.is_none() && result_success.is_none() {
             lower_option_value_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
         } else { None };
-        let option_reference = if result_success.is_none() && option_value.is_none() {
+        let option_reference = if result_failure.is_none() && result_success.is_none() && option_value.is_none() {
             lower_option_reference_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
         } else { None };
         let rust_instance = lower_constructible_i32_instance(tcx)
@@ -72,7 +70,15 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         let external_payload = lower_external_managed_transform(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
 
-        let image = if let Some(result) = result_success {
+        let image = if let Some(result) = result_failure {
+            emit_i32_invalid_operation_export_assembly(
+                assembly_name,
+                "FerrumWeave",
+                "RustApi",
+                &result.method_name,
+                &result.value.to_string(),
+            )
+        } else if let Some(result) = result_success {
             emit_named_i32_method_export_assembly(assembly_name, "FerrumWeave", "RustApi", &result.method_name, result.value)
         } else if let Some(option) = option_value {
             emit_option_value_export_assembly(assembly_name, option.namespace, option.type_name, &option.some_method_name, &option.none_method_name, option.some_value)
