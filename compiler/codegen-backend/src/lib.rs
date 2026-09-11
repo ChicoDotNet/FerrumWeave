@@ -24,6 +24,7 @@ use ferrumweave_cil::{
     emit_i32_export_with_managed_construction, emit_i32_export_with_managed_instance_call,
     emit_i32_export_with_named_system_math_call, emit_i32_export_with_string_builder_length_property,
     emit_named_i32_export_assembly, emit_option_reference_export_assembly,
+    emit_option_value_export_assembly,
 };
 use rustc_codegen_ssa::{
     CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig,
@@ -44,10 +45,12 @@ use rustc_span::{Symbol, sym};
 mod external_managed_lowering;
 mod lowering;
 mod option_reference_lowering;
+mod option_value_lowering;
 mod rust_type_lowering;
 use external_managed_lowering::lower_external_managed_transform;
 use lowering::{LoweredI32Export, lower_exported_i32};
 use option_reference_lowering::lower_option_reference_exports;
+use option_value_lowering::lower_option_value_exports;
 use rust_type_lowering::lower_constructible_i32_instance;
 
 struct GeneratedArtifact {
@@ -73,13 +76,28 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
             .crate_name
             .as_deref()
             .unwrap_or("FerrumWeave.Generated");
-        let option_reference = lower_option_reference_exports(tcx)
+        let option_value = lower_option_value_exports(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+        let option_reference = if option_value.is_none() {
+            lower_option_reference_exports(tcx)
+                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
+        } else {
+            None
+        };
         let rust_instance = lower_constructible_i32_instance(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
         let external_payload = lower_external_managed_transform(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-        let image = if let Some(option) = option_reference {
+        let image = if let Some(option) = option_value {
+            emit_option_value_export_assembly(
+                assembly_name,
+                option.namespace,
+                option.type_name,
+                &option.some_method_name,
+                &option.none_method_name,
+                option.some_value,
+            )
+        } else if let Some(option) = option_reference {
             emit_option_reference_export_assembly(
                 assembly_name,
                 option.namespace,
