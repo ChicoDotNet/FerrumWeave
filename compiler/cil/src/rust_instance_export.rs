@@ -106,8 +106,8 @@ fn build_metadata(
     pad_vec(&mut strings, 4);
 
     let guid = vec![
-        0x46, 0x57, 0x52, 0x55, 0x53, 0x54, 0x54, 0x59, 0x50, 0x45, 0x30, 0x30, 0x30, 0x30,
-        0x30, 0x31,
+        0x46, 0x57, 0x52, 0x55, 0x53, 0x54, 0x54, 0x59, 0x50, 0x45, 0x30, 0x30, 0x30, 0x30, 0x30,
+        0x31,
     ];
 
     let mut blobs = vec![0_u8];
@@ -137,19 +137,16 @@ fn build_metadata(
         push_u32(&mut tables, count);
     }
 
-    // Module (0x00).
     push_u16(&mut tables, 0);
     push_u16(&mut tables, module_name);
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0);
 
-    // TypeRef row 1: [System.Runtime]System.Object.
-    push_u16(&mut tables, 6); // AssemblyRef row 1, ResolutionScope tag 2.
+    push_u16(&mut tables, 6);
     push_u16(&mut tables, object_name);
     push_u16(&mut tables, system_namespace);
 
-    // TypeDef row 1: <Module> owns no methods.
     push_u32(&mut tables, 0);
     push_u16(&mut tables, module_type_name);
     push_u16(&mut tables, 0);
@@ -157,15 +154,13 @@ fn build_metadata(
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // TypeDef row 2: public class namespace.type : System.Object.
     push_u32(&mut tables, 0x0010_0001);
     push_u16(&mut tables, type_name);
     push_u16(&mut tables, namespace);
-    push_u16(&mut tables, 5); // TypeDefOrRef: TypeRef row 1 => (1 << 2) | 1.
+    push_u16(&mut tables, 5);
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 1: public specialname rtspecialname instance void .ctor().
     push_u32(&mut tables, ctor_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x1886);
@@ -173,7 +168,6 @@ fn build_metadata(
     push_u16(&mut tables, ctor_signature);
     push_u16(&mut tables, 1);
 
-    // MethodDef row 2: public instance int32 method().
     push_u32(&mut tables, method_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0086);
@@ -181,12 +175,10 @@ fn build_metadata(
     push_u16(&mut tables, method_signature);
     push_u16(&mut tables, 1);
 
-    // MemberRef row 1: instance void [System.Runtime]System.Object::.ctor().
-    push_u16(&mut tables, 9); // (TypeRef row 1 << 3) | MemberRefParent TypeRef tag 1.
+    push_u16(&mut tables, 9);
     push_u16(&mut tables, ctor_name);
     push_u16(&mut tables, ctor_signature);
 
-    // Assembly (0x20): caller-owned assembly identity, version 1.0.0.0.
     push_u32(&mut tables, 0x0000_8004);
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 0);
@@ -197,7 +189,6 @@ fn build_metadata(
     push_u16(&mut tables, assembly_name);
     push_u16(&mut tables, 0);
 
-    // AssemblyRef (0x23): System.Runtime 10.0.0.0.
     push_u16(&mut tables, 10);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0);
@@ -265,24 +256,19 @@ fn write_clr_header(header: &mut [u8], metadata_rva: u32, metadata_size: u32) {
     write_u16_at(header, 0x06, 5);
     write_u32_at(header, 0x08, metadata_rva);
     write_u32_at(header, 0x0C, metadata_size);
-    write_u32_at(header, 0x10, 0x0000_0001); // COMIMAGE_FLAGS_ILONLY.
-    write_u32_at(header, 0x14, 0); // Library: no managed entry point.
+    write_u32_at(header, 0x10, 0x0000_0001);
+    write_u32_at(header, 0x14, 0);
 }
 
 fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_size: u32) {
     headers[0..2].copy_from_slice(b"MZ");
     write_u32_at(headers, 0x3C, to_u32(PE_OFFSET));
-
     headers[PE_OFFSET..PE_OFFSET + 4].copy_from_slice(b"PE\0\0");
     let coff = PE_OFFSET + 4;
     write_u16_at(headers, coff, 0x014C);
     write_u16_at(headers, coff + 2, 1);
-    write_u32_at(headers, coff + 4, 0);
-    write_u32_at(headers, coff + 8, 0);
-    write_u32_at(headers, coff + 12, 0);
     write_u16_at(headers, coff + 16, to_u16(OPTIONAL_HEADER_SIZE));
     write_u16_at(headers, coff + 18, 0x2022);
-
     let optional = coff + 20;
     write_u16_at(headers, optional, 0x010B);
     write_u32_at(headers, optional + 4, section_raw_size);
@@ -292,7 +278,6 @@ fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_s
     write_u32_at(headers, optional + 36, to_u32(FILE_ALIGNMENT));
     write_u16_at(headers, optional + 40, 4);
     write_u16_at(headers, optional + 48, 4);
-
     let image_size = align_u32(SECTION_RVA + section_virtual_size, SECTION_ALIGNMENT);
     write_u32_at(headers, optional + 56, image_size);
     write_u32_at(headers, optional + 60, to_u32(HEADERS_SIZE));
@@ -303,11 +288,9 @@ fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_s
     write_u32_at(headers, optional + 80, 0x0010_0000);
     write_u32_at(headers, optional + 84, 0x0000_1000);
     write_u32_at(headers, optional + 92, 16);
-
     let cli_directory = optional + 96 + (14 * 8);
     write_u32_at(headers, cli_directory, SECTION_RVA);
     write_u32_at(headers, cli_directory + 4, to_u32(CLR_HEADER_SIZE));
-
     let section = optional + OPTIONAL_HEADER_SIZE;
     headers[section..section + 8].copy_from_slice(b".text\0\0\0");
     write_u32_at(headers, section + 8, section_virtual_size);
@@ -409,7 +392,6 @@ mod tests {
             "Answer",
             211,
         );
-
         assert_ne!(first, second);
         for marker in [
             b"RustLibrary".as_slice(),
@@ -419,8 +401,10 @@ mod tests {
         ] {
             assert!(first.windows(marker.len()).any(|window| window == marker));
         }
-        assert!(!first
-            .windows(b"FerrumWeave.Probe".len())
-            .any(|window| window == b"FerrumWeave.Probe"));
+        assert!(
+            !first
+                .windows(b"FerrumWeave.Probe".len())
+                .any(|window| window == b"FerrumWeave.Probe")
+        );
     }
 }
