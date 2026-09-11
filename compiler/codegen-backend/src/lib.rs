@@ -18,11 +18,12 @@ extern crate rustc_span;
 use std::{any::Any, fs};
 
 use ferrumweave_cil::{
-    emit_i32_argument_export_assembly, emit_i32_arithmetic_export_assembly,
-    emit_i32_control_flow_export_assembly, emit_i32_direct_call_export_assembly,
-    emit_i32_export_with_external_managed_transform, emit_i32_export_with_managed_construction,
-    emit_i32_export_with_managed_instance_call, emit_i32_export_with_named_system_math_call,
-    emit_i32_export_with_string_builder_length_property, emit_named_i32_export_assembly,
+    emit_constructible_i32_instance_assembly, emit_i32_argument_export_assembly,
+    emit_i32_arithmetic_export_assembly, emit_i32_control_flow_export_assembly,
+    emit_i32_direct_call_export_assembly, emit_i32_export_with_external_managed_transform,
+    emit_i32_export_with_managed_construction, emit_i32_export_with_managed_instance_call,
+    emit_i32_export_with_named_system_math_call, emit_i32_export_with_string_builder_length_property,
+    emit_named_i32_export_assembly,
 };
 use rustc_codegen_ssa::{
     CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig,
@@ -42,8 +43,10 @@ use rustc_span::{Symbol, sym};
 
 mod external_managed_lowering;
 mod lowering;
+mod rust_type_lowering;
 use external_managed_lowering::lower_external_managed_transform;
 use lowering::{LoweredI32Export, lower_exported_i32};
+use rust_type_lowering::lower_constructible_i32_instance;
 
 struct GeneratedArtifact {
     image: Vec<u8>,
@@ -68,9 +71,19 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
             .crate_name
             .as_deref()
             .unwrap_or("FerrumWeave.Generated");
+        let rust_instance = lower_constructible_i32_instance(tcx)
+            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
         let external_payload = lower_external_managed_transform(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-        let image = if let Some(payload) = external_payload {
+        let image = if let Some(instance) = rust_instance {
+            emit_constructible_i32_instance_assembly(
+                assembly_name,
+                instance.namespace,
+                &instance.type_name,
+                &instance.method_name,
+                instance.value,
+            )
+        } else if let Some(payload) = external_payload {
             emit_i32_export_with_external_managed_transform(payload)
         } else {
             let lowered = lower_exported_i32(tcx)
