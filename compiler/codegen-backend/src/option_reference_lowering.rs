@@ -1,8 +1,5 @@
 use rustc_middle::{
-    mir::{
-        AggregateKind, Operand, RETURN_PLACE, Rvalue, StatementKind, interpret::ConstValue,
-        mono::MonoItem,
-    },
+    mir::{AggregateKind, ConstValue, Operand, RETURN_PLACE, Rvalue, StatementKind, mono::MonoItem},
     ty::{TyCtxt, TypingEnv},
 };
 
@@ -38,7 +35,7 @@ pub(crate) fn lower_option_reference_exports(
             }
 
             let mir = tcx.instance_mir(instance.def);
-            let method_name = clr_method_name(symbol.as_str());
+            let method_name = clr_method_name(symbol);
             for block in mir.basic_blocks.iter() {
                 for statement in &block.statements {
                     let StatementKind::Assign(assignment) = &statement.kind else {
@@ -54,11 +51,12 @@ pub(crate) fn lower_option_reference_exports(
                     let AggregateKind::Adt(adt, variant_index, ..) = kind.as_ref() else {
                         continue;
                     };
-                    if tcx.item_name(adt.did()).as_str() != "Option" {
+                    if tcx.item_name(*adt).as_str() != "Option" {
                         continue;
                     }
 
-                    let variant_name = adt.variant(*variant_index).name.as_str();
+                    let adt_def = tcx.adt_def(*adt);
+                    let variant_name = adt_def.variant(*variant_index).name.as_str();
                     match variant_name {
                         "Some" => {
                             if operands.len() != 1 {
@@ -66,7 +64,11 @@ pub(crate) fn lower_option_reference_exports(
                                     "Option Some export `{symbol}` must carry exactly one MIR operand"
                                 ));
                             }
-                            let value = lower_string_constant_operand(tcx, &operands[0])?;
+                            let operand = operands
+                                .iter()
+                                .next()
+                                .expect("Option Some operand count was checked above");
+                            let value = lower_string_constant_operand(tcx, operand)?;
                             some = Some((method_name.clone(), value));
                         }
                         "None" => {
