@@ -17,7 +17,7 @@ target_percent_when_done = 100.0
 id = "FW-R06-DOTNET-001"
 family = "Rust produces a managed assembly exposing a coherent public static Rust-defined API"
 implemented = true
-proof = "FerrumWeave.Sdk builds real Rust source through rustc -Z codegen-backend=<FerrumWeave>; FerrumWeave MIR lowering emits FerrumWeave.RustApi.Answer() into RustLibrary.dll with crate-owned CLR assembly identity. Rust-only mutation 137 -> 211 changes the managed artifact and observable. Exact SHA 55caa43cdc93ac18139a7c39e0d264d563c130e417 passed Backend convergence #126 and Rust CI #489 on Ubuntu and Windows."
+proof = "FerrumWeave.Sdk builds real Rust source through rustc -Z codegen-backend=<FerrumWeave>; FerrumWeave MIR lowering emits FerrumWeave.RustApi.Answer() into RustLibrary.dll with crate-owned CLR assembly identity. Rust-only mutation 137 -> 211 changes the managed artifact and observable. Exact SHA 55caa43cdc93ac18139ac5e47205d0bf607043f5 passed Backend convergence #115 and Rust CI #478 on Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R06-DOTNET-002"
@@ -29,7 +29,7 @@ proof = "tests/r06_csharp_static.rs builds RustLibrary.rsproj through FerrumWeav
 id = "FW-R06-DOTNET-003"
 family = "a Visual Basic .NET project references the Rust-produced managed assembly and calls supported public static Rust-defined behavior"
 implemented = true
-proof = "tests/r06_vb_static.rs builds RustLibrary.rsproj through FerrumWeave.Sdk, then an independent net10.0 VB.NET executable references RustLibrary.dll and calls FerrumWeave.RustApi.Answer(). The certifier mutates only Rust source 137 -> 211 and requires both assembly bytes and VB stdout to change. Exact SHA 55caa43cdc93ac18139a7c39e0d264d563c130e417 passed Rust CI #478 and Backend convergence #115 on Ubuntu and Windows; no r06 emitter, ferrumweave_emit, native ABI, or baked consumer behavior participates."
+proof = "tests/r06_vb_static.rs builds RustLibrary.rsproj through FerrumWeave.Sdk, then an independent net10.0 VB.NET executable references RustLibrary.dll and calls FerrumWeave.RustApi.Answer(). The certifier mutates only Rust source 137 -> 211 and requires both assembly bytes and VB stdout to change. Exact SHA 55caa43cdc93ac18139ac5e47205d0bf607043f5 passed Rust CI #478 and Backend convergence #115 on Ubuntu and Windows; no r06 emitter, ferrumweave_emit, native ABI, or baked consumer behavior participates."
 
 [[contracts]]
 id = "FW-R06-DOTNET-004"
@@ -65,4 +65,4 @@ proof = "tests/r06_no_native_abi.rs builds RustLibrary.dll from real Rust source
 id = "FW-R06-DOTNET-009"
 family = "supported R06 consumer scenarios are certified on Linux and Windows"
 implemented = true
-proof = "SOURCE-CAUSAL CERTIFIED: static C# exact SHA d9996458e48023562b434c5b2211e7b2936b9ca7 (Rust CI #477, Backend convergence #114); static VB exact SHA 55caa43cdc93ac18139a7c39e0d264d563c130e417 (Rust CI #478, Backend convergence #115); C# instance exact SHA 5f35bb4e29d352a45501280294bd1440027d2884 (Rust CI #487, Backend convergence #124); VB instance exact SHA 55b59eed7fc89e819a7c39e0d264d563c130e417 (Rust CI #489, Backend convergence #126); reflection exact SHA 3d2d6bbdc960ea699990f0b2b16c60281da95aa3 (Rust CI #492, Backend convergence #129); and no-native-ABI exact SHA 4c74c13f7c659ee0115a824cc58802c2cdbe6e24 (Rust CI #494, Backend convergence #131), all Ubuntu and Windows. Every product claim uses rustc -> FerrumWeave CodegenBackend in the causal path."
+proof = "SOURCE-CAUSAL CERTIFIED: static C# exact SHA d9996458e48023562b434c5b2211e7b2936b9ca7 (Rust CI #477, Backend convergence #114); static VB exact SHA 55caa43cdc93ac18139ac5e47205d0bf607043f5 (Rust CI #478, Backend convergence #115); C# instance exact SHA 5f35bb4e29d352a45501280294bd1440027d2884 (Rust CI #487, Backend convergence #124); VB instance exact SHA 55b59eed7fc89e819a7c39e0d264d563c130e417 (Rust CI #489, Backend convergence #126); reflection exact SHA 3d2d6bbdc960ea699990f0b2b16c60281da95aa3 (Rust CI #492, Backend convergence #129); and no-native-ABI exact SHA 4c74c13f7c659ee0115a824cc58802c2cdbe6e24 (Rust CI #494, Backend convergence #131), all Ubuntu and Windows. Every product claim uses rustc -> FerrumWeave CodegenBackend in the causal path."
