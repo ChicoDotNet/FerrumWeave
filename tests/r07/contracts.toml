@@ -31,8 +31,8 @@ proof = "tests/r07_option_value.rs builds real Rust Option<i32> source through .
 [[contracts]]
 id = "FW-R07-SEM-004"
 family = "Result<T, E> success crosses a supported public CLR boundary as the declared success value"
-implemented = true
-proof = "tests/r07_result_success.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly and observes FerrumWeave.RustApi.ResultOkI32() == 42. The behavior is emitted as managed IL by compiler/cil/src/r06.rs; the C# harness only consumes the public CLR contract. Rust CI #182 certified exact product SHA 1efc849ace95bfe04d069ac8cd2a94e1e6bec258 GREEN for fmt/clippy, functional coverage, code coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #89 was also GREEN."
+implemented = false
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior tests/r07_result_success.rs consumed ResultOkI32() emitted directly by compiler/cil/src/r06.rs. The active certifier now builds real Rust Result<i32, i32> Ok source through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, mutates only Ok(42) -> Ok(73), requires managed artifact bytes and the independent CLR observable to change, and requires the CLR consumer to observe the declared success value. Pending RED/GREEN/falsification replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-005"
@@ -80,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-004/005 are the next active replacements after source-causal certification of FW-R07-SEM-001/002/003."
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-004/005 are the current active replacements after source-causal certification of FW-R07-SEM-001/002/003."
