@@ -1,5 +1,5 @@
 milestone = "R06"
-status = "done"
+status = "needs_recertification"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -7,57 +7,63 @@ target_percent_when_done = 100.0
 # Contracts remain false until executable evidence proves that ordinary .NET consumers
 # can use Rust-defined managed APIs. Consumer projects may be C#/VB test fixtures, but
 # they must not reimplement the Rust-defined behavior under test.
+#
+# Re-certification rule: historical artifact-level proofs remain useful evidence, but a
+# product claim is source-causal only when Rust source flows through rustc and the
+# FerrumWeave CodegenBackend into the managed artifact consumed by .NET. The static C#
+# and VB contracts below now meet that stronger rule. Instance/reflection/native-ABI
+# contracts remain historical until replayed through the same owned causal path.
 
 [[contracts]]
 id = "FW-R06-DOTNET-001"
 family = "Rust produces a managed assembly exposing a coherent public static Rust-defined API"
 implemented = true
-proof = "compiler/cil/src/r06.rs emits FerrumWeave.RustApi.Answer() as public static int32 with a Rust-built ECMA-335 TypeDef/MethodDef and IL body ldc.i4.s 42; ret; Rust CI #148 certified the exact implementation on Ubuntu and Windows"
+proof = "FerrumWeave.Sdk builds real Rust source through rustc -Z codegen-backend=<FerrumWeave>; FerrumWeave MIR lowering emits FerrumWeave.RustApi.Answer() into RustLibrary.dll with crate-owned CLR assembly identity. Rust-only mutation 137 -> 211 changes the managed artifact and observable. Exact SHA 55caa43cdc93ac18139ac5e47205d0bf607043f5 passed Backend convergence #115 and Rust CI #478 on Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R06-DOTNET-002"
 family = "a C# project references the Rust-produced managed assembly and calls supported public static Rust-defined behavior"
 implemented = true
-proof = "tests/r06_csharp_static.rs builds an independent net10.0 C# executable that references FerrumWeave.Probe.dll, calls FerrumWeave.RustApi.Answer(), executes under CoreCLR, and asserts stdout 42; Rust CI #148 integration tests passed on Ubuntu and Windows"
+proof = "tests/r06_csharp_static.rs builds RustLibrary.rsproj through FerrumWeave.Sdk, then an independent net10.0 C# executable references RustLibrary.dll and calls FerrumWeave.RustApi.Answer(). The certifier mutates only Rust source 137 -> 211 and requires both assembly bytes and C# stdout to change. Exact SHA d9996458e48023562b434c5b2211e7b2936b9ca7 passed Rust CI #477 and Backend convergence #114 on Ubuntu and Windows; no r06 emitter, ferrumweave_emit, native ABI, or baked consumer behavior participates."
 
 [[contracts]]
 id = "FW-R06-DOTNET-003"
 family = "a Visual Basic .NET project references the Rust-produced managed assembly and calls supported public static Rust-defined behavior"
 implemented = true
-proof = "tests/r06_vb_static.rs builds an independent net10.0 VB.NET executable that references FerrumWeave.Probe.dll, calls FerrumWeave.RustApi.Answer(), executes under CoreCLR, and asserts stdout 42; Rust CI #150 certified fmt/clippy, code/functional coverage, Ubuntu and Windows and R04 CLR CTS Reflection #59 remained GREEN"
+proof = "tests/r06_vb_static.rs builds RustLibrary.rsproj through FerrumWeave.Sdk, then an independent net10.0 VB.NET executable references RustLibrary.dll and calls FerrumWeave.RustApi.Answer(). The certifier mutates only Rust source 137 -> 211 and requires both assembly bytes and VB stdout to change. Exact SHA 55caa43cdc93ac18139ac5e47205d0bf607043f5 passed Rust CI #478 and Backend convergence #115 on Ubuntu and Windows; no r06 emitter, ferrumweave_emit, native ABI, or baked consumer behavior participates."
 
 [[contracts]]
 id = "FW-R06-DOTNET-004"
 family = "Rust produces a managed public type with a supported instance-call shape"
 implemented = true
-proof = "compiler/cil/src/r06.rs emits public FerrumWeave.RustValue : System.Object with a managed public .ctor() that calls System.Object::.ctor() and a public instance int32 Answer() IL body returning 42; Rust CI #154 certified the exact SHA on Ubuntu and Windows with 92.00% Rust line coverage and R04 CLR CTS Reflection #63 GREEN"
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY pending FerrumWeave-backend source-causal re-certification: compiler/cil/src/r06.rs emits public FerrumWeave.RustValue : System.Object with a managed public .ctor() that calls System.Object::.ctor() and a public instance int32 Answer() IL body returning 42; Rust CI #154 certified the historical exact SHA on Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R06-DOTNET-005"
 family = "a C# project constructs or receives the Rust-defined managed type and calls supported public instance behavior"
 implemented = true
-proof = "tests/r06_csharp_instance.rs builds an independent net10.0 C# executable referencing the Rust-produced assembly, constructs new FerrumWeave.RustValue(), calls value.Answer(), executes under CoreCLR, and asserts stdout 42; Rust CI #154 integration tests passed on Ubuntu and Windows"
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY pending FerrumWeave-backend source-causal re-certification: tests/r06_csharp_instance.rs consumes the assembly emitted by compiler/cil/src/r06.rs, constructs FerrumWeave.RustValue and calls Answer(); historical Rust CI #154 passed on Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R06-DOTNET-006"
 family = "a Visual Basic .NET project constructs or receives the Rust-defined managed type and calls supported public instance behavior"
 implemented = true
-proof = "tests/r06_vb_instance.rs builds an independent net10.0 VB.NET executable referencing the Rust-produced assembly, constructs New FerrumWeave.RustValue(), calls value.Answer(), executes under CoreCLR, and asserts stdout 42; Rust CI #156 certified the exact SHA with fmt/clippy, coverage and integration tests GREEN on Ubuntu and Windows, while R04 CLR CTS Reflection #65 remained GREEN"
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY pending FerrumWeave-backend source-causal re-certification: tests/r06_vb_instance.rs consumes the assembly emitted by compiler/cil/src/r06.rs, constructs FerrumWeave.RustValue and calls Answer(); historical Rust CI #156 passed on Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R06-DOTNET-007"
 family = "independent CLR reflection verifies coherent public names, signatures, visibility, and supported types"
 implemented = true
-proof = "tests/r06_reflection.rs emits the Rust-defined assembly then launches an independent net10.0 CLR verifier using AssemblyLoadContext and System.Reflection to require public FerrumWeave.RustApi static Answer():int, public constructible FerrumWeave.RustValue, public parameterless .ctor(), and public instance Answer():int; after correcting the test to consume the crate's existing public re-export, Rust CI #160 and R04 CLR CTS Reflection #69 certified the exact SHA on Linux and Windows"
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY pending FerrumWeave-backend source-causal re-certification: tests/r06_reflection.rs verifies the public static and instance shapes on the legacy R06-emitted assembly; historical Rust CI #160 and R04 CLR CTS Reflection #69 passed on Linux and Windows."
 
 [[contracts]]
 id = "FW-R06-DOTNET-008"
 family = "managed consumers require no P/Invoke or native ABI layer"
 implemented = true
-proof = "tests/r06_no_native_abi.rs launches an independent net10.0 metadata verifier over the Rust-emitted PE and requires CorFlags.ILOnly, zero ECMA-335 ModuleRef rows, no MethodAttributes.PinvokeImpl, and no MethodImport module handles; Rust CI #163 certified the verifier and all R06 consumer tests on Ubuntu and Windows while R04 CLR CTS Reflection #72 remained GREEN"
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY pending full R06 FerrumWeave-backend replay: tests/r06_no_native_abi.rs verifies ILOnly, zero ModuleRef rows, no PinvokeImpl and no MethodImport module handles; historical Rust CI #163 passed on Ubuntu and Windows. Static C#/VB source-causal certifiers independently use no native ABI."
 
 [[contracts]]
 id = "FW-R06-DOTNET-009"
 family = "supported R06 consumer scenarios are certified on Linux and Windows"
 implemented = true
-proof = "Rust CI #164 ran the complete workspace integration-test suite at ledger state 8/9 and passed all R06 C#/VB static and instance consumers, independent CLR reflection, and no-native-ABI verification on ubuntu-latest and windows-latest; fmt/clippy, functional coverage and code coverage remained GREEN, and R04 CLR CTS Reflection #73 passed independently on Linux and Windows"
+proof = "PARTIALLY RE-CERTIFIED: static C# is source-causal GREEN on exact SHA d9996458e48023562b434c5b2211e7b2936b9ca7 (Rust CI #477, Backend convergence #114) and static VB is source-causal GREEN on exact SHA 55caa43cdc93ac18139ac5e47205d0bf607043f5 (Rust CI #478, Backend convergence #115), both Ubuntu and Windows. Instance/reflection/no-native-ABI families still require FerrumWeave-backend source-causal replay before R06 can return to Done."
