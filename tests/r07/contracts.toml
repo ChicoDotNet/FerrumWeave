@@ -13,20 +13,20 @@ target_percent_when_done = 100.0
 [[contracts]]
 id = "FW-R07-SEM-001"
 family = "Option<T> Some for a supported managed reference preserves the managed value/identity at the CLR boundary"
-implemented = false
-proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior certifier consumed OptionSomeString() emitted directly by compiler/cil/src/r06.rs. The active certifier tests/r07_option_reference.rs now requires real Rust Option<&'static str> source through .rsproj -> rustc -> FerrumWeave CodegenBackend and mutates only the Some payload. Pending exact-SHA RED/GREEN/falsification replay before promotion."
+implemented = true
+proof = "tests/r07_option_reference.rs builds real Rust Option<&'static str> source through .rsproj -> rustc -> FerrumWeave CodegenBackend -> FerrumWeave MIR lowering -> FerrumWeave CIL/metadata, then executes an independent net10.0 C# consumer on CoreCLR. The certifier mutates only the Rust Some payload from FerrumWeave to FerrumWeave-mutated and requires both managed artifact bytes and the CLR observable to change. Exact SHA 47d83fd2b27c77f8ee5f662860866494c5a6d33d was GREEN in Rust CI #508 and FerrumWeave codegen backend convergence #145, with R02 #184, R03 #211 and R04 #360 also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-002"
 family = "Option<T> None for a supported managed reference projects to explicit CLR null semantics"
-implemented = false
-proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior certifier consumed OptionNoneString() emitted directly by compiler/cil/src/r06.rs. The active certifier tests/r07_option_reference.rs now requires real Rust Option<&'static str> source through .rsproj -> rustc -> FerrumWeave CodegenBackend and requires the independent CLR consumer to observe None as null. Pending exact-SHA RED/GREEN/falsification replay before promotion."
+implemented = true
+proof = "tests/r07_option_reference.rs builds real Rust Option<&'static str> source through .rsproj -> rustc -> FerrumWeave CodegenBackend and requires the independent C# consumer to observe Rust None as CLR null while the Some payload remains Rust-source causal. Exact SHA 47d83fd2b27c77f8ee5f662860866494c5a6d33d was GREEN in Rust CI #508 and FerrumWeave codegen backend convergence #145 on the portable lane, with R02 #184, R03 #211 and R04 #360 also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-003"
 family = "Option<T> for a supported CLR value type uses an explicit System.Nullable<T> projection for Some and None"
-implemented = true
-proof = "tests/r07_option_value.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly. FerrumWeave.RustApi.OptionSomeI32() returns System.Nullable<int> constructed by managed IL newobj against a TypeSpec-bound System.Nullable`1 constructor with VAR 0, while OptionNoneI32() returns the default Nullable<int> through managed ldnull + unbox.any. Rust CI #178 certified the exact product SHA fbb53f6741d3d3b02f9040d15540f5918516bcb8 GREEN for fmt/clippy, functional coverage, code coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #85 was also GREEN."
+implemented = false
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior tests/r07_option_value.rs consumed OptionSomeI32()/OptionNoneI32() emitted directly by compiler/cil/src/r06.rs. The active certifier now builds real Rust Option<i32> source through .rsproj -> rustc -> FerrumWeave CodegenBackend, mutates only Some(42) -> Some(73), requires managed artifact bytes and the independent CLR observable to change, and requires None to remain Nullable<int> without value. Pending RED/GREEN/falsification replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-004"
@@ -80,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-001/002 are the first active replacement."
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-003 is the current active replacement after source-causal certification of FW-R07-SEM-001/002."
