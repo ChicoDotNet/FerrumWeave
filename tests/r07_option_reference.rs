@@ -58,8 +58,12 @@ fn option_reference_projection_is_rust_source_causal() {
             String::from_utf8_lossy(&run.stdout),
             String::from_utf8_lossy(&run.stderr),
         );
+        let observable = String::from_utf8_lossy(&run.stdout)
+            .lines()
+            .collect::<Vec<_>>()
+            .join("\n");
         assert_eq!(
-            String::from_utf8_lossy(&run.stdout).trim(),
+            observable,
             format!("{value}\nNULL"),
             "Some payload and None/null observable must follow Rust source",
         );
