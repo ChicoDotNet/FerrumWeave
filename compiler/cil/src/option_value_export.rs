@@ -412,6 +412,10 @@ mod tests {
             73,
         );
         assert_ne!(first, second);
-        assert!(first.windows(b"Nullable`1".len()).any(|w| w == b"Nullable`1"));
+        assert!(
+            first
+                .windows(b"Nullable`1".len())
+                .any(|w| w == b"Nullable`1")
+        );
     }
 }
