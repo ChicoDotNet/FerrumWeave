@@ -73,10 +73,9 @@ pub(crate) fn lower_constructible_i32_instance(
                     ));
                 }
                 let value = lower_constant_i32_return(tcx, callee_mir)?;
-                let type_symbol = tcx.item_name(adt.did());
-                let type_name = type_symbol.as_str().as_ref().to_owned();
-                let method_symbol = tcx.item_name(def_id);
-                let method_name = clr_method_name(method_symbol.as_str().as_ref());
+                let type_name = tcx.item_name(adt.did()).to_string();
+                let rust_method_name = tcx.item_name(def_id).to_string();
+                let method_name = clr_method_name(&rust_method_name);
                 return Ok(Some(LoweredRustInstanceType {
                     namespace: CLR_NAMESPACE,
                     type_name,
