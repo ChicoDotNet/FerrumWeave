@@ -1,5 +1,5 @@
 milestone = "R07"
-status = "done"
+status = "needs_recertification"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -7,18 +7,20 @@ target_percent_when_done = 100.0
 # The denominator is declared up front from the roadmap and inherited R04/R06 boundaries.
 # A contract remains false until executable evidence proves the supported behavior; ADRs and
 # compatibility documentation are milestone DoD evidence but do not substitute for execution.
+# 2026-09 backend-convergence audit: product claims require Rust source -> rustc -> FerrumWeave
+# CodegenBackend causal evidence. Historical emitter evidence remains characterization only.
 
 [[contracts]]
 id = "FW-R07-SEM-001"
 family = "Option<T> Some for a supported managed reference preserves the managed value/identity at the CLR boundary"
-implemented = true
-proof = "tests/r07_option_reference.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly; FerrumWeave.RustApi.OptionSomeString() is emitted in compiler/cil/src/r06.rs as managed IL ldstr 'FerrumWeave'; ret and preserves the expected managed reference value. Rust CI #173 certified integration tests on Ubuntu and Windows for exact product SHA deeee2b684dd98facbd3356460ef4113244ee468; code coverage, fmt/clippy, functional coverage, and emitted-assembly reflection were also GREEN."
+implemented = false
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior certifier consumed OptionSomeString() emitted directly by compiler/cil/src/r06.rs. The active certifier tests/r07_option_reference.rs now requires real Rust Option<&'static str> source through .rsproj -> rustc -> FerrumWeave CodegenBackend and mutates only the Some payload. Pending exact-SHA RED/GREEN/falsification replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-002"
 family = "Option<T> None for a supported managed reference projects to explicit CLR null semantics"
-implemented = true
-proof = "tests/r07_option_reference.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly; FerrumWeave.RustApi.OptionNoneString() is emitted in compiler/cil/src/r06.rs as managed IL ldnull; ret and the CLR consumer observes null explicitly. Rust CI #173 certified integration tests on Ubuntu and Windows for exact product SHA deeee2b684dd98facbd3356460ef4113244ee468; code coverage, fmt/clippy, functional coverage, and emitted-assembly reflection were also GREEN."
+implemented = false
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior certifier consumed OptionNoneString() emitted directly by compiler/cil/src/r06.rs. The active certifier tests/r07_option_reference.rs now requires real Rust Option<&'static str> source through .rsproj -> rustc -> FerrumWeave CodegenBackend and requires the independent CLR consumer to observe None as null. Pending exact-SHA RED/GREEN/falsification replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-003"
@@ -78,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "Exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. Rust CI certified fmt/clippy, functional coverage, code coverage, and the complete integration suite on Ubuntu and Windows, replaying all supported R07 CLR consumers and Rust-side boundary contracts together. This closes the declared R07 denominator at 12/12 without adding unproven scenarios." 
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-001/002 are the first active replacement."
