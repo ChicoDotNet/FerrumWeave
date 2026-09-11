@@ -108,7 +108,10 @@ fn csharp_constructs_rust_source_causal_type_and_calls_instance_behavior() {
             String::from_utf8_lossy(&build.stderr),
         );
         let assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
-        assert!(assembly.is_file(), "R06 Rust instance source did not produce managed DLL");
+        assert!(
+            assembly.is_file(),
+            "R06 Rust instance source did not produce managed DLL"
+        );
 
         let bytes = fs::read(&assembly).expect("read R06 instance managed artifact");
         if let Some(previous) = &previous_artifact {
