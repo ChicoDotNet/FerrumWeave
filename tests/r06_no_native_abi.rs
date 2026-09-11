@@ -143,7 +143,9 @@ Console.WriteLine("R06 no-native-ABI contract verified");
             String::from_utf8_lossy(&run.stdout),
             String::from_utf8_lossy(&run.stderr)
         );
-        assert!(String::from_utf8_lossy(&run.stdout).contains("R06 no-native-ABI contract verified"));
+        assert!(
+            String::from_utf8_lossy(&run.stdout).contains("R06 no-native-ABI contract verified")
+        );
     }
 
     let _ = fs::remove_dir_all(root);
