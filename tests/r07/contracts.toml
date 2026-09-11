@@ -31,14 +31,14 @@ proof = "tests/r07_option_value.rs builds real Rust Option<i32> source through .
 [[contracts]]
 id = "FW-R07-SEM-004"
 family = "Result<T, E> success crosses a supported public CLR boundary as the declared success value"
-implemented = false
-proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior tests/r07_result_success.rs consumed ResultOkI32() emitted directly by compiler/cil/src/r06.rs. The active certifier now builds real Rust Result<i32, i32> Ok source through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, mutates only Ok(42) -> Ok(73), requires managed artifact bytes and the independent CLR observable to change, and requires the CLR consumer to observe the declared success value. Pending RED/GREEN/falsification replay before promotion."
+implemented = true
+proof = "tests/r07_result_success.rs builds real Rust Result<i32, i32>::Ok source through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend -> FerrumWeave MIR lowering -> FerrumWeave CIL/metadata, mutates only Ok(42) -> Ok(73), requires managed artifact bytes and the independent CoreCLR observable to change, and exposes the success payload through the declared public CLR method. Exact SHA d47272f467ec36bb4d2dba3dc585d09481209ff9 was GREEN in Rust CI #523 and FerrumWeave codegen backend convergence #160, with R02 #199, R03 #226 and R04 #375 also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-005"
 family = "Result<T, E> failure crosses a supported public CLR boundary as a coherent managed exception rather than a hidden status-code convention"
-implemented = true
-proof = "tests/r07_result_failure.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted managed assembly. FerrumWeave.RustApi.ResultErrI32() is emitted in compiler/cil/src/r06.rs as managed IL that loads the stable message, constructs System.InvalidOperationException(string), and throws it; the C# harness only consumes the public CLR contract and observes the exact message 'FerrumWeave Result error'. Rust CI #189 certified exact product SHA 9d9f003e93f99de96feca18f0b2d11e39705e1e0 GREEN for fmt/clippy, functional coverage, 92.54% code coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #96 was also GREEN on Linux and Windows."
+implemented = false
+proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior tests/r07_result_failure.rs consumed ResultErrI32() emitted directly by compiler/cil/src/r06.rs. The active certifier now builds real Rust Result<i32, i32>::Err source through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, mutates only Err(42) -> Err(73), requires managed artifact bytes and the independent CLR exception observable to change, and requires the CLR boundary to represent failure as InvalidOperationException rather than a status-code convention. Pending RED/GREEN/falsification replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-006"
@@ -80,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-004/005 are the current active replacements after source-causal certification of FW-R07-SEM-001/002/003."
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-005 is the current active replacement after source-causal certification of FW-R07-SEM-001/002/003/004."
