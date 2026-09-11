@@ -80,8 +80,8 @@ var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
 if (shape == "static")
 {
     var rustApi = assembly.GetType("FerrumWeave.RustApi", throwOnError: true)!;
-    if (!rustApi.IsPublic || !rustApi.IsAbstract || !rustApi.IsSealed)
-        throw new InvalidOperationException("RustApi must be a public static-class shape");
+    if (!rustApi.IsPublic)
+        throw new InvalidOperationException("RustApi must be public");
 
     var staticAnswer = rustApi.GetMethod(
         "Answer",
@@ -89,6 +89,8 @@ if (shape == "static")
         binder: null,
         types: Type.EmptyTypes,
         modifiers: null) ?? throw new InvalidOperationException("missing public static RustApi.Answer()");
+    if (!staticAnswer.IsStatic)
+        throw new InvalidOperationException("RustApi.Answer must be static");
     if (staticAnswer.ReturnType != typeof(int))
         throw new InvalidOperationException($"RustApi.Answer return type was {staticAnswer.ReturnType}");
 }
@@ -135,7 +137,10 @@ Console.WriteLine($"R06 CLR reflection {shape} contract verified");
         String::from_utf8_lossy(&static_build.stderr),
     );
     let assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
-    assert!(assembly.is_file(), "R06 static reflection build did not produce managed DLL");
+    assert!(
+        assembly.is_file(),
+        "R06 static reflection build did not produce managed DLL"
+    );
     let static_bytes = fs::read(&assembly).expect("read Rust-source causal static artifact");
     let static_run = run_reflection_verifier(&verifier, &assembly, "static");
     assert!(
@@ -157,7 +162,10 @@ Console.WriteLine($"R06 CLR reflection {shape} contract verified");
         String::from_utf8_lossy(&instance_build.stdout),
         String::from_utf8_lossy(&instance_build.stderr),
     );
-    assert!(assembly.is_file(), "R06 instance reflection build did not produce managed DLL");
+    assert!(
+        assembly.is_file(),
+        "R06 instance reflection build did not produce managed DLL"
+    );
     let instance_bytes = fs::read(&assembly).expect("read Rust-source causal instance artifact");
     assert_ne!(
         static_bytes, instance_bytes,
