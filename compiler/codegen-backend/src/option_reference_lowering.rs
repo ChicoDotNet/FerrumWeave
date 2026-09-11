@@ -1,5 +1,8 @@
 use rustc_middle::{
-    mir::{AggregateKind, ConstValue, Operand, RETURN_PLACE, Rvalue, StatementKind, mono::MonoItem},
+    mir::{
+        AggregateKind, Operand, RETURN_PLACE, Rvalue, StatementKind, interpret::ConstValue,
+        mono::MonoItem,
+    },
     ty::{TyCtxt, TypingEnv},
 };
 
