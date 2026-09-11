@@ -36,7 +36,10 @@ fn result_success_crosses_managed_boundary_from_rust_source() {
         );
 
         let assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
-        assert!(assembly.is_file(), "R07 Result success Rust source did not produce managed DLL");
+        assert!(
+            assembly.is_file(),
+            "R07 Result success Rust source did not produce managed DLL"
+        );
         let bytes = fs::read(&assembly).expect("read R07 Result success managed artifact");
         if let Some(previous) = &previous_artifact {
             assert_ne!(
@@ -55,7 +58,10 @@ fn result_success_crosses_managed_boundary_from_rust_source() {
             String::from_utf8_lossy(&run.stdout),
             String::from_utf8_lossy(&run.stderr),
         );
-        assert_eq!(String::from_utf8_lossy(&run.stdout).trim(), value.to_string());
+        assert_eq!(
+            String::from_utf8_lossy(&run.stdout).trim(),
+            value.to_string()
+        );
     }
 
     let _ = fs::remove_dir_all(root);
