@@ -65,7 +65,10 @@ pub extern "C" fn answer() -> i32 {{
         );
 
         let assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
-        assert!(assembly.is_file(), "R07 Rust source did not produce managed DLL");
+        assert!(
+            assembly.is_file(),
+            "R07 Rust source did not produce managed DLL"
+        );
         let bytes = fs::read(&assembly).expect("read R07 managed identity artifact");
         if let Some(previous) = &previous_artifact {
             assert_ne!(
