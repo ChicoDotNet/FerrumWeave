@@ -61,14 +61,14 @@ proof = "tests/r07_managed_identity.rs builds RustResource + Drop from real Rust
 [[contracts]]
 id = "FW-R07-SEM-009"
 family = "at least one supported generic boundary has a coherent Rust/CTS representation observable by CLR consumers"
-implemented = false
-proof = "HISTORICAL EMITTER-LEVEL EVIDENCE ONLY: the prior tests/r07_generic_boundary.rs called write_r06_static_api_artifact directly, so its reflection GREEN proved the Nullable<int> metadata shape but not FerrumWeave rustc-backend ownership. The active certifier now builds real Rust Option<i32> Some/None through the canonical .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend path, requires reflection to observe System.Nullable<> with System.Int32, executes the values on CoreCLR, and mutates only Some(42) -> Some(73) so artifact bytes and the CLR observable must change. Pending exact-SHA RED/GREEN/replay before promotion."
+implemented = true
+proof = "tests/r07_generic_boundary.rs builds real Rust Option<i32> Some/None through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend -> FerrumWeave MIR lowering -> CTS/CIL/metadata, requires reflection to observe System.Nullable<> with System.Int32, executes Some/None on CoreCLR, and mutates only Some(42) -> Some(73) so both artifact bytes and the CLR observable change. Exact SHA dc960770fc675e7073b70b0bdf1aa6a469278089 was GREEN in Rust CI #548 and FerrumWeave codegen backend convergence #185, with R02 #224, R03 #251 and R04 #400 also GREEN. The earlier write_r06_static_api_artifact evidence remains characterization only and is not part of this PASS."
 
 [[contracts]]
 id = "FW-R07-SEM-010"
 family = "Rust borrow/lifetime semantics that cannot safely escape a managed boundary are rejected explicitly rather than erased into GC reachability"
-implemented = true
-proof = "projection/types/tests/borrow_lifetime_boundary.rs exercises the Rust-side projection contract for both SharedBorrow and ExclusiveBorrow. managed_object_mapping(...) rejects each borrowed shape as Unsupported, preserves the rejected ManagedObjectSource in the diagnostic, and emits stable rationale that CLR managed references preserve reachability/identity but do not encode Rust borrow/lifetime guarantees. Exact SHA a1f919605933d75364b331672a0894b8a8220241 was GREEN in Rust CI #207 and R04 CLR CTS Reflection #114, including Ubuntu/Windows integration certification."
+implemented = false
+proof = "HISTORICAL PROJECTION-LEVEL EVIDENCE ONLY: projection/types/tests/borrow_lifetime_boundary.rs proves the intended rejection policy for SharedBorrow and ExclusiveBorrow, but does not prove that rustc invokes FerrumWeave and enforces it before CLR artifact creation. Active replacement: tests/r07_borrow_boundary.rs builds real Rust shared and exclusive borrow exports through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend and requires stable FERRUMWEAVE_BORROW_BOUNDARY_REJECTED diagnostics with no managed DLL; it then mutates the Rust boundary to owned i32 and requires successful artifact production to falsify an always-reject implementation. Pending exact-SHA RED/GREEN/replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-011"
@@ -80,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-009 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005/006/007/008."
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-010 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005/006/007/008/009."
