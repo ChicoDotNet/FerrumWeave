@@ -20,6 +20,16 @@ fn legacy_source_parser_emitter_is_not_a_registered_product_binary() {
 }
 
 #[test]
+fn legacy_source_parser_emitter_is_absent_from_product_source_tree() {
+    let legacy_emitter = repo_root().join("compiler/cil/src/bin/ferrumweave_emit.rs");
+
+    assert!(
+        !legacy_emitter.exists(),
+        "legacy source-parser emitter must not remain in the compiler/cil product source tree; Git history preserves its provenance"
+    );
+}
+
+#[test]
 fn sdk_product_path_invokes_rustc_backend_and_not_legacy_emitter() {
     let targets_path = repo_root().join("sdk/FerrumWeave.Sdk/Sdk/Sdk.targets");
     let targets = fs::read_to_string(&targets_path)
