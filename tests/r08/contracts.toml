@@ -75,3 +75,9 @@ id = "FW-R08-SDK-011"
 family = "normal .rsproj compilation causally invokes rustc with the FerrumWeave CodegenBackend rather than a legacy emitter/source parser"
 implemented = true
 proof = "sdk/FerrumWeave.Sdk/Sdk/Sdk.targets builds compiler/codegen-backend and invokes rustc -Z codegen-backend=<FerrumWeave>. tests/sdk_backend_path.rs first supplies malformed Rust that the legacy source parser could have accepted and requires a real rustc syntax diagnostic plus no DLL and no ferrumweave_emit trace. It then mutates only valid Rust source 137 -> 211 and requires both HelloFerrum.dll bytes and an independent C# CoreCLR observable to change. Exact SHA 9b08fa42e0a0c5ad12700b544a670aabc045569c passed Rust CI #565 on both Ubuntu and Windows, with FerrumWeave backend convergence #202, R02 #241, R03 #268 and R04 #417 GREEN."
+
+[[contracts]]
+id = "FW-R08-SDK-012"
+family = "the legacy ferrumweave_emit source-parser emitter is retired from the registered product binaries while the SDK remains bound to the FerrumWeave rustc CodegenBackend"
+implemented = true
+proof = "tests/legacy_emitter_retirement.rs requires compiler/cil/Cargo.toml to contain no registered ferrumweave_emit binary and independently requires sdk/FerrumWeave.Sdk/Sdk/Sdk.targets to invoke rustc -Z codegen-backend=<FerrumWeave> with no ferrumweave_emit reference. compiler/cil keeps autobins=false, so retaining the historical source file does not expose it as a product executable. Exact SHA ef063e3854ec48d16c9765ecd91f6f00889f9aef passed Rust CI #572 on Ubuntu and Windows, FerrumWeave backend convergence #209, R02 #248, R03 #275 and R04 #424 GREEN."
