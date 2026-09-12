@@ -12,29 +12,30 @@ fn uncontained_panic_is_rejected_by_ferrumweave_backend_before_managed_export() 
     let root = unique_temp_dir();
     let source_dir = root.join("rust-source/src");
     let rust_project = root.join("rust-source");
+    let rust_source = source_dir.join("main.rs");
     fs::create_dir_all(&source_dir).expect("create R07 panic-boundary Rust source directory");
     fs::copy(template, rust_project.join("RustLibrary.rsproj")).expect("copy canonical rsproj");
 
     fs::write(
-        source_dir.join("main.rs"),
+        &rust_source,
         r#"#[no_mangle]
-pub extern "C" fn panic_boundary_i32() -> i32 {
+pub extern "C" fn answer() -> i32 {
     panic!("panic must not unwind across the managed boundary")
 }
 "#,
     )
     .expect("write R07 Rust panic-boundary source");
 
-    let build = dotnet_build(&repo, &rust_project);
+    let rejected = dotnet_build(&repo, &rust_project);
     assert!(
-        !build.status.success(),
+        !rejected.status.success(),
         "an uncontained Rust panic at a supported managed public boundary must be rejected before a valid managed artifact is produced",
     );
 
     let output = format!(
         "{}\n{}",
-        String::from_utf8_lossy(&build.stdout),
-        String::from_utf8_lossy(&build.stderr),
+        String::from_utf8_lossy(&rejected.stdout),
+        String::from_utf8_lossy(&rejected.stderr),
     );
     assert!(
         output.contains(PANIC_BOUNDARY_DIAGNOSTIC),
@@ -45,6 +46,28 @@ pub extern "C" fn panic_boundary_i32() -> i32 {
     assert!(
         !assembly.is_file(),
         "panic-boundary rejection must happen before a valid managed artifact exists",
+    );
+
+    fs::write(
+        &rust_source,
+        r#"#[no_mangle]
+pub extern "C" fn answer() -> i32 {
+    42
+}
+"#,
+    )
+    .expect("mutate only Rust source from panic to a supported return");
+
+    let accepted = dotnet_build(&repo, &rust_project);
+    assert!(
+        accepted.status.success(),
+        "removing only the uncontained Rust panic must remove the policy rejection; stdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&accepted.stdout),
+        String::from_utf8_lossy(&accepted.stderr),
+    );
+    assert!(
+        assembly.is_file(),
+        "the source-only non-panic mutation must produce the managed artifact",
     );
 
     let _ = fs::remove_dir_all(root);
