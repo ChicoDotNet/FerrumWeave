@@ -120,11 +120,7 @@ fn build_release_count_body() -> Vec<u8> {
     tiny_method(vec![
         0x02, // ldarg.0
         0x7B, // ldfld int32 releaseCount
-        0x01,
-        0x00,
-        0x00,
-        0x04,
-        0x2A, // ret
+        0x01, 0x00, 0x00, 0x04, 0x2A, // ret
     ])
 }
 
@@ -479,7 +475,8 @@ mod tests {
 
     #[test]
     fn disposable_resource_image_is_source_parameterized_and_deterministic() {
-        let first = emit_disposable_resource_assembly("RustLibrary", "FerrumWeave", "RustResource", 0, 1);
+        let first =
+            emit_disposable_resource_assembly("RustLibrary", "FerrumWeave", "RustResource", 0, 1);
         assert_eq!(
             first,
             emit_disposable_resource_assembly("RustLibrary", "FerrumWeave", "RustResource", 0, 1)
