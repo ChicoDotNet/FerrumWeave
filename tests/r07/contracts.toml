@@ -43,14 +43,14 @@ proof = "tests/r07_result_failure.rs builds real Rust Result<i32, i32>::Err sour
 [[contracts]]
 id = "FW-R07-SEM-006"
 family = "panic behavior at a supported managed public boundary follows an explicit policy and does not silently unwind across an unsupported runtime boundary"
-implemented = false
-proof = "HISTORICAL POLICY-LEVEL EVIDENCE ONLY: projection/types/tests/panic_boundary_policy.rs proves the Rust-side policy object returns RejectUncontainedPanic, but that does not prove the product compiler path enforces it. The active certifier tests/r07_panic_boundary.rs now builds real Rust containing panic! through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend and requires compilation to fail with stable diagnostic FERRUMWEAVE_PANIC_BOUNDARY_REJECTED before a valid managed artifact is produced. Pending RED/GREEN/replay before promotion."
+implemented = true
+proof = "tests/r07_panic_boundary.rs builds real Rust through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend. A public answer() containing panic! is rejected before artifact creation with stable diagnostic FERRUMWEAVE_PANIC_BOUNDARY_REJECTED; then only Rust source is mutated to a supported answer() -> 42 and the same project must build a managed DLL. Exact SHA d90d1606419e9fec77e0846a1e978614cde394b7 completed all GitHub checks GREEN, including FerrumWeave rustc boundary on Ubuntu and Windows plus the R02-R04 replay lanes. This hardening falsifies an always-rejecting or generic unsupported-MIR implementation."
 
 [[contracts]]
 id = "FW-R07-SEM-007"
 family = "a supported Rust Drop/RAII resource projects to IDisposable-style cleanup with exactly-once observable release semantics"
-implemented = true
-proof = "compiler/cil/src/r07.rs emits a dedicated IL-only managed FerrumWeave.RustResource class implementing System.IDisposable with private per-instance releaseCount state, public constructor, idempotent Dispose(), and ReleaseCount(). tests/r07_disposable.rs builds and executes an independent net10.0 C# consumer, verifies the IDisposable cast, and observes logical release counts 0 -> 1 -> 1 before cleanup, after first Dispose, and after repeated Dispose. Rust CI #201 certified exact product SHA 4d1187c1281eae9c578db01183b60e1f241580ac GREEN for fmt/clippy, functional coverage, 93.26% line coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #108 was also GREEN on Linux and Windows."
+implemented = false
+proof = "HISTORICAL EMITTER-LEVEL EVIDENCE ONLY: compiler/cil/src/r07.rs can emit an IL-only FerrumWeave.RustResource implementing IDisposable and the prior tests/r07_disposable.rs consumed that prebuilt shape, but that does not prove a Rust Drop implementation reaches the product backend. The active certifier now builds real Rust defining RustResource + Drop through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, requires an independent C# consumer to observe IDisposable release counts seed -> seed+1 -> seed+1, and mutates only the Rust seed 0 -> 5 so both artifact and observable must change. Pending RED/GREEN/replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-008"
@@ -80,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-006 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005."
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-007 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005/006."
