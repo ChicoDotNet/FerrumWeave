@@ -46,6 +46,9 @@ pub use option_value_export::*;
 mod exception_export;
 pub use exception_export::*;
 
+mod disposable_resource_export;
+pub use disposable_resource_export::*;
+
 mod r06;
 pub use r06::*;
 
