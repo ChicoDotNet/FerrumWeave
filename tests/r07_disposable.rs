@@ -18,7 +18,7 @@ fn rust_drop_resource_projects_to_idisposable_from_rust_source() {
     fs::copy(template, rust_project.join("RustLibrary.rsproj")).expect("copy canonical rsproj");
 
     let mut previous_artifact: Option<Vec<u8>> = None;
-    for seed in [0, 5] {
+    for (seed, release_increment) in [(0, 1), (5, 2)] {
         fs::write(
             source_dir.join("main.rs"),
             format!(
@@ -40,7 +40,7 @@ impl RustResource {{
 impl Drop for RustResource {{
     fn drop(&mut self) {{
         if !self.released {{
-            self.release_count += 1;
+            self.release_count += {release_increment};
             self.released = true;
         }}
     }}
@@ -73,7 +73,7 @@ pub extern "C" fn answer() -> i32 {{
         if let Some(previous) = &previous_artifact {
             assert_ne!(
                 previous, &bytes,
-                "mutating only the Rust resource seed must mutate the managed artifact",
+                "mutating only Rust construction/drop semantics must mutate the managed artifact",
             );
         }
         previous_artifact = Some(bytes);
@@ -92,8 +92,8 @@ pub extern "C" fn answer() -> i32 {{
         let observed: Vec<_> = stdout.lines().collect();
         let expected = [
             seed.to_string(),
-            (seed + 1).to_string(),
-            (seed + 1).to_string(),
+            (seed + release_increment).to_string(),
+            (seed + release_increment).to_string(),
         ];
         assert_eq!(observed, expected);
     }
