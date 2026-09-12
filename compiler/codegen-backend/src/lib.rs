@@ -11,14 +11,14 @@ extern crate rustc_span;
 
 use std::{any::Any, fs};
 use ferrumweave_cil::{
-    emit_constructible_i32_instance_assembly, emit_i32_argument_export_assembly,
-    emit_i32_arithmetic_export_assembly, emit_i32_control_flow_export_assembly,
-    emit_i32_direct_call_export_assembly, emit_i32_export_with_external_managed_transform,
-    emit_i32_export_with_managed_construction, emit_i32_export_with_managed_instance_call,
-    emit_i32_export_with_named_system_math_call, emit_i32_export_with_string_builder_length_property,
-    emit_i32_invalid_operation_export_assembly, emit_named_i32_export_assembly,
-    emit_named_i32_method_export_assembly, emit_option_reference_export_assembly,
-    emit_option_value_export_assembly,
+    emit_constructible_i32_instance_assembly, emit_disposable_resource_assembly,
+    emit_i32_argument_export_assembly, emit_i32_arithmetic_export_assembly,
+    emit_i32_control_flow_export_assembly, emit_i32_direct_call_export_assembly,
+    emit_i32_export_with_external_managed_transform, emit_i32_export_with_managed_construction,
+    emit_i32_export_with_managed_instance_call, emit_i32_export_with_named_system_math_call,
+    emit_i32_export_with_string_builder_length_property, emit_i32_invalid_operation_export_assembly,
+    emit_named_i32_export_assembly, emit_named_i32_method_export_assembly,
+    emit_option_reference_export_assembly, emit_option_value_export_assembly,
 };
 use rustc_codegen_ssa::{CodegenResults, CompiledModule, CrateInfo, ModuleKind, TargetConfig, traits::CodegenBackend};
 use rustc_data_structures::fx::FxIndexMap;
@@ -27,6 +27,7 @@ use rustc_middle::{dep_graph::{WorkProduct, WorkProductId}, ty::TyCtxt};
 use rustc_session::{Session, config::{OutputFilenames, OutputType}};
 use rustc_span::{Symbol, sym};
 
+mod disposable_resource_lowering;
 mod external_managed_lowering;
 mod lowering;
 mod option_reference_lowering;
@@ -35,6 +36,7 @@ mod panic_boundary;
 mod result_failure_lowering;
 mod result_success_lowering;
 mod rust_type_lowering;
+use disposable_resource_lowering::lower_disposable_resource;
 use external_managed_lowering::lower_external_managed_transform;
 use lowering::{LoweredI32Export, lower_exported_i32};
 use option_reference_lowering::lower_option_reference_exports;
@@ -68,10 +70,20 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         let option_reference = if result_failure.is_none() && result_success.is_none() && option_value.is_none() {
             lower_option_reference_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
         } else { None };
-        let rust_instance = lower_constructible_i32_instance(tcx)
+        let disposable_resource = lower_disposable_resource(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-        let external_payload = lower_external_managed_transform(tcx)
-            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+        let rust_instance = if disposable_resource.is_none() {
+            lower_constructible_i32_instance(tcx)
+                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
+        } else {
+            None
+        };
+        let external_payload = if disposable_resource.is_none() {
+            lower_external_managed_transform(tcx)
+                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
+        } else {
+            None
+        };
 
         let image = if let Some(result) = result_failure {
             emit_i32_invalid_operation_export_assembly(
@@ -87,6 +99,14 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
             emit_option_value_export_assembly(assembly_name, option.namespace, option.type_name, &option.some_method_name, &option.none_method_name, option.some_value)
         } else if let Some(option) = option_reference {
             emit_option_reference_export_assembly(assembly_name, option.namespace, option.type_name, &option.some_method_name, &option.none_method_name, &option.some_value)
+        } else if let Some(resource) = disposable_resource {
+            emit_disposable_resource_assembly(
+                assembly_name,
+                resource.namespace,
+                &resource.type_name,
+                resource.seed,
+                resource.release_increment,
+            )
         } else if let Some(instance) = rust_instance {
             emit_constructible_i32_instance_assembly(assembly_name, instance.namespace, &instance.type_name, &instance.method_name, instance.value)
         } else if let Some(payload) = external_payload {
