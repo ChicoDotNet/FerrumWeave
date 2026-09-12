@@ -23,7 +23,11 @@ fn copy_tree(source: &Path, destination: &Path) {
         let entry = entry.expect("read canonical R09 fixture entry");
         let source_path = entry.path();
         let destination_path = destination.join(entry.file_name());
-        if entry.file_type().expect("read R09 fixture file type").is_dir() {
+        if entry
+            .file_type()
+            .expect("read R09 fixture file type")
+            .is_dir()
+        {
             copy_tree(&source_path, &destination_path);
         } else {
             fs::copy(&source_path, &destination_path).unwrap_or_else(|error| {
@@ -43,7 +47,10 @@ fn rewrite_sdk_imports(repo: &Path, fixture: &Path) {
     let props = repo.join("sdk/FerrumWeave.Sdk/Sdk/Sdk.props");
     let targets = repo.join("sdk/FerrumWeave.Sdk/Sdk/Sdk.targets");
     let rewritten = original
-        .replace("../../../../sdk/FerrumWeave.Sdk/Sdk/Sdk.props", &props.display().to_string())
+        .replace(
+            "../../../../sdk/FerrumWeave.Sdk/Sdk/Sdk.props",
+            &props.display().to_string(),
+        )
         .replace(
             "../../../../sdk/FerrumWeave.Sdk/Sdk/Sdk.targets",
             &targets.display().to_string(),
@@ -105,7 +112,10 @@ fn mixed_solution_business_path_is_causal_from_rust_source() {
             !build_output.contains("ferrumweave_emit"),
             "legacy ferrumweave_emit must not participate in the R09 product call path:\n{build_output}",
         );
-        assert!(artifact.is_file(), "R09 Rust project did not emit RiskEngine.dll");
+        assert!(
+            artifact.is_file(),
+            "R09 Rust project did not emit RiskEngine.dll"
+        );
 
         let bytes = fs::read(&artifact).expect("read source-causal RiskEngine.dll");
         assert!(bytes.starts_with(b"MZ") && bytes.windows(4).any(|window| window == b"BSJB"));
@@ -127,7 +137,9 @@ fn mixed_solution_business_path_is_causal_from_rust_source() {
                 let mut encoded_call = vec![0x28];
                 encoded_call.extend_from_slice(&managed_dependency.token.to_le_bytes());
                 assert!(
-                    bytes.windows(encoded_call.len()).any(|window| window == encoded_call),
+                    bytes
+                        .windows(encoded_call.len())
+                        .any(|window| window == encoded_call),
                     "R09 source-causal artifact must contain a CLR call to System.Math.Abs",
                 );
             }
@@ -154,7 +166,9 @@ fn mixed_solution_business_path_is_causal_from_rust_source() {
         );
         let stdout = String::from_utf8_lossy(&run.stdout);
         assert!(
-            stdout.lines().any(|line| line.trim() == format!("risk-score={value}")),
+            stdout
+                .lines()
+                .any(|line| line.trim() == format!("risk-score={value}")),
             "R09 CoreCLR observable must follow the Rust-only source mutation; stdout was:\n{stdout}",
         );
     }
