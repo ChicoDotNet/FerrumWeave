@@ -49,14 +49,14 @@ proof = "tests/r07_panic_boundary.rs builds real Rust through .rsproj/MSBuild ->
 [[contracts]]
 id = "FW-R07-SEM-007"
 family = "a supported Rust Drop/RAII resource projects to IDisposable-style cleanup with exactly-once observable release semantics"
-implemented = false
-proof = "HISTORICAL EMITTER-LEVEL EVIDENCE ONLY: compiler/cil/src/r07.rs can emit an IL-only FerrumWeave.RustResource implementing IDisposable and the prior tests/r07_disposable.rs consumed that prebuilt shape, but that does not prove a Rust Drop implementation reaches the product backend. The active certifier now builds real Rust defining RustResource + Drop through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, requires an independent C# consumer to observe IDisposable release counts seed -> seed+1 -> seed+1, and mutates only the Rust seed 0 -> 5 so both artifact and observable must change. Pending RED/GREEN/replay before promotion."
+implemented = true
+proof = "tests/r07_disposable.rs builds real Rust defining RustResource + Drop through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend -> disposable_resource_lowering -> disposable_resource_export, then an independent C# consumer observes IDisposable cleanup. The certifier mutates only Rust source from (seed=0, drop increment=1) to (seed=5, drop increment=2), requires managed artifact bytes to change, and requires CoreCLR to observe 0 -> 1 -> 1 and 5 -> 7 -> 7 so construction, cleanup increment and exactly-once/idempotent Dispose semantics are source-causal. Exact SHA 3ce6e50b85c57c8e5391e66fc4a8138fba0c1e97 was GREEN in Rust CI #542 and FerrumWeave codegen backend convergence #179, with R02 #218, R03 #245 and R04 #394 also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-008"
 family = "supported managed ownership/GC lifetime preserves identity without duplicate release or invalid access after release in supported scenarios"
-implemented = true
-proof = "tests/r07_managed_identity.rs builds and executes an independent net10.0 C# consumer against the Rust-emitted FerrumWeave.RustResource. Two managed aliases are ReferenceEquals-identical, disposing through either alias updates the same per-instance release state exactly once, repeated Dispose through the other alias remains idempotent, ReleaseCount remains safely observable after release, and GC.KeepAlive preserves both references through the observation. Exact SHA 92384d62af1cd308c6670f05a895d124eac0fe83 was GREEN in Rust CI on Ubuntu and Windows, code coverage, fmt/clippy, functional coverage, and emitted-assembly reflection on Linux and Windows."
+implemented = false
+proof = "HISTORICAL EMITTER-LEVEL EVIDENCE ONLY: the prior tests/r07_managed_identity.rs called write_r07_disposable_artifact directly, so it did not prove the FerrumWeave rustc backend owned the capability. The active certifier now builds RustResource + Drop from real Rust through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, aliases the resulting managed object in an independent C# consumer, checks ReferenceEquals identity, single shared Dispose state and GC.KeepAlive, and mutates only Rust constructor seed 0 -> 5 so artifact and observable state must change. Pending exact-SHA RED/GREEN/replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-009"
@@ -80,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-007 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005/006."
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-008 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005/006/007."
