@@ -31,6 +31,7 @@ mod external_managed_lowering;
 mod lowering;
 mod option_reference_lowering;
 mod option_value_lowering;
+mod panic_boundary;
 mod result_failure_lowering;
 mod result_success_lowering;
 mod rust_type_lowering;
@@ -38,6 +39,7 @@ use external_managed_lowering::lower_external_managed_transform;
 use lowering::{LoweredI32Export, lower_exported_i32};
 use option_reference_lowering::lower_option_reference_exports;
 use option_value_lowering::lower_option_value_exports;
+use panic_boundary::reject_direct_uncontained_panics;
 use result_failure_lowering::lower_result_failure;
 use result_success_lowering::lower_result_success;
 use rust_type_lowering::lower_constructible_i32_instance;
@@ -50,6 +52,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
     fn locale_resource(&self) -> &'static str { "" }
 
     fn codegen_crate<'a>(&self, tcx: TyCtxt<'_>) -> Box<dyn Any> {
+        reject_direct_uncontained_panics(tcx).unwrap_or_else(|message| panic!("{message}"));
         let assembly_name = tcx.sess.opts.crate_name.as_deref().unwrap_or("FerrumWeave.Generated");
         let result_failure = lower_result_failure(tcx)
             .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
