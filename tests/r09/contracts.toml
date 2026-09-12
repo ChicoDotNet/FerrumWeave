@@ -1,5 +1,5 @@
 milestone = "R09"
-status = "needs_recertification"
+status = "done"
 minimum_percent_when_done = 96.0
 target_percent_when_done = 100.0
 
@@ -67,5 +67,5 @@ proof = "R09 executable contracts observe crossings directly: tests/r09_call_pat
 [[contracts]]
 id = "FW-R09-SLNX-010"
 family = "the mixed-solution business path is source-causal through the FerrumWeave rustc CodegenBackend"
-implemented = false
-proof = "tests/r09_source_causality.rs creates an isolated replay of the canonical Enterprise.slnx graph, changes only RiskEngine/src/main.rs from 42 to 73 between builds, and requires RiskEngine.dll bytes plus the existing Domain C# CoreCLR observable to follow that mutation while the Rust-emitted method retains its CLR call to System.Math.Abs. The build must contain no ferrumweave_emit trace. Promotion requires exact-SHA Linux+Windows CI through the FerrumWeave backend; rustc_codegen_clr does not count."
+implemented = true
+proof = "tests/r09_source_causality.rs creates an isolated replay of the canonical Enterprise.slnx graph, changes only RiskEngine/src/main.rs from 42 to 73 between builds, and requires RiskEngine.dll bytes plus the existing Domain C# CoreCLR observable to follow that mutation while the Rust-emitted method retains its CLR call to System.Math.Abs. The build contains no ferrumweave_emit trace. Exact SHA 5d02490e8f4ac71383f915464e47199b4badfb6a completed GREEN in Rust CI #569 on Ubuntu and Windows, FerrumWeave codegen backend convergence #206, R02 #245, R03 #272 and R04 #421. rustc_codegen_clr is not product PASS evidence."

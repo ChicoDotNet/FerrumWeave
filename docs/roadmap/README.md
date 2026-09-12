@@ -18,9 +18,9 @@ A milestone is complete only when it changes a technical fact about the project 
 | R05 — Rust consumes .NET | **Done — FerrumWeave backend re-certified** | Required managed-call families are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; upstream remains oracle-only. |
 | R06 — .NET consumes Rust | **Done — FerrumWeave backend re-certified** | C#/VB consumers, reflection and no-native-ABI contracts consume Rust-source-causal assemblies emitted through the FerrumWeave `rustc` CodegenBackend on Linux and Windows. |
 | R07 — Semantic interoperability | **Done — FerrumWeave backend re-certified** | All declared semantic-interoperability contracts are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; unsupported crossings fail diagnostically before CLR emission. |
-| R08 — `.rsproj` and FerrumWeave SDK | **Needs re-certification** | SDK/project-system work exists, but normal `.rsproj` build must be reconnected to the real `rustc` → CLR path before this milestone can be trusted. |
-| R09 — Mixed `.slnx` proof | **Needs re-certification** | Solution/ProjectReference/NuGet integration evidence exists, but the advertised .NET → Rust → managed dependency call path must become source-causal. |
-| R10 — Developer experience / 0.1 alpha | **Paused as release milestone** | Draft DX work is preserved, but R10 cannot be promoted until R05-R09 are causally re-certified. |
+| R08 — `.rsproj` and FerrumWeave SDK | **Done — FerrumWeave backend re-certified** | Normal `.rsproj` build now follows `FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend`; Rust-only mutation changes the managed artifact and CoreCLR observable on Linux and Windows without `ferrumweave_emit` in the product path. |
+| R09 — Mixed `.slnx` proof | **Done — FerrumWeave backend re-certified** | The canonical mixed-language `.slnx` is source-causal through `.rsproj -> rustc -> FerrumWeave`; a Rust-only `42 -> 73` mutation changes `RiskEngine.dll` and the C# CoreCLR business observable on Linux and Windows while preserving the managed dependency call. |
+| R10 — Developer experience / 0.1 alpha | **Paused pending explicit post-convergence replay** | Draft DX work is preserved. R05-R09 causal convergence is complete, but R10 remains paused until the current convergence PR is certified and governance explicitly resumes the release milestone. |
 
 ---
 
@@ -418,7 +418,7 @@ Evidence may cause the dedicated unsafe milestone to move earlier, but support m
 
 # R08 — `.rsproj` and FerrumWeave SDK
 
-**Status: Needs re-certification. The normal `.rsproj` build must use the real `rustc` → CLR codegen path before this developer workflow can be called Done.**
+**Status: Done — re-certified through `.rsproj -> FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend` on Linux and Windows.**
 
 ## Goal
 
@@ -446,11 +446,13 @@ R08 is Done when, from a clean machine/environment with documented prerequisites
 - no bespoke manual build script is required outside the SDK contract;
 - the SDK uses the current supported stable/LTS .NET line rather than an obsolete target by default.
 
+Exact product-path replay SHA `9b08fa42e0a0c5ad12700b544a670aabc045569c` passed Rust CI #565 on Ubuntu and Windows, FerrumWeave codegen backend convergence #202, R02 #241, R03 #268 and R04 #417. `tests/sdk_backend_path.rs` proves malformed Rust is rejected by real `rustc`, rejects `ferrumweave_emit` from the product path, and proves a Rust-only `137 -> 211` mutation changes both managed assembly bytes and an independent CoreCLR consumer observable.
+
 ---
 
 # R09 — Mixed `.slnx` proof
 
-**Status: Needs re-certification. Solution integration evidence is preserved, but the business call path must be source-causal.**
+**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows.**
 
 ## Goal
 
@@ -498,6 +500,8 @@ R09 is Done when:
 - the solution works on Linux and Windows where all chosen project types support the scenario;
 - functional contracts prove the language crossings rather than merely checking that projects compile.
 
+The source-causal closure is certified at exact SHA `5d02490e8f4ac71383f915464e47199b4badfb6a`: Rust CI #569, FerrumWeave backend convergence #206, R02 #245, R03 #272 and R04 #421 all completed GREEN. `tests/r09_source_causality.rs` replays the canonical mixed solution and changes only `RiskEngine/src/main.rs` from `42` to `73`; `RiskEngine.dll` bytes and the independent C# CoreCLR observable both change while the emitted method retains its CLR call to `System.Math.Abs` and no `ferrumweave_emit` trace is permitted.
+
 This is the canonical **0.1 proof moment**:
 
 > Add `RiskEngine.rsproj` to an existing multi-language `.slnx`; preserve what already works; strengthen the new critical component with Rust.
@@ -506,7 +510,7 @@ This is the canonical **0.1 proof moment**:
 
 # R10 — Developer experience / 0.1 alpha
 
-**Status: Paused as a release milestone while R05-R09 are causally re-certified. Existing draft work should be preserved and replayed, not discarded.**
+**Status: Paused pending explicit post-convergence replay. R05-R09 are now causally re-certified, but existing R10 draft work remains preserved and subordinate until governance explicitly resumes this release milestone.**
 
 ## Goal
 
