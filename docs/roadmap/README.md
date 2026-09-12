@@ -17,7 +17,7 @@ A milestone is complete only when it changes a technical fact about the project 
 | R04 — CLR / CTS foundation | **Done — re-audited** | CTS mapping/reflection evidence remains valid at its declared artifact/type-system scope; it does not claim managed API consumption from Rust source. |
 | R05 — Rust consumes .NET | **Done — FerrumWeave backend re-certified** | Required managed-call families are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; upstream remains oracle-only. |
 | R06 — .NET consumes Rust | **Needs re-certification** | Existing managed-consumer evidence must be replayed after public behavior is proven to originate from Rust source. |
-| R07 — Semantic interoperability | **Needs re-certification** | Existing semantic artifacts remain evidence candidates; source-causal crossings must be replayed after R05/R06. |
+| R07 — Semantic interoperability | **Done — FerrumWeave backend re-certified** | All declared semantic-interoperability contracts are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; unsupported crossings fail diagnostically before CLR emission. |
 | R08 — `.rsproj` and FerrumWeave SDK | **Needs re-certification** | SDK/project-system work exists, but normal `.rsproj` build must be reconnected to the real `rustc` → CLR path before this milestone can be trusted. |
 | R09 — Mixed `.slnx` proof | **Needs re-certification** | Solution/ProjectReference/NuGet integration evidence exists, but the advertised .NET → Rust → managed dependency call path must become source-causal. |
 | R10 — Developer experience / 0.1 alpha | **Paused as release milestone** | Draft DX work is preserved, but R10 cannot be promoted until R05-R09 are causally re-certified. |
@@ -104,7 +104,6 @@ It includes:
 - dual MIT / Apache-2.0 licensing;
 - contribution, governance, security, support, DCO, and Code of Conduct foundations;
 - FerrumWeave branding and GitHub Pages;
-- repository-layout guidance;
 - a minimal native Rust `Hello FerrumWeave` executable;
 - Windows and Linux CI;
 - unit tests and functional-contract tracking;
@@ -370,7 +369,7 @@ R06 is Done when:
 
 # R07 — Semantic interoperability
 
-**Status: Needs re-certification after R05/R06 source causality is restored.**
+**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows.**
 
 ## Goal
 
@@ -396,6 +395,8 @@ R07 is Done when:
 - managed lifetime does not introduce known double-free/use-after-free behavior in supported contracts;
 - unsupported combinations fail explicitly;
 - the compatibility documentation explains what is safe, what is managed, and what remains unsupported.
+
+The backend-convergence audit closes the causal gap: all declared R07 contracts now execute or reject through the FerrumWeave `rustc` CodegenBackend rather than relying on projection/emitter-only evidence. Exact aggregate SHA `6e86017e4b46526eec76a3f862a7bc922af14487` passed Rust CI #561 on Ubuntu and Windows, FerrumWeave codegen backend convergence #198, R02 #237, R03 #264 and R04 #413. `rustc_codegen_clr` remains oracle-only.
 
 ## `unsafe` policy
 
