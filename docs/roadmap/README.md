@@ -16,7 +16,7 @@ A milestone is complete only when it changes a technical fact about the project 
 | R03 — Core Rust semantics | **Done** | 11/11 declared safe-Rust semantic and negative contracts are certified on Linux and Windows with native/CLR differential evidence. |
 | R04 — CLR / CTS foundation | **Done — re-audited** | CTS mapping/reflection evidence remains valid at its declared artifact/type-system scope; it does not claim managed API consumption from Rust source. |
 | R05 — Rust consumes .NET | **Done — FerrumWeave backend re-certified** | Required managed-call families are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; upstream remains oracle-only. |
-| R06 — .NET consumes Rust | **Needs re-certification** | Existing managed-consumer evidence must be replayed after public behavior is proven to originate from Rust source. |
+| R06 — .NET consumes Rust | **Done — FerrumWeave backend re-certified** | C#/VB consumers, reflection and no-native-ABI contracts consume Rust-source-causal assemblies emitted through the FerrumWeave `rustc` CodegenBackend on Linux and Windows. |
 | R07 — Semantic interoperability | **Done — FerrumWeave backend re-certified** | All declared semantic-interoperability contracts are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; unsupported crossings fail diagnostically before CLR emission. |
 | R08 — `.rsproj` and FerrumWeave SDK | **Needs re-certification** | SDK/project-system work exists, but normal `.rsproj` build must be reconnected to the real `rustc` → CLR path before this milestone can be trusted. |
 | R09 — Mixed `.slnx` proof | **Needs re-certification** | Solution/ProjectReference/NuGet integration evidence exists, but the advertised .NET → Rust → managed dependency call path must become source-causal. |
@@ -340,7 +340,7 @@ The first projection should favor **CLR-shaped, mechanically predictable semanti
 
 # R06 — .NET consumes Rust
 
-**Status: Needs re-certification after the R05 source-causality gate is restored.**
+**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows.**
 
 ## Goal
 
@@ -364,6 +364,8 @@ R06 is Done when:
 - CLR reflection sees coherent public names, signatures, visibility, and supported types;
 - at least static and instance-call shapes are represented in the contract suite;
 - Linux and Windows are green for the supported consumer scenarios.
+
+The causal replay is complete: static and instance Rust-defined APIs are built by `FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend`, consumed independently from C# and Visual Basic, reflected as coherent CLR metadata and verified to contain no P/Invoke/native ABI substitute. Rust-only mutations change both artifact bytes and managed observables. The exact supporting SHAs and portable CI runs are recorded in `tests/r06/contracts.toml`; `rustc_codegen_clr` and the legacy R06 emitter are not in the product causal path.
 
 ---
 
