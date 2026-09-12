@@ -80,4 +80,10 @@ proof = "sdk/FerrumWeave.Sdk/Sdk/Sdk.targets builds compiler/codegen-backend and
 id = "FW-R08-SDK-012"
 family = "the legacy ferrumweave_emit source-parser emitter is retired from the registered product binaries while the SDK remains bound to the FerrumWeave rustc CodegenBackend"
 implemented = true
-proof = "tests/legacy_emitter_retirement.rs requires compiler/cil/Cargo.toml to contain no registered ferrumweave_emit binary and independently requires sdk/FerrumWeave.Sdk/Sdk/Sdk.targets to invoke rustc -Z codegen-backend=<FerrumWeave> with no ferrumweave_emit reference. compiler/cil keeps autobins=false, so retaining the historical source file does not expose it as a product executable. Exact SHA ef063e3854ec48d16c9765ecd91f6f00889f9aef passed Rust CI #572 on Ubuntu and Windows, FerrumWeave backend convergence #209, R02 #248, R03 #275 and R04 #424 GREEN."
+proof = "tests/legacy_emitter_retirement.rs requires compiler/cil/Cargo.toml to contain no registered ferrumweave_emit binary and independently requires sdk/FerrumWeave.Sdk/Sdk/Sdk.targets to invoke rustc -Z codegen-backend=<FerrumWeave> with no ferrumweave_emit reference. compiler/cil keeps autobins=false. Exact SHA ef063e3854ec48d16c9765ecd91f6f00889f9aef passed Rust CI #572 on Ubuntu and Windows, FerrumWeave backend convergence #209, R02 #248, R03 #275 and R04 #424 GREEN."
+
+[[contracts]]
+id = "FW-R08-SDK-013"
+family = "the legacy source-parser emitter implementation is absent from the current product source tree"
+implemented = true
+proof = "tests/legacy_emitter_retirement.rs requires compiler/cil/src/bin/ferrumweave_emit.rs to be absent while separately preserving the SDK-to-FerrumWeave-CodegenBackend guardrails. RED SHA 69ffa458d140a9f00dda1b25b5100cc68aafce76 failed Rust CI #574 integration on Ubuntu and Windows for the precise reason that the historical source-parser file still existed. GREEN SHA bfd5e9b6a6226235a77aa60c6046a10810cc4949 deletes only that implementation and passed Rust CI #575 on Ubuntu and Windows, FerrumWeave backend convergence #212, R02 #251, R03 #278 and R04 #427 GREEN. Git history preserves provenance without retaining the substitute implementation in the current product tree."
