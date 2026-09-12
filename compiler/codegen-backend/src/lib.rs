@@ -37,6 +37,7 @@ mod panic_boundary;
 mod result_failure_lowering;
 mod result_success_lowering;
 mod rust_type_lowering;
+mod semantic_boundary;
 use borrow_boundary::reject_escaping_borrows;
 use disposable_resource_lowering::lower_disposable_resource;
 use external_managed_lowering::lower_external_managed_transform;
@@ -47,6 +48,7 @@ use panic_boundary::reject_direct_uncontained_panics;
 use result_failure_lowering::lower_result_failure;
 use result_success_lowering::lower_result_success;
 use rust_type_lowering::lower_constructible_i32_instance;
+use semantic_boundary::reject_unsupported_export_semantics;
 
 struct GeneratedArtifact { image: Vec<u8>, crate_info: CrateInfo }
 struct FerrumWeaveCodegenBackend;
@@ -114,6 +116,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         } else if let Some(payload) = external_payload {
             emit_i32_export_with_external_managed_transform(payload)
         } else {
+            reject_unsupported_export_semantics(tcx).unwrap_or_else(|message| panic!("{message}"));
             reject_escaping_borrows(tcx).unwrap_or_else(|message| panic!("{message}"));
             let lowered = lower_exported_i32(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
             match lowered {
