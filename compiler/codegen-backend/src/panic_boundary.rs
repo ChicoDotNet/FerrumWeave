@@ -31,14 +31,18 @@ pub(crate) fn reject_direct_uncontained_panics(tcx: TyCtxt<'_>) -> Result<(), St
                 let ty::FnDef(def_id, _) = *func_ty.kind() else {
                     continue;
                 };
-                let callee_path = tcx.def_path_str(def_id);
-                if !is_direct_panic_target(&callee_path) {
+                if def_id.is_local() {
+                    continue;
+                }
+
+                let callee_name = tcx.item_name(def_id);
+                if !is_direct_panic_target(callee_name.as_str()) {
                     continue;
                 }
 
                 let caller = tcx.symbol_name(instance).name;
                 return Err(format!(
-                    "{PANIC_BOUNDARY_DIAGNOSTIC}: direct Rust panic target `{callee_path}` is not permitted while compiling managed export candidate `{caller}`; contain or model failure explicitly"
+                    "{PANIC_BOUNDARY_DIAGNOSTIC}: direct Rust panic target `{callee_name}` is not permitted while compiling managed export candidate `{caller}`; contain or model failure explicitly"
                 ));
             }
         }
@@ -47,14 +51,10 @@ pub(crate) fn reject_direct_uncontained_panics(tcx: TyCtxt<'_>) -> Result<(), St
     Ok(())
 }
 
-fn is_direct_panic_target(path: &str) -> bool {
+fn is_direct_panic_target(name: &str) -> bool {
     matches!(
-        path,
-        "core::panicking::panic_fmt"
-            | "core::panicking::panic"
-            | "core::panicking::panic_nounwind_fmt"
-            | "core::panicking::panic_nounwind"
-            | "std::panicking::begin_panic"
+        name,
+        "panic_fmt" | "panic" | "panic_nounwind_fmt" | "panic_nounwind" | "begin_panic"
     )
 }
 
@@ -63,12 +63,13 @@ mod tests {
     use super::is_direct_panic_target;
 
     #[test]
-    fn recognizes_core_panic_entrypoints_without_source_text() {
-        assert!(is_direct_panic_target("core::panicking::panic_fmt"));
-        assert!(is_direct_panic_target("core::panicking::panic"));
-        assert!(is_direct_panic_target("core::panicking::panic_nounwind_fmt"));
-        assert!(is_direct_panic_target("core::panicking::panic_nounwind"));
-        assert!(is_direct_panic_target("std::panicking::begin_panic"));
-        assert!(!is_direct_panic_target("user_crate::panic_boundary_i32"));
+    fn recognizes_external_panic_entrypoint_names_without_source_text() {
+        assert!(is_direct_panic_target("panic_fmt"));
+        assert!(is_direct_panic_target("panic"));
+        assert!(is_direct_panic_target("panic_nounwind_fmt"));
+        assert!(is_direct_panic_target("panic_nounwind"));
+        assert!(is_direct_panic_target("begin_panic"));
+        assert!(!is_direct_panic_target("panic_boundary_i32"));
+        assert!(!is_direct_panic_target("helper_add"));
     }
 }
