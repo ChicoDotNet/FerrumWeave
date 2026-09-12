@@ -72,7 +72,9 @@ pub(crate) fn lower_constructible_i32_instance(
                         "{EXPORT_SYMBOL} Rust instance projection requires a receiver-only method"
                     ));
                 }
-                let value = lower_constant_i32_return(tcx, callee_mir)?;
+                let Some(value) = lower_constant_i32_return(tcx, callee_mir)? else {
+                    return Ok(None);
+                };
                 let type_name = tcx.item_name(adt.did()).to_string();
                 let rust_method_name = tcx.item_name(def_id).to_string();
                 let method_name = clr_method_name(&rust_method_name);
@@ -91,7 +93,7 @@ pub(crate) fn lower_constructible_i32_instance(
 fn lower_constant_i32_return<'tcx>(
     tcx: TyCtxt<'tcx>,
     mir: &rustc_middle::mir::Body<'tcx>,
-) -> Result<i32, String> {
+) -> Result<Option<i32>, String> {
     for block in mir.basic_blocks.iter() {
         for statement in &block.statements {
             let StatementKind::Assign(assignment) = &statement.kind else {
@@ -104,7 +106,10 @@ fn lower_constant_i32_return<'tcx>(
             let Rvalue::Use(operand) = rvalue else {
                 continue;
             };
-            return lower_i32_constant_operand(tcx, operand);
+            let Operand::Constant(_) = operand else {
+                return Ok(None);
+            };
+            return lower_i32_constant_operand(tcx, operand).map(Some);
         }
     }
     Err("Rust instance method return is not a direct i32 MIR constant".to_owned())
