@@ -67,17 +67,17 @@ proof = "tests/r07_generic_boundary.rs builds real Rust Option<i32> Some/None th
 [[contracts]]
 id = "FW-R07-SEM-010"
 family = "Rust borrow/lifetime semantics that cannot safely escape a managed boundary are rejected explicitly rather than erased into GC reachability"
-implemented = false
-proof = "HISTORICAL PROJECTION-LEVEL EVIDENCE ONLY: projection/types/tests/borrow_lifetime_boundary.rs proves the intended rejection policy for SharedBorrow and ExclusiveBorrow, but does not prove that rustc invokes FerrumWeave and enforces it before CLR artifact creation. Active replacement: tests/r07_borrow_boundary.rs builds real Rust shared and exclusive borrow exports through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend and requires stable FERRUMWEAVE_BORROW_BOUNDARY_REJECTED diagnostics with no managed DLL; it then mutates the Rust boundary to owned i32 and requires successful artifact production to falsify an always-reject implementation. Pending exact-SHA RED/GREEN/replay before promotion."
+implemented = true
+proof = "tests/r07_borrow_boundary.rs builds real Rust shared and exclusive borrow exports through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend and requires stable FERRUMWEAVE_BORROW_BOUNDARY_REJECTED diagnostics with no managed DLL; it then mutates only Rust source to an owned i32 boundary and requires successful artifact production. Rich FerrumWeave lowerers claim supported internal borrows before the escaping-borrow policy runs, preventing false rejection of valid managed projections. Exact SHA f2d3126c02b428454c3f3c4bc18c95cd15645456 was GREEN in Rust CI #553 and FerrumWeave codegen backend convergence #190, with R02 #229, R03 #256 and R04 #405 also GREEN on the portable replay. Historical projection/types evidence remains characterization only."
 
 [[contracts]]
 id = "FW-R07-SEM-011"
 family = "unsupported cross-runtime semantic combinations fail explicitly and diagnostically"
-implemented = true
-proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises two unsupported semantic combinations directly against the Rust projection layer: Rust char -> System.Char is rejected because the CLR representation cannot preserve every Rust Unicode scalar value without potential loss, and invalid CLR UTF-16 -> Rust String is rejected rather than normalized with replacement characters. Exact SHA 494ba57012adb1ffa1901dfbe7e13b58436610c5 was GREEN in Rust CI #210 and R04 CLR CTS Reflection #117, including Ubuntu/Windows integration certification."
+implemented = false
+proof = "HISTORICAL PROJECTION-LEVEL EVIDENCE ONLY: projection/types/tests/unsupported_semantic_combinations.rs proves intended rejection for Rust char -> System.Char and invalid CLR UTF-16 -> Rust String, but does not prove rustc invokes FerrumWeave or that product compilation stops before a CLR artifact exists. Active replacement: tests/r07_unsupported_semantics.rs builds real Rust through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, requires a stable FERRUMWEAVE_SEMANTIC_BOUNDARY_REJECTED diagnostic and no managed DLL for unsupported char and String boundaries, then mutates only Rust source to a supported owned i32 export and requires artifact production to falsify reject-all behavior. Pending correct RED, implementation, falsification and exact-SHA replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
-implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-010 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005/006/007/008/009."
+implemented = false
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path. FW-R07-SEM-001 through FW-R07-SEM-010 are now source-causal/backend-certified; FW-R07-SEM-011 is the active replacement frontier, so aggregate portable certification remains false until that contract closes."
