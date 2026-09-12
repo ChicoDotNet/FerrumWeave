@@ -87,3 +87,9 @@ id = "FW-R08-SDK-013"
 family = "the legacy source-parser emitter implementation is absent from the current product source tree"
 implemented = true
 proof = "tests/legacy_emitter_retirement.rs requires compiler/cil/src/bin/ferrumweave_emit.rs to be absent while separately preserving the SDK-to-FerrumWeave-CodegenBackend guardrails. RED SHA 69ffa458d140a9f00dda1b25b5100cc68aafce76 failed Rust CI #574 integration on Ubuntu and Windows for the precise reason that the historical source-parser file still existed. GREEN SHA bfd5e9b6a6226235a77aa60c6046a10810cc4949 deletes only that implementation and passed Rust CI #575 on Ubuntu and Windows, FerrumWeave backend convergence #212, R02 #251, R03 #278 and R04 #427 GREEN. Git history preserves provenance without retaining the substitute implementation in the current product tree."
+
+[[contracts]]
+id = "FW-R08-SDK-014"
+family = "the legacy hard-coded R08 PE/CIL emitter implementation is absent from the current product source tree"
+implemented = true
+proof = "tests/legacy_emitter_retirement.rs requires compiler/cil/src/bin/r08_exec.rs to be absent while independently preserving clr_probe, autobins=false, and the SDK-to-FerrumWeave-CodegenBackend guardrails. RED SHA a63ebf86014908d72e48c2d7be6132907b85d508 failed Rust CI #577 integration for the precise reason that the historical hard-coded PE/CIL emitter still existed. GREEN SHA 7a6eba484da7ac7631aa4bd6903ea5603ae3518e deletes only that implementation and passed Rust CI #578 on Ubuntu and Windows, FerrumWeave backend convergence #215, R02 #254, R03 #281 and R04 #430 GREEN. Git history preserves the historical emitter and provenance without retaining the substitute implementation in the current product tree."
