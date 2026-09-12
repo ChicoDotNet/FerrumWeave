@@ -6,6 +6,9 @@ target_percent_when_done = 100.0
 # R08 makes Rust a first-class SDK-style project in the dotnet toolchain.
 # The denominator is declared up front from the roadmap DoD. A contract remains false
 # until executable evidence proves the supported behavior on the required platforms.
+# 2026-09 backend-convergence audit: the product build contract additionally requires
+# .rsproj -> FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend causality; the legacy
+# ferrumweave_emit/source-parser path is not valid product evidence.
 
 [[contracts]]
 id = "FW-R08-SDK-001"
@@ -17,7 +20,7 @@ proof = "tests/r08_dotnet_new.rs installs the repository template through the re
 id = "FW-R08-SDK-002"
 family = ".rsproj is an SDK-style project owned by FerrumWeave.Sdk"
 implemented = true
-proof = "sdk/templates/rust/HelloFerrum.rsproj names FerrumWeave.Sdk as its MSBuild SDK, while sdk/FerrumWeave.Sdk/Sdk/Sdk.props and Sdk.targets provide the repository-owned SDK boundary and delegate the standard .NET lifecycle to Microsoft.NET.Sdk. Certified by tests/r08_restore.rs on Linux and Windows in Rust CI #225 at 8cdd02e2d1d0cdf7f06b580b21c5c6ebe8ec369d."
+proof = "sdk/templates/rust/HelloFerrum.rsproj names FerrumWeave.Sdk as its MSBuild SDK. Current sdk/FerrumWeave.Sdk/Sdk/Sdk.targets owns compilation, builds compiler/codegen-backend and invokes rustc with -Z codegen-backend=<FerrumWeave>; standard .NET lifecycle remains delegated to Microsoft.NET.Sdk. The exact product-path replay is covered by FW-R08-SDK-011."
 
 [[contracts]]
 id = "FW-R08-SDK-003"
@@ -29,7 +32,7 @@ proof = "tests/r08_restore.rs runs real 'dotnet restore HelloFerrum.rsproj' with
 id = "FW-R08-SDK-004"
 family = "dotnet build produces the managed FerrumWeave assembly"
 implemented = true
-proof = "tests/r08_build.rs runs real 'dotnet build HelloFerrum.rsproj' through FerrumWeave.Sdk, requires the standard bin/Debug/net10.0/HelloFerrum.dll output, loads that assembly through CLR reflection, and verifies FerrumWeave.RustApi.Answer returns 42. Certified on Linux and Windows by Rust CI #236 and R04 CLR CTS Reflection #131 at 0307a83a2c21276f3894f0a452f129b9a47d6b56."
+proof = "tests/r08_build.rs runs real 'dotnet build HelloFerrum.rsproj' through FerrumWeave.Sdk and verifies the managed output. The stronger backend-convergence certifier tests/sdk_backend_path.rs proves that the same normal dotnet build is gated by real rustc, contains no ferrumweave_emit product path, and that Rust-only mutation 137 -> 211 changes both managed assembly bytes and an independent CoreCLR consumer observable. Exact aggregate SHA 6e86017e4b46526eec76a3f862a7bc922af14487 passed Rust CI #561 on Ubuntu and Windows."
 
 [[contracts]]
 id = "FW-R08-SDK-005"
@@ -53,7 +56,7 @@ proof = "tests/r08_test.rs invokes real 'dotnet test HelloFerrum.rsproj --no-res
 id = "FW-R08-SDK-008"
 family = "the project lifecycle requires no bespoke manual build script outside the SDK contract"
 implemented = true
-proof = "tests/r08_sdk_lifecycle.rs rejects bespoke shell/PowerShell/cmd/batch/Makefile build scripts in the canonical Rust template, requires the .rsproj to delegate lifecycle ownership to FerrumWeave.Sdk, and executes real dotnet build through that SDK boundary to materialize bin/Debug/net10.0/HelloFerrum.dll. Certified on Linux and Windows by Rust CI #258 and R04 CLR CTS Reflection #153 at a44fa893971ac811004b1ac3413f26430e59b067."
+proof = "tests/r08_sdk_lifecycle.rs rejects bespoke shell/PowerShell/cmd/batch/Makefile build scripts in the canonical Rust template and requires lifecycle ownership in FerrumWeave.Sdk. The current SDK directly builds and invokes the FerrumWeave rustc CodegenBackend; tests/sdk_backend_path.rs independently rejects ferrumweave_emit in the product compilation path. Exact aggregate SHA 6e86017e4b46526eec76a3f862a7bc922af14487 passed the portable Rust CI #561 replay."
 
 [[contracts]]
 id = "FW-R08-SDK-009"
@@ -65,4 +68,10 @@ proof = "tests/r08_supported_dotnet.rs requires the canonical template to target
 id = "FW-R08-SDK-010"
 family = "the complete supported R08 SDK lifecycle is certified from documented prerequisites on Linux and Windows"
 implemented = true
-proof = "tests/r08_end_to_end.rs verifies documented Rust 1.98 and .NET 10 SDK prerequisites, then exercises the complete supported lifecycle through the real dotnet CLI: restore, build, run, explicit test-adapter limitation, and clean, including the managed HelloFerrum.dll artifact and 'Hello from FerrumWeave!' observable. Exact SHA 246cf36ccf219d2dc83f5814f088c9ca43d3d76b completed GREEN in Rust CI #265 for fmt/clippy, functional coverage, code coverage, and integration on Ubuntu and Windows; R04 CLR CTS Reflection #160 was also GREEN."
+proof = "tests/r08_end_to_end.rs exercises the complete real dotnet lifecycle, while tests/sdk_backend_path.rs certifies the compiler causality inside that SDK boundary. Exact aggregate SHA 6e86017e4b46526eec76a3f862a7bc922af14487 completed Rust CI #561 GREEN for fmt/clippy, functional/source-causality, code coverage and integration on Ubuntu and Windows; Backend convergence #198, R02 #237, R03 #264 and R04 #413 were also GREEN."
+
+[[contracts]]
+id = "FW-R08-SDK-011"
+family = "normal .rsproj compilation causally invokes rustc with the FerrumWeave CodegenBackend rather than a legacy emitter/source parser"
+implemented = true
+proof = "sdk/FerrumWeave.Sdk/Sdk/Sdk.targets builds compiler/codegen-backend and invokes rustc -Z codegen-backend=<FerrumWeave>. tests/sdk_backend_path.rs first supplies malformed Rust that the legacy source parser could have accepted and requires a real rustc syntax diagnostic plus no DLL and no ferrumweave_emit trace. It then mutates only valid Rust source 137 -> 211 and requires both HelloFerrum.dll bytes and an independent C# CoreCLR observable to change. Exact SHA 6e86017e4b46526eec76a3f862a7bc922af14487 passed Rust CI #561 on both Ubuntu and Windows, with FerrumWeave backend convergence #198 GREEN."
