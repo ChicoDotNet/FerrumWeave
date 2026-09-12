@@ -55,14 +55,14 @@ proof = "tests/r07_disposable.rs builds real Rust defining RustResource + Drop t
 [[contracts]]
 id = "FW-R07-SEM-008"
 family = "supported managed ownership/GC lifetime preserves identity without duplicate release or invalid access after release in supported scenarios"
-implemented = false
-proof = "HISTORICAL EMITTER-LEVEL EVIDENCE ONLY: the prior tests/r07_managed_identity.rs called write_r07_disposable_artifact directly, so it did not prove the FerrumWeave rustc backend owned the capability. The active certifier now builds RustResource + Drop from real Rust through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, aliases the resulting managed object in an independent C# consumer, checks ReferenceEquals identity, single shared Dispose state and GC.KeepAlive, and mutates only Rust constructor seed 0 -> 5 so artifact and observable state must change. Pending exact-SHA RED/GREEN/replay before promotion."
+implemented = true
+proof = "tests/r07_managed_identity.rs builds RustResource + Drop from real Rust through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, aliases the resulting managed object in an independent C# consumer, verifies ReferenceEquals identity, one shared exactly-once Dispose state and GC.KeepAlive lifetime, and mutates only the Rust constructor seed 0 -> 5 so both managed artifact bytes and the CoreCLR state observable change while identity remains true. Exact SHA 4718d1046ce3ed4a67aa286e54a068d56abd9102 was GREEN in Rust CI #545 and FerrumWeave codegen backend convergence #182, with R02 #221, R03 #248 and R04 #397 also GREEN on the portable replay."
 
 [[contracts]]
 id = "FW-R07-SEM-009"
 family = "at least one supported generic boundary has a coherent Rust/CTS representation observable by CLR consumers"
-implemented = true
-proof = "tests/r07_generic_boundary.rs loads the Rust-emitted assembly in an independent net10.0 CLR consumer and uses System.Reflection to verify that OptionSomeI32 and OptionNoneI32 expose a genuine generic return type whose generic definition is System.Nullable<> and whose sole generic argument is System.Int32. Exact SHA 9079dcf41dbe8bf9387b5f552ece4f12ef2b351a was GREEN in Rust CI #205 and R04 CLR CTS Reflection #112, including Ubuntu/Windows integration certification."
+implemented = false
+proof = "HISTORICAL EMITTER-LEVEL EVIDENCE ONLY: the prior tests/r07_generic_boundary.rs called write_r06_static_api_artifact directly, so its reflection GREEN proved the Nullable<int> metadata shape but not FerrumWeave rustc-backend ownership. The active certifier now builds real Rust Option<i32> Some/None through the canonical .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend path, requires reflection to observe System.Nullable<> with System.Int32, executes the values on CoreCLR, and mutates only Some(42) -> Some(73) so artifact bytes and the CLR observable must change. Pending exact-SHA RED/GREEN/replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-010"
@@ -80,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-008 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005/006/007."
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-009 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005/006/007/008."
