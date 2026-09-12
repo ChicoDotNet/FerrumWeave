@@ -48,7 +48,8 @@ impl Drop for RustResource {{
 
 #[no_mangle]
 pub extern "C" fn answer() -> i32 {{
-    {seed}
+    let resource = RustResource::new();
+    resource.release_count()
 }}
 "#
             ),
@@ -64,7 +65,10 @@ pub extern "C" fn answer() -> i32 {{
         );
 
         let assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
-        assert!(assembly.is_file(), "R07 Rust source did not produce managed DLL");
+        assert!(
+            assembly.is_file(),
+            "R07 Rust source did not produce managed DLL"
+        );
         let bytes = fs::read(&assembly).expect("read R07 managed artifact");
         if let Some(previous) = &previous_artifact {
             assert_ne!(
@@ -86,7 +90,11 @@ pub extern "C" fn answer() -> i32 {{
 
         let stdout = String::from_utf8_lossy(&run.stdout);
         let observed: Vec<_> = stdout.lines().collect();
-        let expected = [seed.to_string(), (seed + 1).to_string(), (seed + 1).to_string()];
+        let expected = [
+            seed.to_string(),
+            (seed + 1).to_string(),
+            (seed + 1).to_string(),
+        ];
         assert_eq!(observed, expected);
     }
 
