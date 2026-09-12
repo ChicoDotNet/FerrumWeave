@@ -36,7 +36,10 @@ fn option_i32_exposes_nullable_i32_as_a_source_causal_clr_generic_boundary() {
         );
 
         let assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
-        assert!(assembly.is_file(), "R07 Rust source did not produce managed DLL");
+        assert!(
+            assembly.is_file(),
+            "R07 Rust source did not produce managed DLL"
+        );
         let bytes = fs::read(&assembly).expect("read R07 generic-boundary managed artifact");
         if let Some(previous) = &previous_artifact {
             assert_ne!(
