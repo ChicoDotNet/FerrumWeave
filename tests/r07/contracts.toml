@@ -37,14 +37,14 @@ proof = "tests/r07_result_success.rs builds real Rust Result<i32, i32>::Ok sourc
 [[contracts]]
 id = "FW-R07-SEM-005"
 family = "Result<T, E> failure crosses a supported public CLR boundary as a coherent managed exception rather than a hidden status-code convention"
-implemented = false
-proof = "HISTORICAL ARTIFACT-LEVEL EVIDENCE ONLY: the prior tests/r07_result_failure.rs consumed ResultErrI32() emitted directly by compiler/cil/src/r06.rs. The active certifier now builds real Rust Result<i32, i32>::Err source through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend, mutates only Err(42) -> Err(73), requires managed artifact bytes and the independent CLR exception observable to change, and requires the CLR boundary to represent failure as InvalidOperationException rather than a status-code convention. Pending RED/GREEN/falsification replay before promotion."
+implemented = true
+proof = "tests/r07_result_failure.rs builds real Rust Result<i32, i32>::Err source through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend -> FerrumWeave MIR lowering -> FerrumWeave CIL/metadata, mutates only Err(42) -> Err(73), requires managed artifact bytes and the independent CoreCLR exception observable to change, and requires the CLR boundary to represent failure as InvalidOperationException carrying the Rust-derived payload rather than a hidden status code. Exact SHA 1fa3bf19237d77dac15c8357de9041801aba3055 was GREEN in Rust CI #527 and FerrumWeave codegen backend convergence #164, with R02 #203, R03 #230 and R04 #379 also GREEN."
 
 [[contracts]]
 id = "FW-R07-SEM-006"
 family = "panic behavior at a supported managed public boundary follows an explicit policy and does not silently unwind across an unsupported runtime boundary"
-implemented = true
-proof = "projection/types/tests/panic_boundary_policy.rs exercises FerrumWeave's Rust-side managed-boundary policy directly: managed_panic_boundary_policy() returns RejectUncontainedPanic, reports that CLR-boundary unwind is not permitted, and exposes a stable diagnostic requiring panic containment or explicit failure modeling. Rust CI #193 certified exact product SHA 860b74a81bba08f0bbc09d72f433e9ced1f27142 GREEN for fmt/clippy, functional coverage, 92.57% code coverage, and integration tests on Ubuntu and Windows; R04 CLR CTS Reflection #100 was also GREEN on Linux and Windows."
+implemented = false
+proof = "HISTORICAL POLICY-LEVEL EVIDENCE ONLY: projection/types/tests/panic_boundary_policy.rs proves the Rust-side policy object returns RejectUncontainedPanic, but that does not prove the product compiler path enforces it. The active certifier tests/r07_panic_boundary.rs now builds real Rust containing panic! through .rsproj/MSBuild -> rustc -> FerrumWeave CodegenBackend and requires compilation to fail with stable diagnostic FERRUMWEAVE_PANIC_BOUNDARY_REJECTED before a valid managed artifact is produced. Pending RED/GREEN/replay before promotion."
 
 [[contracts]]
 id = "FW-R07-SEM-007"
@@ -80,4 +80,4 @@ proof = "projection/types/tests/unsupported_semantic_combinations.rs exercises t
 id = "FW-R07-SEM-012"
 family = "all supported R07 semantic-interoperability scenarios are certified on Linux and Windows"
 implemented = true
-proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-005 is the current active replacement after source-causal certification of FW-R07-SEM-001/002/003/004."
+proof = "HISTORICAL MILESTONE EVIDENCE: exact milestone SHA ca0d589c4e673825c05b44d3bf1f7f6aa2d87478 completed GREEN in Rust CI #211 and R04 CLR CTS Reflection #118. The 2026-09 backend-convergence audit reopens R07 because product claims must be replayed through the FerrumWeave rustc CodegenBackend causal path; FW-R07-SEM-006 is now the active replacement frontier after source-causal certification of FW-R07-SEM-001/002/003/004/005."
