@@ -3,6 +3,9 @@ use rustc_middle::{
     ty::{self, TyCtxt},
 };
 
+#[path = "semantic_boundary.rs"]
+mod semantic_boundary;
+
 const BORROW_BOUNDARY_DIAGNOSTIC: &str = "FERRUMWEAVE_BORROW_BOUNDARY_REJECTED";
 const EXPORT_SYMBOL: &str = "answer";
 
@@ -12,6 +15,8 @@ const EXPORT_SYMBOL: &str = "answer";
 /// CLR reachability and identity, but they do not encode Rust's shared/exclusive borrow and
 /// lifetime guarantees, so FerrumWeave must not erase those guarantees into a GC reference.
 pub(crate) fn reject_escaping_borrows(tcx: TyCtxt<'_>) -> Result<(), String> {
+    semantic_boundary::reject_unsupported_export_semantics(tcx)?;
+
     let codegen_units = tcx.collect_and_partition_mono_items(());
 
     for cgu in codegen_units.codegen_units {
