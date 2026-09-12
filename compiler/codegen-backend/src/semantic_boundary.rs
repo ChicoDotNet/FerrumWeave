@@ -2,7 +2,6 @@ use rustc_middle::{
     mir::{RETURN_PLACE, mono::MonoItem},
     ty::{Ty, TyCtxt, TyKind},
 };
-use rustc_span::sym;
 
 pub const DIAGNOSTIC: &str = "FERRUMWEAVE_SEMANTIC_BOUNDARY_REJECTED";
 const EXPORT_SYMBOL: &str = "answer";
@@ -39,7 +38,7 @@ fn reject_type(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Result<(), String> {
         TyKind::Char => Err(format!(
             "{DIAGNOSTIC}: Rust char cannot cross the managed export boundary until FerrumWeave owns a scalar-value projection that preserves the full Unicode scalar range"
         )),
-        TyKind::Adt(adt, _) if Some(adt.did()) == tcx.get_diagnostic_item(sym::String) => Err(format!(
+        TyKind::Adt(adt, _) if Some(adt.did()) == tcx.lang_items().string() => Err(format!(
             "{DIAGNOSTIC}: Rust String cannot cross the managed export boundary until FerrumWeave owns an explicit UTF-8/UTF-16 projection policy"
         )),
         _ => Ok(()),
