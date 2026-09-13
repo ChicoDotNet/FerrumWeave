@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Falsify FerrumWeave i32 arithmetic lowering through rustc MIR.
 
-The C# consumer and its arguments stay fixed. Only the Rust arithmetic operator
-changes from addition to subtraction. The contract passes only when
-FerrumWeave's own CodegenBackend lowers that MIR operation into the managed
-method body.
+The C# consumer arguments stay fixed. Rust-only mutations change the arithmetic
+operator or the exported Rust symbol. The contract passes only when
+FerrumWeave's own CodegenBackend lowers the MIR operation and preserves the
+rustc-owned public export identity into managed metadata.
 """
 
 from __future__ import annotations
@@ -19,22 +19,29 @@ from pathlib import Path
 ASSEMBLY_FILE = "FerrumWeave.Generated.dll"
 
 
-def rust_source(operator: str) -> str:
+def rust_source(operator: str, export_symbol: str = "answer") -> str:
     if operator not in {"+", "-"}:
         raise ValueError(operator)
     return (
         '#[no_mangle]\n'
-        'pub extern "C" fn answer(left: i32, right: i32) -> i32 {\n'
+        f'pub extern "C" fn {export_symbol}(left: i32, right: i32) -> i32 {{\n'
         f'    let result = left {operator} right;\n'
         '    result\n'
         '}\n'
     )
 
 
-def compile_source(toolchain: str, backend: Path, work: Path, label: str, operator: str) -> Path:
+def compile_source(
+    toolchain: str,
+    backend: Path,
+    work: Path,
+    label: str,
+    operator: str,
+    export_symbol: str = "answer",
+) -> Path:
     source = work / f"arithmetic_{label}.rs"
     artifact = work / f"arithmetic_{label}.dll"
-    source.write_text(rust_source(operator), encoding="utf-8")
+    source.write_text(rust_source(operator, export_symbol), encoding="utf-8")
     result = subprocess.run(
         [
             "rustc",
@@ -63,7 +70,13 @@ def compile_source(toolchain: str, backend: Path, work: Path, label: str, operat
     return artifact
 
 
-def execute_from_csharp(artifact: Path, expected: int, root: Path, label: str) -> None:
+def execute_from_csharp(
+    artifact: Path,
+    expected: int,
+    root: Path,
+    label: str,
+    method_name: str = "Answer",
+) -> None:
     consumer = root / f"consumer_{label}"
     consumer.mkdir()
     shutil.copyfile(artifact, consumer / ASSEMBLY_FILE)
@@ -83,7 +96,7 @@ def execute_from_csharp(artifact: Path, expected: int, root: Path, label: str) -
         encoding="utf-8",
     )
     (consumer / "Program.cs").write_text(
-        'System.Console.WriteLine(FerrumWeave.RustApi.Answer(137, 74));\n',
+        f'System.Console.WriteLine(FerrumWeave.RustApi.{method_name}(137, 74));\n',
         encoding="utf-8",
     )
     run = subprocess.run(
@@ -119,24 +132,46 @@ def main() -> int:
             work = Path(temp)
             add_artifact = compile_source(args.toolchain, backend, work, "add", "+")
             sub_artifact = compile_source(args.toolchain, backend, work, "sub", "-")
+            renamed_artifact = compile_source(
+                args.toolchain,
+                backend,
+                work,
+                "renamed",
+                "+",
+                export_symbol="compute_result",
+            )
 
             execute_from_csharp(add_artifact, 211, work, "add")
             execute_from_csharp(sub_artifact, 63, work, "sub")
+            execute_from_csharp(
+                renamed_artifact,
+                211,
+                work,
+                "renamed",
+                method_name="ComputeResult",
+            )
 
             add_hash = hashlib.sha256(add_artifact.read_bytes()).hexdigest()
             sub_hash = hashlib.sha256(sub_artifact.read_bytes()).hexdigest()
+            renamed_hash = hashlib.sha256(renamed_artifact.read_bytes()).hexdigest()
             if add_hash == sub_hash:
                 raise AssertionError(
                     "changing only Rust operator + -> - did not change the managed artifact"
+                )
+            if add_hash == renamed_hash:
+                raise AssertionError(
+                    "changing only Rust export answer -> compute_result did not change managed metadata"
                 )
     except AssertionError as exc:
         print(f"RED: {exc}")
         return 1
 
     print("GREEN: FerrumWeave source-causally lowers i32 arithmetic")
-    print("  Fixed C# call: Answer(137, 74)")
-    print("  Rust-only mutation: left + right -> left - right")
+    print("  Fixed C# arguments: (137, 74)")
+    print("  Rust-only arithmetic mutation: left + right -> left - right")
     print("  Managed observable: 211 -> 63")
+    print("  Rust-only export mutation: answer -> compute_result")
+    print("  Managed consumer mutation: Answer(...) -> ComputeResult(...)")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
 
