@@ -12,8 +12,6 @@ use rustc_middle::{
     ty::{self, TyCtxt, TypingEnv},
 };
 
-const EXPORT_SYMBOL: &str = "answer";
-
 pub(crate) enum LoweredI32Export {
     Constant(i32),
     Argument(u8),
@@ -48,9 +46,13 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
             let MonoItem::Fn(instance) = *item else {
                 continue;
             };
-            if tcx.symbol_name(instance).name != EXPORT_SYMBOL {
+            if !tcx
+                .codegen_fn_attrs(instance.def_id())
+                .contains_extern_indicator()
+            {
                 continue;
             }
+            let export_symbol = tcx.symbol_name(instance).name;
 
             let mir = tcx.instance_mir(instance.def);
             let mut local_aliases = HashMap::new();
@@ -101,7 +103,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                                     }
                                     other => {
                                         return Err(format!(
-                                            "unsupported i32 binary operation {other:?} in {EXPORT_SYMBOL}"
+                                            "unsupported i32 binary operation {other:?} in {export_symbol}"
                                         ));
                                     }
                                 }
@@ -121,12 +123,12 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                 if let TerminatorKind::SwitchInt { discr, targets } = &block.terminator().kind {
                     let (Operand::Copy(condition) | Operand::Move(condition)) = discr else {
                         return Err(format!(
-                            "{EXPORT_SYMBOL} control-flow discriminator is not a MIR place: {discr:?}"
+                            "{export_symbol} control-flow discriminator is not a MIR place: {discr:?}"
                         ));
                     };
                     if !condition.projection.is_empty() {
                         return Err(format!(
-                            "{EXPORT_SYMBOL} control-flow discriminator projection is unsupported: {condition:?}"
+                            "{export_symbol} control-flow discriminator projection is unsupported: {condition:?}"
                         ));
                     }
 
@@ -136,7 +138,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                             .find_map(|(value, target)| (value == 0).then_some(target))
                             .ok_or_else(|| {
                                 format!(
-                                    "{EXPORT_SYMBOL} selector SwitchInt does not expose a zero target"
+                                    "{export_symbol} selector SwitchInt does not expose a zero target"
                                 )
                             })?;
                         let nonzero_target = targets.otherwise();
@@ -153,7 +155,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                             .find_map(|(value, target)| (value == 0).then_some(target))
                             .ok_or_else(|| {
                                 format!(
-                                    "{EXPORT_SYMBOL} boolean SwitchInt does not expose a false target"
+                                    "{export_symbol} boolean SwitchInt does not expose a false target"
                                 )
                             })?;
                         let true_target = targets.otherwise();
@@ -181,7 +183,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                 let func_ty = func.ty(&mir.local_decls, tcx);
                 let ty::FnDef(def_id, _) = *func_ty.kind() else {
                     return Err(format!(
-                        "{EXPORT_SYMBOL} call target is not a direct Rust function: {func_ty:?}"
+                        "{export_symbol} call target is not a direct Rust function: {func_ty:?}"
                     ));
                 };
                 let callee_symbol = tcx.item_name(def_id);
@@ -192,7 +194,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                         ManagedIntrinsic::SystemMathAbs | ManagedIntrinsic::SystemMathSign => {
                             if args.len() != 1 {
                                 return Err(format!(
-                                    "{EXPORT_SYMBOL} managed static marker requires exactly one i32 argument"
+                                    "{export_symbol} managed static marker requires exactly one i32 argument"
                                 ));
                             }
                             let method = match intrinsic {
@@ -207,7 +209,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                         | ManagedIntrinsic::SystemTextStringBuilderNew => {
                             if args.len() != 1 {
                                 return Err(format!(
-                                    "{EXPORT_SYMBOL} managed construction marker requires exactly one i32 payload"
+                                    "{export_symbol} managed construction marker requires exactly one i32 payload"
                                 ));
                             }
                             let constructor = match intrinsic {
@@ -227,7 +229,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                         | ManagedIntrinsic::SystemTextStringBuilderToString => {
                             if args.len() != 1 {
                                 return Err(format!(
-                                    "{EXPORT_SYMBOL} managed instance marker requires exactly one i32 payload"
+                                    "{export_symbol} managed instance marker requires exactly one i32 payload"
                                 ));
                             }
                             let receiver = match intrinsic {
@@ -245,7 +247,7 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                         ManagedIntrinsic::SystemTextStringBuilderLength => {
                             if args.len() != 1 {
                                 return Err(format!(
-                                    "{EXPORT_SYMBOL} managed property marker requires exactly one i32 payload"
+                                    "{export_symbol} managed property marker requires exactly one i32 payload"
                                 ));
                             }
                             let payload = lower_i32_constant_operand(tcx, &args[0].node)?;
@@ -256,12 +258,12 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
 
                 if !def_id.is_local() {
                     return Err(format!(
-                        "unsupported non-local Rust call target `{callee_name}` in {EXPORT_SYMBOL}"
+                        "unsupported non-local Rust call target `{callee_name}` in {export_symbol}"
                     ));
                 }
                 if args.len() != 2 {
                     return Err(format!(
-                        "{EXPORT_SYMBOL} direct Rust call currently requires exactly two i32 arguments"
+                        "{export_symbol} direct Rust call currently requires exactly two i32 arguments"
                     ));
                 }
                 require_binary_argument_order(mir, &args[0].node, &args[1].node)?;
@@ -289,13 +291,11 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
             }
 
             return Err(format!(
-                "{EXPORT_SYMBOL} MIR contains neither a supported constant return, simple i32 argument flow, i32 arithmetic, i32 control flow, direct Rust call, managed static call, managed construction, managed instance call, nor managed property access"
+                "{export_symbol} MIR contains neither a supported constant return, simple i32 argument flow, i32 arithmetic, i32 control flow, direct Rust call, managed static call, managed construction, managed instance call, nor managed property access"
             ));
         }
     }
-    Err(format!(
-        "no monomorphized `{EXPORT_SYMBOL}` export reached FerrumWeave codegen"
-    ))
+    Err("no externally visible monomorphized i32 export reached FerrumWeave codegen".to_owned())
 }
 
 fn lower_direct_i32_callee<'tcx>(
@@ -385,9 +385,7 @@ fn lower_zero_comparison<'tcx>(
     if (left_is_selector && right_is_zero) || (right_is_selector && left_is_zero) {
         Ok(predicate)
     } else {
-        Err(format!(
-            "{EXPORT_SYMBOL} control-flow comparison currently requires selector argument against i32 zero"
-        ))
+        Err("exported i32 control-flow comparison currently requires selector argument against i32 zero".to_owned())
     }
 }
 
@@ -437,15 +435,13 @@ fn branch_result_argument<'tcx>(
             TerminatorKind::Return => break,
             other => {
                 return Err(format!(
-                    "{EXPORT_SYMBOL} branch result encountered unsupported terminator {other:?}"
+                    "exported i32 branch result encountered unsupported terminator {other:?}"
                 ));
             }
         }
     }
 
-    Err(format!(
-        "{EXPORT_SYMBOL} branch does not resolve to a direct i32 argument"
-    ))
+    Err("exported i32 branch does not resolve to a direct i32 argument".to_owned())
 }
 
 fn require_binary_argument_order<'tcx>(
@@ -456,9 +452,7 @@ fn require_binary_argument_order<'tcx>(
     let left_index = argument_index(mir, left)?;
     let right_index = argument_index(mir, right)?;
     if left_index != 0 || right_index != 1 {
-        return Err(format!(
-            "{EXPORT_SYMBOL} arithmetic currently requires left/right argument order"
-        ));
+        return Err("exported i32 arithmetic currently requires left/right argument order".to_owned());
     }
     Ok(())
 }
