@@ -18,14 +18,14 @@ from pathlib import Path
 ASSEMBLY_FILE = "FerrumWeave.Generated.dll"
 
 
-def rust_source(marker: str, argument: int) -> str:
+def rust_source(marker: str, argument: int, export_name: str = "answer") -> str:
     return (
         "#[inline(never)]\n"
         "fn ferrumweave_system_math_abs(value: i32) -> i32 { value }\n\n"
         "#[inline(never)]\n"
         "fn ferrumweave_system_math_sign(value: i32) -> i32 { value }\n\n"
         "#[no_mangle]\n"
-        f'pub extern "C" fn answer() -> i32 {{ {marker}({argument}) }}\n'
+        f'pub extern "C" fn {export_name}() -> i32 {{ {marker}({argument}) }}\n'
     )
 
 
@@ -136,28 +136,37 @@ def main() -> int:
     # Positive constants keep this slice focused on MIR Call lowering rather than
     # also requiring UnaryOp lowering. Abs still distinguishes argument mutation,
     # while switching only the Rust-selected marker to Sign changes the managed
-    # method and observable from 137 to 1.
+    # method and observable from 137 to 1. The final case mutates only the Rust
+    # export name so fixture-owned export selection cannot survive as a false GREEN.
     cases = [
-        ("abs_137", "ferrumweave_system_math_abs", 137, "Abs", 137),
-        ("abs_211", "ferrumweave_system_math_abs", 211, "Abs", 211),
-        ("sign_137", "ferrumweave_system_math_sign", 137, "Sign", 1),
+        ("abs_137", "ferrumweave_system_math_abs", 137, "answer", "Abs", 137),
+        ("abs_211", "ferrumweave_system_math_abs", 211, "answer", "Abs", 211),
+        ("sign_137", "ferrumweave_system_math_sign", 137, "answer", "Sign", 1),
+        (
+            "renamed_export_137",
+            "ferrumweave_system_math_abs",
+            137,
+            "compute_result",
+            "Abs",
+            137,
+        ),
     ]
 
     with tempfile.TemporaryDirectory(prefix="ferrumweave-managed-static-") as temp:
         work = Path(temp)
         images: dict[str, bytes] = {}
 
-        for name, marker, argument, managed_method, expected in cases:
+        for name, marker, argument, export_name, managed_method, expected in cases:
             result, artifact = compile_source(
                 args.toolchain,
                 backend,
                 work,
                 name,
-                rust_source(marker, argument),
+                rust_source(marker, argument, export_name),
             )
             if result.returncode != 0:
                 print(
-                    f"RED: FerrumWeave cannot lower Rust MIR call {marker}({argument})"
+                    f"RED: FerrumWeave cannot lower Rust export {export_name} with MIR call {marker}({argument})"
                 )
                 print(result.stdout)
                 print(result.stderr)
@@ -185,6 +194,7 @@ def main() -> int:
     print("GREEN: FerrumWeave source-causally lowers a managed static System.* call")
     print("  MIR-selected method: Math.Abs -> Math.Sign changes MemberRef and observable 137 -> 1")
     print("  MIR-selected argument: 137 -> 211 changes managed observable 137 -> 211")
+    print("  Rust export rename: answer -> compute_result preserves managed observable 137")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
 
