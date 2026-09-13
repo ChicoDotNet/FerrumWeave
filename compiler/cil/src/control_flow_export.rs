@@ -27,14 +27,32 @@ pub enum I32ZeroPredicate {
     NotEqual,
 }
 
-/// Emit `public static int Answer(int selector, int left, int right)` preserving
-/// a Rust MIR `selector == 0` / `selector != 0` branch and its two argument
-/// results.
+/// Emit the historical `Answer` compatibility export while preserving the
+/// lowered Rust MIR predicate and branch results.
 #[must_use]
 pub fn emit_i32_control_flow_export_assembly(
     predicate: I32ZeroPredicate,
     true_argument: u8,
     false_argument: u8,
+) -> Vec<u8> {
+    emit_named_i32_control_flow_export_assembly(
+        predicate,
+        true_argument,
+        false_argument,
+        METHOD_NAME,
+    )
+}
+
+/// Emit a caller-named public static i32 control-flow export.
+///
+/// The caller owns the managed method identity; this emitter owns only the CIL
+/// representation of the already-lowered branch shape.
+#[must_use]
+pub fn emit_named_i32_control_flow_export_assembly(
+    predicate: I32ZeroPredicate,
+    true_argument: u8,
+    false_argument: u8,
+    method_name: &str,
 ) -> Vec<u8> {
     assert!(
         (1..=2).contains(&true_argument),
@@ -48,11 +66,12 @@ pub fn emit_i32_control_flow_export_assembly(
         true_argument, false_argument,
         "control-flow branches must remain distinguishable"
     );
+    assert!(!method_name.is_empty(), "control-flow export method name must not be empty");
 
     let method_body = build_method_body(predicate, true_argument, false_argument);
     let method_offset = CLR_HEADER_SIZE;
     let method_rva = SECTION_RVA + to_u32(method_offset);
-    let metadata = build_metadata(method_rva);
+    let metadata = build_metadata(method_rva, method_name);
     let metadata_offset = align_usize(method_offset + method_body.len(), 4);
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
@@ -82,21 +101,9 @@ fn build_method_body(
     true_argument: u8,
     false_argument: u8,
 ) -> [u8; 11] {
-    // Tiny header for ten bytes of IL.
-    //
-    // ldarg.0
-    // ldc.i4.0
-    // ceq
-    // brfalse.s/brtrue.s false_branch
-    // ldarg.<true>; ret
-    // false_branch: ldarg.<false>; ret
-    //
-    // `ceq` yields 1 when selector == 0. Equal therefore branches to the false
-    // result when that value is false; NotEqual branches to the false result
-    // when it is true.
     let false_branch_opcode = match predicate {
-        I32ZeroPredicate::Equal => 0x2C,    // brfalse.s
-        I32ZeroPredicate::NotEqual => 0x2D, // brtrue.s
+        I32ZeroPredicate::Equal => 0x2C,
+        I32ZeroPredicate::NotEqual => 0x2D,
     };
     [
         (10 << 2) | 0b10,
@@ -113,7 +120,7 @@ fn build_method_body(
     ]
 }
 
-fn build_metadata(method_rva: u32) -> Vec<u8> {
+fn build_metadata(method_rva: u32, method_name: &str) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, ASSEMBLY_FILE);
     let object_name = push_string(&mut strings, "Object");
@@ -121,7 +128,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, TYPE_NAME);
     let ferrumweave_namespace = push_string(&mut strings, NAMESPACE);
-    let answer_name = push_string(&mut strings, METHOD_NAME);
+    let export_method_name = push_string(&mut strings, method_name);
     let assembly_name = push_string(&mut strings, ASSEMBLY_NAME);
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
     pad_vec(&mut strings, 4);
@@ -132,8 +139,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     ];
 
     let mut blobs = vec![0_u8];
-    // DEFAULT, three parameters, return int32, parameter int32 x3.
-    let answer_signature = push_blob(&mut blobs, &[0x00, 0x03, 0x08, 0x08, 0x08, 0x08]);
+    let export_signature = push_blob(&mut blobs, &[0x00, 0x03, 0x08, 0x08, 0x08, 0x08]);
     let system_public_key_token = push_blob(
         &mut blobs,
         &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
@@ -151,19 +157,16 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
         push_u32(&mut tables, count);
     }
 
-    // Module.
     push_u16(&mut tables, 0);
     push_u16(&mut tables, module_name);
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0);
 
-    // TypeRef: [System.Runtime]System.Object.
     push_u16(&mut tables, 6);
     push_u16(&mut tables, object_name);
     push_u16(&mut tables, system_namespace);
 
-    // Global <Module>.
     push_u32(&mut tables, 0);
     push_u16(&mut tables, module_type_name);
     push_u16(&mut tables, 0);
@@ -171,7 +174,6 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // public FerrumWeave.RustApi : System.Object.
     push_u32(&mut tables, 0x0010_0001);
     push_u16(&mut tables, rust_api_name);
     push_u16(&mut tables, ferrumweave_namespace);
@@ -179,15 +181,13 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // public static int32 Answer(int32, int32, int32).
     push_u32(&mut tables, method_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0096);
-    push_u16(&mut tables, answer_name);
-    push_u16(&mut tables, answer_signature);
+    push_u16(&mut tables, export_method_name);
+    push_u16(&mut tables, export_signature);
     push_u16(&mut tables, 1);
 
-    // Assembly.
     push_u32(&mut tables, 0x0000_8004);
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 0);
@@ -198,7 +198,6 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, assembly_name);
     push_u16(&mut tables, 0);
 
-    // AssemblyRef: System.Runtime.
     push_u16(&mut tables, 10);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0);
@@ -399,5 +398,23 @@ mod tests {
                     0x2A, 0x02, 0x16, 0xFE, 0x01, 0x2D, 0x02, 0x03, 0x2A, 0x04, 0x2A,
                 ]
         }));
+    }
+
+    #[test]
+    fn control_flow_export_method_name_is_caller_owned() {
+        let answer = emit_named_i32_control_flow_export_assembly(
+            I32ZeroPredicate::Equal,
+            1,
+            2,
+            "Answer",
+        );
+        let compute = emit_named_i32_control_flow_export_assembly(
+            I32ZeroPredicate::Equal,
+            1,
+            2,
+            "ComputeResult",
+        );
+        assert_ne!(answer, compute);
+        assert!(compute.windows("ComputeResult".len()).any(|window| window == b"ComputeResult"));
     }
 }
