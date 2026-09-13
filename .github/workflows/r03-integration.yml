@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   oracle-characterization:
-    name: oracle characterization: native parity → CLR (${{ matrix.os }})
+    name: "oracle characterization: native parity → CLR (${{ matrix.os }})"
     strategy:
       fail-fast: false
       matrix:
