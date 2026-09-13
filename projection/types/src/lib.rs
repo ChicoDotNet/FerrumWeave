@@ -54,11 +54,32 @@ pub fn external_managed_operation_from_marker(marker: &str) -> Option<ExternalMa
     }
 }
 
+/// Project a rustc-owned export symbol into the public CLR method identity.
+///
+/// The projection is deterministic and source-causal: snake_case words become
+/// PascalCase while already contiguous identifier content is otherwise preserved.
+/// This keeps the historical `answer -> Answer` surface without letting compiler
+/// lowering or CIL emission own a fixture-specific method name.
+#[must_use]
+pub fn managed_method_name_from_export_symbol(export_symbol: &str) -> String {
+    export_symbol
+        .split('_')
+        .filter(|segment| !segment.is_empty())
+        .map(|segment| {
+            let mut chars = segment.chars();
+            let Some(first) = chars.next() else {
+                return String::new();
+            };
+            first.to_uppercase().chain(chars).collect::<String>()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod managed_intrinsic_tests {
     use super::{
         ExternalManagedOperation, ManagedIntrinsic, external_managed_operation_from_marker,
-        managed_intrinsic_from_marker,
+        managed_intrinsic_from_marker, managed_method_name_from_export_symbol,
     };
 
     #[test]
@@ -110,5 +131,15 @@ mod managed_intrinsic_tests {
             external_managed_operation_from_marker("ferrumweave_external_managed_unknown"),
             None
         );
+    }
+
+    #[test]
+    fn rust_export_symbols_project_to_stable_managed_method_names() {
+        assert_eq!(managed_method_name_from_export_symbol("answer"), "Answer");
+        assert_eq!(
+            managed_method_name_from_export_symbol("compute_result"),
+            "ComputeResult"
+        );
+        assert_eq!(managed_method_name_from_export_symbol("already"), "Already");
     }
 }
