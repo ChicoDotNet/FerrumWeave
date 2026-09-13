@@ -107,6 +107,10 @@ mod tests {
     fn arithmetic_export_preserves_caller_owned_method_name() {
         let image =
             emit_named_i32_arithmetic_export_assembly(I32ArithmeticOp::Add, "ComputeResult");
-        assert!(image.windows(b"ComputeResult".len()).any(|window| window == b"ComputeResult"));
+        assert!(
+            image
+                .windows(b"ComputeResult".len())
+                .any(|window| window == b"ComputeResult")
+        );
     }
 }
