@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Falsify FerrumWeave i32 control-flow lowering through rustc MIR.
 
-The C# consumer and all arguments stay fixed. Only the Rust branch predicate
-changes from equality to inequality. Each produced assembly is exercised with
-both selector outcomes so an emitter cannot pass by baking the expected branch.
-The contract can pass only when FerrumWeave's own CodegenBackend preserves Rust
-MIR control flow in the managed method body.
+The C# consumer and all arguments stay fixed. Rust-only mutations independently
+change the branch predicate and the public export symbol. Each produced assembly
+is exercised so an emitter cannot pass by baking either the expected branch or
+the historical `Answer` metadata name. The contract can pass only when
+FerrumWeave's own CodegenBackend preserves Rust MIR control flow and rustc-owned
+export identity in the managed artifact.
 """
 
 from __future__ import annotations
@@ -20,12 +21,12 @@ from pathlib import Path
 ASSEMBLY_FILE = "FerrumWeave.Generated.dll"
 
 
-def rust_source(predicate: str) -> str:
+def rust_source(predicate: str, export_name: str = "answer") -> str:
     if predicate not in {"==", "!="}:
         raise ValueError(predicate)
     return (
         '#[no_mangle]\n'
-        'pub extern "C" fn answer(selector: i32, left: i32, right: i32) -> i32 {\n'
+        f'pub extern "C" fn {export_name}(selector: i32, left: i32, right: i32) -> i32 {{\n'
         f'    if selector {predicate} 0 {{\n'
         '        left\n'
         '    } else {\n'
@@ -35,10 +36,17 @@ def rust_source(predicate: str) -> str:
     )
 
 
-def compile_source(toolchain: str, backend: Path, work: Path, label: str, predicate: str) -> Path:
+def compile_source(
+    toolchain: str,
+    backend: Path,
+    work: Path,
+    label: str,
+    predicate: str,
+    export_name: str = "answer",
+) -> Path:
     source = work / f"control_flow_{label}.rs"
     artifact = work / f"control_flow_{label}.dll"
-    source.write_text(rust_source(predicate), encoding="utf-8")
+    source.write_text(rust_source(predicate, export_name), encoding="utf-8")
     result = subprocess.run(
         [
             "rustc",
@@ -73,6 +81,7 @@ def execute_from_csharp(
     expected: int,
     root: Path,
     label: str,
+    method_name: str = "Answer",
 ) -> None:
     consumer = root / f"consumer_{label}_{selector}"
     consumer.mkdir()
@@ -93,7 +102,7 @@ def execute_from_csharp(
         encoding="utf-8",
     )
     (consumer / "Program.cs").write_text(
-        f'System.Console.WriteLine(FerrumWeave.RustApi.Answer({selector}, 137, 211));\n',
+        f'System.Console.WriteLine(FerrumWeave.RustApi.{method_name}({selector}, 137, 211));\n',
         encoding="utf-8",
     )
     run = subprocess.run(
@@ -131,11 +140,35 @@ def main() -> int:
             work = Path(temp)
             eq_artifact = compile_source(args.toolchain, backend, work, "eq", "==")
             ne_artifact = compile_source(args.toolchain, backend, work, "ne", "!=")
+            renamed_artifact = compile_source(
+                args.toolchain,
+                backend,
+                work,
+                "renamed",
+                "==",
+                "compute_result",
+            )
 
             execute_from_csharp(eq_artifact, 0, 137, work, "eq")
             execute_from_csharp(eq_artifact, 1, 211, work, "eq")
             execute_from_csharp(ne_artifact, 0, 211, work, "ne")
             execute_from_csharp(ne_artifact, 1, 137, work, "ne")
+            execute_from_csharp(
+                renamed_artifact,
+                0,
+                137,
+                work,
+                "renamed",
+                "ComputeResult",
+            )
+            execute_from_csharp(
+                renamed_artifact,
+                1,
+                211,
+                work,
+                "renamed_nonzero",
+                "ComputeResult",
+            )
 
             eq_hash = hashlib.sha256(eq_artifact.read_bytes()).hexdigest()
             ne_hash = hashlib.sha256(ne_artifact.read_bytes()).hexdigest()
@@ -143,13 +176,19 @@ def main() -> int:
                 raise AssertionError(
                     "changing only Rust predicate == -> != did not change the managed artifact"
                 )
+            renamed_hash = hashlib.sha256(renamed_artifact.read_bytes()).hexdigest()
+            if eq_hash == renamed_hash:
+                raise AssertionError(
+                    "changing only Rust export answer -> compute_result did not change managed metadata"
+                )
     except AssertionError as exc:
         print(f"RED: {exc}")
         return 1
 
     print("GREEN: FerrumWeave source-causally lowers i32 control flow")
     print("  Rust-only mutation: selector == 0 -> selector != 0")
-    print("  Each artifact is exercised with selector=0 and selector=1")
+    print("  Rust-only mutation: answer -> compute_result -> CLR ComputeResult")
+    print("  Each predicate artifact is exercised with selector=0 and selector=1")
     print("  Equal observable: 137, 211; not-equal observable: 211, 137")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
