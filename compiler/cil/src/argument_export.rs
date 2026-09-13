@@ -30,10 +30,7 @@ pub fn emit_i32_argument_export_assembly(argument_index: u8) -> Vec<u8> {
 /// Emit a caller-named public static i32 export whose result is one of the two
 /// incoming arguments selected by Rust MIR lowering.
 #[must_use]
-pub fn emit_named_i32_argument_export_assembly(
-    argument_index: u8,
-    method_name: &str,
-) -> Vec<u8> {
+pub fn emit_named_i32_argument_export_assembly(argument_index: u8, method_name: &str) -> Vec<u8> {
     assert!(
         argument_index < 2,
         "i32 argument export supports exactly two arguments"
