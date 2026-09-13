@@ -137,7 +137,8 @@ def main() -> int:
     # also requiring UnaryOp lowering. Abs still distinguishes argument mutation,
     # while switching only the Rust-selected marker to Sign changes the managed
     # method and observable from 137 to 1. The final case mutates only the Rust
-    # export name so fixture-owned export selection cannot survive as a false GREEN.
+    # export name so fixture-owned export selection or emission cannot survive as
+    # a false GREEN.
     cases = [
         ("abs_137", "ferrumweave_system_math_abs", 137, "answer", "Abs", 137),
         ("abs_211", "ferrumweave_system_math_abs", 211, "answer", "Abs", 211),
@@ -190,11 +191,16 @@ def main() -> int:
         if images["abs_137"] == images["sign_137"]:
             print("RED: changing only the Rust-selected method Abs -> Sign did not change the assembly")
             return 1
+        if images["abs_137"] == images["renamed_export_137"]:
+            print(
+                "RED: changing only the Rust export name answer -> compute_result did not change managed metadata"
+            )
+            return 1
 
     print("GREEN: FerrumWeave source-causally lowers a managed static System.* call")
     print("  MIR-selected method: Math.Abs -> Math.Sign changes MemberRef and observable 137 -> 1")
     print("  MIR-selected argument: 137 -> 211 changes managed observable 137 -> 211")
-    print("  Rust export rename: answer -> compute_result preserves managed observable 137")
+    print("  Rust export rename: answer -> compute_result changes managed metadata")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
 
