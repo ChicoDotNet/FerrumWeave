@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   source-causality-oracle:
-    name: Oracle: Rust source → managed static call (${{ matrix.os }})
+    name: "Oracle: Rust source → managed static call (${{ matrix.os }})"
     strategy:
       fail-fast: false
       matrix:
