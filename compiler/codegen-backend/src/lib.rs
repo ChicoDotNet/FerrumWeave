@@ -15,7 +15,8 @@ use ferrumweave_cil::{
     emit_i32_argument_export_assembly, emit_i32_arithmetic_export_assembly,
     emit_i32_control_flow_export_assembly, emit_i32_direct_call_export_assembly,
     emit_i32_export_with_external_managed_transform, emit_i32_export_with_managed_construction,
-    emit_i32_export_with_managed_instance_call, emit_i32_export_with_named_system_math_call,
+    emit_i32_export_with_managed_instance_call,
+    emit_i32_export_with_named_system_math_method_call,
     emit_i32_export_with_string_builder_length_property, emit_i32_invalid_operation_export_assembly,
     emit_named_i32_export_assembly, emit_named_i32_method_export_assembly,
     emit_option_reference_export_assembly, emit_option_value_export_assembly,
@@ -125,7 +126,14 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
                 LoweredI32Export::Arithmetic(operation) => emit_i32_arithmetic_export_assembly(operation),
                 LoweredI32Export::ControlFlow { predicate, true_argument, false_argument } => emit_i32_control_flow_export_assembly(predicate, true_argument, false_argument),
                 LoweredI32Export::DirectRustCall(operation) => emit_i32_direct_call_export_assembly(operation),
-                LoweredI32Export::SystemMath { method, argument } => emit_i32_export_with_named_system_math_call(assembly_name, method, argument),
+                LoweredI32Export::SystemMath { export_method_name, method, argument } => {
+                    emit_i32_export_with_named_system_math_method_call(
+                        assembly_name,
+                        &export_method_name,
+                        method,
+                        argument,
+                    )
+                }
                 LoweredI32Export::ManagedConstruction { constructor, payload } => emit_i32_export_with_managed_construction(constructor, payload),
                 LoweredI32Export::ManagedInstance { receiver, payload } => emit_i32_export_with_managed_instance_call(receiver, payload),
                 LoweredI32Export::ManagedStringBuilderLength { payload } => emit_i32_export_with_string_builder_length_property(payload),
