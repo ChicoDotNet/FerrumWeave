@@ -1,10 +1,12 @@
+use ferrumweave_projection_types::{
+    ExternalManagedOperation, external_managed_operation_from_marker,
+};
 use rustc_middle::{
     mir::{ConstValue, Operand, TerminatorKind, RETURN_PLACE, mono::MonoItem},
     ty::{self, TyCtxt, TypingEnv},
 };
 
 const EXPORT_SYMBOL: &str = "answer";
-const EXTERNAL_MANAGED_TRANSFORM_MARKER: &str = "ferrumweave_external_managed_transform";
 
 /// Recognize the narrow external-managed marker from rustc MIR.
 ///
@@ -43,7 +45,9 @@ pub(crate) fn lower_external_managed_transform(
                 let ty::FnDef(def_id, _) = *func_ty.kind() else {
                     continue;
                 };
-                if tcx.item_name(def_id).as_str() != EXTERNAL_MANAGED_TRANSFORM_MARKER {
+                if external_managed_operation_from_marker(tcx.item_name(def_id).as_str())
+                    != Some(ExternalManagedOperation::Transform)
+                {
                     continue;
                 }
                 if args.len() != 1 {
