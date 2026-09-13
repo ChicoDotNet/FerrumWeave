@@ -49,8 +49,8 @@ pub use exception_export::*;
 mod disposable_resource_export;
 pub use disposable_resource_export::*;
 
-mod managed_api_probe;
-pub use managed_api_probe::*;
+mod r06;
+pub use r06::*;
 
-mod disposable_resource_probe;
-pub use disposable_resource_probe::*;
+mod r07;
+pub use r07::*;
