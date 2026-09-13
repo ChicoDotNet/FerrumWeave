@@ -60,7 +60,7 @@ def compile_source(
     return result, output
 
 
-def assert_managed_target(artifact: Path, method: str) -> None:
+def assert_managed_target(artifact: Path, method: str, export_method: str) -> None:
     data = artifact.read_bytes()
     for expected in [
         b"MZ",
@@ -68,7 +68,7 @@ def assert_managed_target(artifact: Path, method: str) -> None:
         b"FerrumWeave.Generated",
         b"FerrumWeave",
         b"RustApi",
-        b"Answer",
+        export_method.encode("ascii"),
         b"System",
         b"Math",
         method.encode("ascii"),
@@ -79,7 +79,13 @@ def assert_managed_target(artifact: Path, method: str) -> None:
             )
 
 
-def execute_from_csharp(artifact: Path, expected: int, root: Path, name: str) -> None:
+def execute_from_csharp(
+    artifact: Path,
+    expected: int,
+    root: Path,
+    name: str,
+    export_method: str,
+) -> None:
     consumer = root / f"consumer_{name}"
     consumer.mkdir()
     shutil.copyfile(artifact, consumer / ASSEMBLY_FILE)
@@ -101,7 +107,7 @@ def execute_from_csharp(artifact: Path, expected: int, root: Path, name: str) ->
         encoding="utf-8",
     )
     (consumer / "Program.cs").write_text(
-        "Console.WriteLine(FerrumWeave.RustApi.Answer());\n",
+        f"Console.WriteLine(FerrumWeave.RustApi.{export_method}());\n",
         encoding="utf-8",
     )
 
@@ -140,14 +146,15 @@ def main() -> int:
     # export name so fixture-owned export selection or emission cannot survive as
     # a false GREEN.
     cases = [
-        ("abs_137", "ferrumweave_system_math_abs", 137, "answer", "Abs", 137),
-        ("abs_211", "ferrumweave_system_math_abs", 211, "answer", "Abs", 211),
-        ("sign_137", "ferrumweave_system_math_sign", 137, "answer", "Sign", 1),
+        ("abs_137", "ferrumweave_system_math_abs", 137, "answer", "Answer", "Abs", 137),
+        ("abs_211", "ferrumweave_system_math_abs", 211, "answer", "Answer", "Abs", 211),
+        ("sign_137", "ferrumweave_system_math_sign", 137, "answer", "Answer", "Sign", 1),
         (
             "renamed_export_137",
             "ferrumweave_system_math_abs",
             137,
             "compute_result",
+            "ComputeResult",
             "Abs",
             137,
         ),
@@ -157,7 +164,15 @@ def main() -> int:
         work = Path(temp)
         images: dict[str, bytes] = {}
 
-        for name, marker, argument, export_name, managed_method, expected in cases:
+        for (
+            name,
+            marker,
+            argument,
+            export_name,
+            export_method,
+            managed_method,
+            expected,
+        ) in cases:
             result, artifact = compile_source(
                 args.toolchain,
                 backend,
@@ -177,8 +192,8 @@ def main() -> int:
                 return 1
 
             try:
-                assert_managed_target(artifact, managed_method)
-                execute_from_csharp(artifact, expected, work, name)
+                assert_managed_target(artifact, managed_method, export_method)
+                execute_from_csharp(artifact, expected, work, name, export_method)
             except AssertionError as exc:
                 print(f"RED: {exc}")
                 return 1
@@ -200,7 +215,7 @@ def main() -> int:
     print("GREEN: FerrumWeave source-causally lowers a managed static System.* call")
     print("  MIR-selected method: Math.Abs -> Math.Sign changes MemberRef and observable 137 -> 1")
     print("  MIR-selected argument: 137 -> 211 changes managed observable 137 -> 211")
-    print("  Rust export rename: answer -> compute_result changes managed metadata")
+    print("  Rust export rename: answer -> compute_result changes CLR method Answer -> ComputeResult and executes")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
 
