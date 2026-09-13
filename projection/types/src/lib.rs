@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
-mod core;
-pub use core::*;
+mod cts_policy;
+pub use cts_policy::*;
 
 /// Stable semantic descriptor for managed API operations recognized by FerrumWeave.
 ///
@@ -46,9 +46,18 @@ mod managed_intrinsic_tests {
     #[test]
     fn marker_resolution_is_centralized_and_exact() {
         let cases = [
-            ("ferrumweave_system_math_abs", ManagedIntrinsic::SystemMathAbs),
-            ("ferrumweave_system_math_sign", ManagedIntrinsic::SystemMathSign),
-            ("ferrumweave_system_object_new", ManagedIntrinsic::SystemObjectNew),
+            (
+                "ferrumweave_system_math_abs",
+                ManagedIntrinsic::SystemMathAbs,
+            ),
+            (
+                "ferrumweave_system_math_sign",
+                ManagedIntrinsic::SystemMathSign,
+            ),
+            (
+                "ferrumweave_system_object_new",
+                ManagedIntrinsic::SystemObjectNew,
+            ),
             (
                 "ferrumweave_system_text_string_builder_new",
                 ManagedIntrinsic::SystemTextStringBuilderNew,
