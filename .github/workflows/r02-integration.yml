@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   oracle-characterization:
-    name: oracle characterization: real Rust → CLR (${{ matrix.os }})
+    name: "oracle characterization: real Rust → CLR (${{ matrix.os }})"
     strategy:
       fail-fast: false
       matrix:
