@@ -63,12 +63,7 @@ pub fn emit_i32_export_with_named_system_math_call(
     method: SystemMathMethod,
     argument: i32,
 ) -> Vec<u8> {
-    emit_i32_export_with_named_system_math_method_call(
-        assembly_name,
-        METHOD_NAME,
-        method,
-        argument,
-    )
+    emit_i32_export_with_named_system_math_method_call(assembly_name, METHOD_NAME, method, argument)
 }
 
 /// Emits an IL-only managed library whose CLR assembly/module and public method
