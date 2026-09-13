@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use ferrumweave_cil::{
     I32ArithmeticOp, I32ZeroPredicate, ManagedConstructor, ManagedInstanceReceiver, SystemMathMethod,
 };
+use ferrumweave_projection_types::{ManagedIntrinsic, managed_intrinsic_from_marker};
 use rustc_middle::{
     mir::{
         BinOp, ConstValue, Operand, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
@@ -12,16 +13,6 @@ use rustc_middle::{
 };
 
 const EXPORT_SYMBOL: &str = "answer";
-const SYSTEM_MATH_ABS_MARKER: &str = "ferrumweave_system_math_abs";
-const SYSTEM_MATH_SIGN_MARKER: &str = "ferrumweave_system_math_sign";
-const SYSTEM_OBJECT_NEW_MARKER: &str = "ferrumweave_system_object_new";
-const SYSTEM_TEXT_STRING_BUILDER_NEW_MARKER: &str =
-    "ferrumweave_system_text_string_builder_new";
-const SYSTEM_OBJECT_TO_STRING_MARKER: &str = "ferrumweave_system_object_to_string";
-const SYSTEM_TEXT_STRING_BUILDER_TO_STRING_MARKER: &str =
-    "ferrumweave_system_text_string_builder_to_string";
-const SYSTEM_TEXT_STRING_BUILDER_LENGTH_MARKER: &str =
-    "ferrumweave_system_text_string_builder_length";
 
 pub(crate) enum LoweredI32Export {
     Constant(i32),
@@ -196,64 +187,71 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                 let callee_symbol = tcx.item_name(def_id);
                 let callee_name = callee_symbol.as_str();
 
-                let managed_method = match callee_name.as_ref() {
-                    SYSTEM_MATH_ABS_MARKER => Some(SystemMathMethod::Abs),
-                    SYSTEM_MATH_SIGN_MARKER => Some(SystemMathMethod::Sign),
-                    _ => None,
-                };
-                if let Some(method) = managed_method {
-                    if args.len() != 1 {
-                        return Err(format!(
-                            "{EXPORT_SYMBOL} managed static marker requires exactly one i32 argument"
-                        ));
+                if let Some(intrinsic) = managed_intrinsic_from_marker(callee_name.as_ref()) {
+                    match intrinsic {
+                        ManagedIntrinsic::SystemMathAbs | ManagedIntrinsic::SystemMathSign => {
+                            if args.len() != 1 {
+                                return Err(format!(
+                                    "{EXPORT_SYMBOL} managed static marker requires exactly one i32 argument"
+                                ));
+                            }
+                            let method = match intrinsic {
+                                ManagedIntrinsic::SystemMathAbs => SystemMathMethod::Abs,
+                                ManagedIntrinsic::SystemMathSign => SystemMathMethod::Sign,
+                                _ => unreachable!("matched System.Math intrinsic"),
+                            };
+                            let argument = lower_i32_constant_operand(tcx, &args[0].node)?;
+                            return Ok(LoweredI32Export::SystemMath { method, argument });
+                        }
+                        ManagedIntrinsic::SystemObjectNew
+                        | ManagedIntrinsic::SystemTextStringBuilderNew => {
+                            if args.len() != 1 {
+                                return Err(format!(
+                                    "{EXPORT_SYMBOL} managed construction marker requires exactly one i32 payload"
+                                ));
+                            }
+                            let constructor = match intrinsic {
+                                ManagedIntrinsic::SystemObjectNew => ManagedConstructor::Object,
+                                ManagedIntrinsic::SystemTextStringBuilderNew => {
+                                    ManagedConstructor::StringBuilder
+                                }
+                                _ => unreachable!("matched constructor intrinsic"),
+                            };
+                            let payload = lower_i32_constant_operand(tcx, &args[0].node)?;
+                            return Ok(LoweredI32Export::ManagedConstruction {
+                                constructor,
+                                payload,
+                            });
+                        }
+                        ManagedIntrinsic::SystemObjectToString
+                        | ManagedIntrinsic::SystemTextStringBuilderToString => {
+                            if args.len() != 1 {
+                                return Err(format!(
+                                    "{EXPORT_SYMBOL} managed instance marker requires exactly one i32 payload"
+                                ));
+                            }
+                            let receiver = match intrinsic {
+                                ManagedIntrinsic::SystemObjectToString => {
+                                    ManagedInstanceReceiver::Object
+                                }
+                                ManagedIntrinsic::SystemTextStringBuilderToString => {
+                                    ManagedInstanceReceiver::StringBuilder
+                                }
+                                _ => unreachable!("matched instance-call intrinsic"),
+                            };
+                            let payload = lower_i32_constant_operand(tcx, &args[0].node)?;
+                            return Ok(LoweredI32Export::ManagedInstance { receiver, payload });
+                        }
+                        ManagedIntrinsic::SystemTextStringBuilderLength => {
+                            if args.len() != 1 {
+                                return Err(format!(
+                                    "{EXPORT_SYMBOL} managed property marker requires exactly one i32 payload"
+                                ));
+                            }
+                            let payload = lower_i32_constant_operand(tcx, &args[0].node)?;
+                            return Ok(LoweredI32Export::ManagedStringBuilderLength { payload });
+                        }
                     }
-                    let argument = lower_i32_constant_operand(tcx, &args[0].node)?;
-                    return Ok(LoweredI32Export::SystemMath { method, argument });
-                }
-
-                let managed_constructor = match callee_name.as_ref() {
-                    SYSTEM_OBJECT_NEW_MARKER => Some(ManagedConstructor::Object),
-                    SYSTEM_TEXT_STRING_BUILDER_NEW_MARKER => Some(ManagedConstructor::StringBuilder),
-                    _ => None,
-                };
-                if let Some(constructor) = managed_constructor {
-                    if args.len() != 1 {
-                        return Err(format!(
-                            "{EXPORT_SYMBOL} managed construction marker requires exactly one i32 payload"
-                        ));
-                    }
-                    let payload = lower_i32_constant_operand(tcx, &args[0].node)?;
-                    return Ok(LoweredI32Export::ManagedConstruction {
-                        constructor,
-                        payload,
-                    });
-                }
-
-                let managed_instance = match callee_name.as_ref() {
-                    SYSTEM_OBJECT_TO_STRING_MARKER => Some(ManagedInstanceReceiver::Object),
-                    SYSTEM_TEXT_STRING_BUILDER_TO_STRING_MARKER => {
-                        Some(ManagedInstanceReceiver::StringBuilder)
-                    }
-                    _ => None,
-                };
-                if let Some(receiver) = managed_instance {
-                    if args.len() != 1 {
-                        return Err(format!(
-                            "{EXPORT_SYMBOL} managed instance marker requires exactly one i32 payload"
-                        ));
-                    }
-                    let payload = lower_i32_constant_operand(tcx, &args[0].node)?;
-                    return Ok(LoweredI32Export::ManagedInstance { receiver, payload });
-                }
-
-                if callee_name == SYSTEM_TEXT_STRING_BUILDER_LENGTH_MARKER {
-                    if args.len() != 1 {
-                        return Err(format!(
-                            "{EXPORT_SYMBOL} managed property marker requires exactly one i32 payload"
-                        ));
-                    }
-                    let payload = lower_i32_constant_operand(tcx, &args[0].node)?;
-                    return Ok(LoweredI32Export::ManagedStringBuilderLength { payload });
                 }
 
                 if !def_id.is_local() {

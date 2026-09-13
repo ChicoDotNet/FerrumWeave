@@ -11,5 +11,6 @@ crate-type = ["dylib"]
 
 [dependencies]
 ferrumweave-cil = { path = "../cil" }
+ferrumweave-projection-types = { path = "../../projection/types" }
 
 [workspace]
