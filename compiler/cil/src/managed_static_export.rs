@@ -40,20 +40,46 @@ impl SystemMathMethod {
 ///
 /// This compatibility entrypoint keeps the historical deterministic assembly
 /// identity used by emitter-level tests. Product codegen should use
-/// [`emit_i32_export_with_named_system_math_call`] so the emitted CLR identity
-/// follows the Rust crate/MSBuild project identity.
+/// [`emit_i32_export_with_named_system_math_method_call`] so both assembly and
+/// method identity follow rustc-owned input.
 #[must_use]
 pub fn emit_i32_export_with_system_math_call(method: SystemMathMethod, argument: i32) -> Vec<u8> {
-    emit_i32_export_with_named_system_math_call(DEFAULT_ASSEMBLY_NAME, method, argument)
+    emit_i32_export_with_named_system_math_method_call(
+        DEFAULT_ASSEMBLY_NAME,
+        METHOD_NAME,
+        method,
+        argument,
+    )
 }
 
 /// Emits an IL-only managed library whose CLR assembly/module identity is supplied by rustc.
 ///
-/// The method body loads `argument`, calls the selected public static
-/// `System.Math` method, and returns that managed result.
+/// This compatibility entrypoint preserves the historical `Answer` method while
+/// allowing callers to own assembly identity. Product codegen should use
+/// [`emit_i32_export_with_named_system_math_method_call`].
 #[must_use]
 pub fn emit_i32_export_with_named_system_math_call(
     assembly_name: &str,
+    method: SystemMathMethod,
+    argument: i32,
+) -> Vec<u8> {
+    emit_i32_export_with_named_system_math_method_call(
+        assembly_name,
+        METHOD_NAME,
+        method,
+        argument,
+    )
+}
+
+/// Emits an IL-only managed library whose CLR assembly/module and public method
+/// identities are supplied by the compiler layer.
+///
+/// The method body loads `argument`, calls the selected public static
+/// `System.Math` method, and returns that managed result.
+#[must_use]
+pub fn emit_i32_export_with_named_system_math_method_call(
+    assembly_name: &str,
+    export_method_name: &str,
     method: SystemMathMethod,
     argument: i32,
 ) -> Vec<u8> {
@@ -61,11 +87,15 @@ pub fn emit_i32_export_with_named_system_math_call(
         !assembly_name.is_empty(),
         "managed assembly identity must not be empty"
     );
+    assert!(
+        !export_method_name.is_empty(),
+        "managed export method identity must not be empty"
+    );
     let method_body = build_method_body(argument);
     let method_offset = CLR_HEADER_SIZE;
     let method_rva = SECTION_RVA + to_u32(method_offset);
 
-    let metadata = build_metadata(method_rva, method, assembly_name);
+    let metadata = build_metadata(method_rva, method, assembly_name, export_method_name);
     let metadata_offset = align_usize(method_offset + method_body.len(), 4);
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
@@ -102,7 +132,12 @@ fn build_method_body(argument: i32) -> Vec<u8> {
     body
 }
 
-fn build_metadata(method_rva: u32, method: SystemMathMethod, assembly_name: &str) -> Vec<u8> {
+fn build_metadata(
+    method_rva: u32,
+    method: SystemMathMethod,
+    assembly_name: &str,
+    export_method_name: &str,
+) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let assembly_file = format!("{assembly_name}.dll");
     let module_name = push_string(&mut strings, &assembly_file);
@@ -112,7 +147,7 @@ fn build_metadata(method_rva: u32, method: SystemMathMethod, assembly_name: &str
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, TYPE_NAME);
     let ferrumweave_namespace = push_string(&mut strings, NAMESPACE);
-    let answer_name = push_string(&mut strings, METHOD_NAME);
+    let export_name = push_string(&mut strings, export_method_name);
     let managed_method_name = push_string(&mut strings, method.managed_name());
     let assembly_name = push_string(&mut strings, assembly_name);
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
@@ -180,7 +215,7 @@ fn build_metadata(method_rva: u32, method: SystemMathMethod, assembly_name: &str
     push_u32(&mut tables, method_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0096);
-    push_u16(&mut tables, answer_name);
+    push_u16(&mut tables, export_name);
     push_u16(&mut tables, answer_signature);
     push_u16(&mut tables, 1);
 
@@ -416,5 +451,21 @@ mod tests {
                 .windows(21)
                 .any(|window| window == b"FerrumWeave.Generated")
         );
+    }
+
+    #[test]
+    fn named_managed_static_export_owns_method_identity() {
+        let image = emit_i32_export_with_named_system_math_method_call(
+            "RiskEngine",
+            "ComputeResult",
+            SystemMathMethod::Abs,
+            42,
+        );
+        assert!(
+            image
+                .windows("ComputeResult".len())
+                .any(|window| window == b"ComputeResult")
+        );
+        assert!(!image.windows(6).any(|window| window == b"Answer"));
     }
 }
