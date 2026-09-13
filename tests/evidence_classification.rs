@@ -1,7 +1,8 @@
 use std::fs;
 
 fn contract_blocks(path: &str) -> Vec<String> {
-    let text = fs::read_to_string(path).unwrap_or_else(|error| panic!("failed to read {path}: {error}"));
+    let text =
+        fs::read_to_string(path).unwrap_or_else(|error| panic!("failed to read {path}: {error}"));
     text.split("[[contracts]]")
         .skip(1)
         .map(str::trim)
@@ -13,7 +14,11 @@ fn contract_blocks(path: &str) -> Vec<String> {
 fn contract_id(block: &str) -> &str {
     block
         .lines()
-        .find_map(|line| line.trim().strip_prefix("id = \"").and_then(|rest| rest.strip_suffix('"')))
+        .find_map(|line| {
+            line.trim()
+                .strip_prefix("id = \"")
+                .and_then(|rest| rest.strip_suffix('"'))
+        })
         .unwrap_or("<missing-id>")
 }
 
