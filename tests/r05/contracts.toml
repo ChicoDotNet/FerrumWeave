@@ -77,6 +77,7 @@ id = "FW-R05-DOTNET-009"
 family = "real Rust source causally selects and calls a public static System.* method"
 implemented = true
 evidence_level = "source-causal-certified"
+backend_evidence = "FerrumWeave-backend-proven"
 proof = "FerrumWeave codegen backend convergence run #24 on implementation SHA 174abd02df162717e4b00f3d056b94f4cfa965d0 passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: Rust MIR selected System.Math.Abs vs System.Math.Sign, changing only the selected Rust marker changed the managed MemberRef and C# observable 137->1, and changing only the Rust argument 137->211 changed the managed observable 137->211"
 oracle_proof = "Earlier oracle run #1 on SHA 54663e6f3bf095c07179bd26daac36721c8d74ef characterized the feasibility through pinned rustc_codegen_clr; it is retained as historical/differential evidence and is no longer the product certification"
 
@@ -85,6 +86,7 @@ id = "FW-R05-DOTNET-010"
 family = "real Rust source causally constructs a supported public .NET type"
 implemented = true
 evidence_level = "source-causal-certified"
+backend_evidence = "FerrumWeave-backend-proven"
 proof = "FerrumWeave codegen backend convergence run #61 on SHA 15b901bfbb313b01de7b382117c93dd0a6aced4d passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: Rust MIR selected System.Object vs System.Text.StringBuilder construction, payload mutation 137->211 changed the executable observable, constructor mutation changed managed metadata/artifact bytes, and emitted CLR newobj executed under CoreCLR"
 
 [[contracts]]
@@ -92,6 +94,7 @@ id = "FW-R05-DOTNET-011"
 family = "real Rust source causally calls a supported public instance method"
 implemented = true
 evidence_level = "source-causal-certified"
+backend_evidence = "FerrumWeave-backend-proven"
 proof = "FerrumWeave codegen backend convergence run #66 on SHA 3e7fdb126d6620b79fa97bc90a609d0a63cdc302 passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: Rust MIR selected Object::ToString vs StringBuilder::ToString, payload mutation 137->211 changed the executable observable, receiver mutation changed managed metadata/artifact bytes, and Answer contained a real CLR callvirt executed under CoreCLR"
 
 [[contracts]]
@@ -99,6 +102,7 @@ id = "FW-R05-DOTNET-012"
 family = "real Rust source causally reads and writes a supported public .NET property"
 implemented = true
 evidence_level = "source-causal-certified"
+backend_evidence = "FerrumWeave-backend-proven"
 proof = "FerrumWeave codegen backend convergence run #74 on SHA 3add9b7fcdfb9b478a6d89e16b860f22c49b3e4a passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: Rust MIR selected the StringBuilder.Length marker, Rust-only payload mutation 3->7 changed artifact bytes and executable observable, emitted metadata contained set_Length/get_Length, Answer contained at least two CLR callvirt opcodes, and the resulting managed assemblies executed under CoreCLR"
 
 [[contracts]]
@@ -106,4 +110,5 @@ id = "FW-R05-DOTNET-013"
 family = "real Rust source causally consumes an independently compiled user-defined C# assembly"
 implemented = true
 evidence_level = "source-causal-certified"
+backend_evidence = "FerrumWeave-backend-proven"
 proof = "FerrumWeave codegen backend convergence run #89 on exact SHA e651829d147b46ad08573e44b72ca65ee8c60703 passed on ubuntu-22.04 and windows-latest without rustc_codegen_clr: an independently compiled fixed External.Managed.dll exposed ExternalManaged.ExternalApi.Transform(int) => value + 1000; changing only Rust payload 137->211 changed FerrumWeave-produced assembly bytes and executable CoreCLR observable 1137->1211, while emitted metadata retained External.Managed/ExternalManaged/ExternalApi/Transform references and Answer contained a real CLR call opcode"
