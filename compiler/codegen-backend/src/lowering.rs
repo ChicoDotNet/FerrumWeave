@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use ferrumweave_cil::{
     I32ArithmeticOp, I32ZeroPredicate, ManagedConstructor, ManagedInstanceReceiver, SystemMathMethod,
 };
-use ferrumweave_projection_types::{ManagedIntrinsic, managed_intrinsic_from_marker};
+use ferrumweave_projection_types::{
+    ManagedIntrinsic, managed_intrinsic_from_marker, managed_method_name_from_export_symbol,
+};
 use rustc_middle::{
     mir::{
         BinOp, ConstValue, Operand, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
@@ -23,6 +25,7 @@ pub(crate) enum LoweredI32Export {
     },
     DirectRustCall(I32ArithmeticOp),
     SystemMath {
+        export_method_name: String,
         method: SystemMathMethod,
         argument: i32,
     },
@@ -203,7 +206,13 @@ pub(crate) fn lower_exported_i32(tcx: TyCtxt<'_>) -> Result<LoweredI32Export, St
                                 _ => unreachable!("matched System.Math intrinsic"),
                             };
                             let argument = lower_i32_constant_operand(tcx, &args[0].node)?;
-                            return Ok(LoweredI32Export::SystemMath { method, argument });
+                            let export_method_name =
+                                managed_method_name_from_export_symbol(export_symbol.as_ref());
+                            return Ok(LoweredI32Export::SystemMath {
+                                export_method_name,
+                                method,
+                                argument,
+                            });
                         }
                         ManagedIntrinsic::SystemObjectNew
                         | ManagedIntrinsic::SystemTextStringBuilderNew => {
