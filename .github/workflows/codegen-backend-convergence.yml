@@ -1,0 +1,205 @@
+name: FerrumWeave codegen backend convergence
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - ".github/workflows/codegen-backend-convergence.yml"
+      - "compiler/codegen-backend/**"
+      - "compiler/cil/**"
+      - "projection/**"
+      - "sdk/**"
+      - "eng/verification/verify_codegen_backend_boundary.py"
+      - "eng/verification/verify_i32_local_flow_backend.py"
+      - "eng/verification/verify_i32_arithmetic_backend.py"
+      - "eng/verification/verify_i32_control_flow_backend.py"
+      - "eng/verification/verify_i32_overflow_backend.py"
+      - "eng/verification/verify_direct_rust_function_call_backend.py"
+      - "eng/verification/verify_managed_static_call_backend.py"
+      - "eng/verification/verify_managed_construction_backend.py"
+      - "eng/verification/verify_managed_instance_call_backend.py"
+      - "eng/verification/verify_managed_property_backend.py"
+      - "eng/verification/verify_external_managed_assembly_backend.py"
+      - "tests/sdk_backend_path.rs"
+      - "tests/r05/contracts.toml"
+      - "Cargo.toml"
+      - "docs/architecture/adr/0002-r02-isolated-upstream-codegen-lane.md"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - ".github/workflows/codegen-backend-convergence.yml"
+      - "compiler/codegen-backend/**"
+      - "compiler/cil/**"
+      - "projection/**"
+      - "sdk/**"
+      - "eng/verification/verify_codegen_backend_boundary.py"
+      - "eng/verification/verify_i32_local_flow_backend.py"
+      - "eng/verification/verify_i32_arithmetic_backend.py"
+      - "eng/verification/verify_i32_control_flow_backend.py"
+      - "eng/verification/verify_i32_overflow_backend.py"
+      - "eng/verification/verify_direct_rust_function_call_backend.py"
+      - "eng/verification/verify_managed_static_call_backend.py"
+      - "eng/verification/verify_managed_construction_backend.py"
+      - "eng/verification/verify_managed_instance_call_backend.py"
+      - "eng/verification/verify_managed_property_backend.py"
+      - "eng/verification/verify_external_managed_assembly_backend.py"
+      - "tests/sdk_backend_path.rs"
+      - "tests/r05/contracts.toml"
+      - "Cargo.toml"
+      - "docs/architecture/adr/0002-r02-isolated-upstream-codegen-lane.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codegen-backend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-boundary:
+    name: FerrumWeave rustc boundary (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            backend: libferrumweave_codegen_backend.so
+          - os: windows-latest
+            backend: ferrumweave_codegen_backend.dll
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "10.0.400"
+
+      - name: Install pinned rustc-private toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2025-10-14 \
+            --profile minimal \
+            --component rustc-dev,rust-src,llvm-tools-preview
+          rustc +nightly-2025-10-14 --version --verbose
+
+      - name: Build FerrumWeave codegen backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +nightly-2025-10-14 build \
+            --ignore-rust-version \
+            --release \
+            --manifest-path compiler/codegen-backend/Cargo.toml
+
+      - name: Certify rustc loads FerrumWeave
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_codegen_backend_boundary.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave-owned MIR lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_codegen_backend_boundary.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}" \
+            --require-artifact
+
+      - name: Require FerrumWeave i32 argument/local flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_i32_local_flow_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave i32 arithmetic lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_i32_arithmetic_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave i32 control-flow lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_i32_control_flow_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave checked i32 overflow semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_i32_overflow_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave direct Rust function-call lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_direct_rust_function_call_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave managed static call lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_managed_static_call_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave managed construction lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_managed_construction_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave managed instance call lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_managed_instance_call_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave managed property read/write lowering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_managed_property_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require FerrumWeave external managed assembly consumption
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_external_managed_assembly_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
+      - name: Require .rsproj to invoke rustc with the FerrumWeave backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked --test sdk_backend_path -- --nocapture

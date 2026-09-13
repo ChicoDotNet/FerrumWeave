@@ -1,0 +1,15 @@
+[package]
+name = "ferrumweave-codegen-backend"
+version = "0.0.1"
+edition = "2021"
+publish = false
+license = "MIT OR Apache-2.0"
+description = "rustc codegen adapter for the FerrumWeave CLR backend"
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
+ferrumweave-cil = { path = "../cil" }
+
+[workspace]

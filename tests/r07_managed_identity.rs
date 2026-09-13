@@ -1,26 +1,139 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Output};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use ferrumweave_cil::{PROBE_ASSEMBLY_FILE, write_r07_disposable_artifact};
-
 const CONSUMER_ASSEMBLY_NAME: &str = "FerrumWeave.R07.ManagedIdentityConsumer";
-const EXPECTED_VALUES: [&str; 4] = ["True", "1", "1", "True"];
 
 #[test]
-fn managed_aliases_preserve_identity_and_single_release_state() {
+fn managed_aliases_preserve_identity_and_single_release_state_from_rust_source() {
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let template = repo.join("sdk/templates/rust/HelloFerrum.rsproj");
     let root = unique_temp_dir();
-    let produced = root.join("rust-produced");
+    let source_dir = root.join("rust-source/src");
+    let rust_project = root.join("rust-source");
     let consumer = root.join("csharp-consumer");
+    fs::create_dir_all(&source_dir).expect("create R07 managed identity Rust source directory");
     fs::create_dir_all(&consumer).expect("create R07 managed identity C# consumer directory");
+    fs::copy(template, rust_project.join("RustLibrary.rsproj")).expect("copy canonical rsproj");
 
-    let assembly =
-        write_r07_disposable_artifact(&produced).expect("emit Rust-produced managed assembly");
-    fs::copy(&assembly, consumer.join(PROBE_ASSEMBLY_FILE))
-        .expect("place Rust-produced managed assembly beside R07 managed identity consumer");
+    let mut previous_artifact: Option<Vec<u8>> = None;
+    for seed in [0, 5] {
+        fs::write(
+            source_dir.join("main.rs"),
+            format!(
+                r#"pub struct RustResource {{
+    release_count: i32,
+    released: bool,
+}}
 
-    write_project(&consumer);
+impl RustResource {{
+    pub fn new() -> Self {{
+        Self {{ release_count: {seed}, released: false }}
+    }}
+
+    pub fn release_count(&self) -> i32 {{
+        self.release_count
+    }}
+}}
+
+impl Drop for RustResource {{
+    fn drop(&mut self) {{
+        if !self.released {{
+            self.release_count += 1;
+            self.released = true;
+        }}
+    }}
+}}
+
+#[no_mangle]
+pub extern "C" fn answer() -> i32 {{
+    let resource = RustResource::new();
+    resource.release_count()
+}}
+"#
+            ),
+        )
+        .expect("write R07 managed identity Rust source");
+
+        let build = dotnet_build(&repo, &rust_project);
+        assert!(
+            build.status.success(),
+            "R07 managed identity source must build through .rsproj -> rustc -> FerrumWeave:\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&build.stdout),
+            String::from_utf8_lossy(&build.stderr),
+        );
+
+        let assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
+        assert!(
+            assembly.is_file(),
+            "R07 Rust source did not produce managed DLL"
+        );
+        let bytes = fs::read(&assembly).expect("read R07 managed identity artifact");
+        if let Some(previous) = &previous_artifact {
+            assert_ne!(
+                previous, &bytes,
+                "mutating only Rust construction state must mutate the managed artifact",
+            );
+        }
+        previous_artifact = Some(bytes);
+
+        fs::copy(&assembly, consumer.join("RustLibrary.dll"))
+            .expect("place Rust-produced assembly beside managed identity consumer");
+        let run = build_and_run_consumer(&consumer, "RustLibrary.dll");
+        assert!(
+            run.status.success(),
+            "C# consumer must preserve managed identity and a single release state:\n{}\n{}",
+            String::from_utf8_lossy(&run.stdout),
+            String::from_utf8_lossy(&run.stderr),
+        );
+
+        let stdout = String::from_utf8_lossy(&run.stdout);
+        let observed: Vec<_> = stdout.lines().collect();
+        let expected = [
+            "True".to_string(),
+            (seed + 1).to_string(),
+            (seed + 1).to_string(),
+            "True".to_string(),
+        ];
+        assert_eq!(observed, expected);
+    }
+
+    let _ = fs::remove_dir_all(root);
+}
+
+fn dotnet_build(repo: &Path, project: &Path) -> Output {
+    Command::new("dotnet")
+        .args(["build", "RustLibrary.rsproj"])
+        .current_dir(project)
+        .env("MSBuildSDKsPath", repo.join("sdk"))
+        .output()
+        .expect("dotnet build must execute")
+}
+
+fn build_and_run_consumer(consumer: &Path, assembly_file: &str) -> Output {
+    fs::write(
+        consumer.join("Consumer.csproj"),
+        format!(
+            r#"<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>{CONSUMER_ASSEMBLY_NAME}</AssemblyName>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="RustLibrary">
+      <HintPath>{assembly_file}</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
+"#
+        ),
+    )
+    .expect("write R07 managed identity C# consumer project");
     fs::write(
         consumer.join("Program.cs"),
         r#"using System;
@@ -44,7 +157,7 @@ GC.KeepAlive(alias);
 
     let build = Command::new("dotnet")
         .args(["build", "--configuration", "Release", "--nologo"])
-        .current_dir(&consumer)
+        .current_dir(consumer)
         .output()
         .expect("build R07 managed identity C# consumer");
     assert!(
@@ -59,47 +172,11 @@ GC.KeepAlive(alias);
         .join("Release")
         .join("net10.0")
         .join(format!("{CONSUMER_ASSEMBLY_NAME}.dll"));
-    let run = Command::new("dotnet")
+    Command::new("dotnet")
         .arg(&consumer_dll)
-        .current_dir(&consumer)
+        .current_dir(consumer)
         .output()
-        .expect("execute R07 managed identity C# consumer on CoreCLR");
-    assert!(
-        run.status.success(),
-        "C# consumer must preserve managed identity and a single release state:\n{}\n{}",
-        String::from_utf8_lossy(&run.stdout),
-        String::from_utf8_lossy(&run.stderr)
-    );
-    let stdout = String::from_utf8_lossy(&run.stdout);
-    let observed: Vec<_> = stdout.lines().collect();
-    assert_eq!(observed, EXPECTED_VALUES);
-
-    let _ = fs::remove_dir_all(root);
-}
-
-fn write_project(consumer: &Path) {
-    fs::write(
-        consumer.join("Consumer.csproj"),
-        format!(
-            r#"<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>{CONSUMER_ASSEMBLY_NAME}</AssemblyName>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="FerrumWeave.Probe">
-      <HintPath>{PROBE_ASSEMBLY_FILE}</HintPath>
-      <Private>true</Private>
-    </Reference>
-  </ItemGroup>
-</Project>
-"#
-        ),
-    )
-    .expect("write R07 managed identity C# consumer project");
+        .expect("execute R07 managed identity C# consumer on CoreCLR")
 }
 
 fn unique_temp_dir() -> PathBuf {
@@ -109,6 +186,6 @@ fn unique_temp_dir() -> PathBuf {
         .as_nanos();
     std::env::temp_dir().join(format!(
         "ferrumweave-r07-managed-identity-{}-{nonce}",
-        std::process::id()
+        std::process::id(),
     ))
 }

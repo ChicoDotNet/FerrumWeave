@@ -1,0 +1,363 @@
+#![forbid(unsafe_code)]
+
+//! Minimal managed scalar export emission.
+//! Values and CLR surface names are supplied by compiler lowering; no expected result is baked here.
+
+const PE_OFFSET: usize = 0x80;
+const OPTIONAL_HEADER_SIZE: usize = 0xE0;
+const HEADERS_SIZE: usize = 0x200;
+const FILE_ALIGNMENT: usize = 0x200;
+const SECTION_ALIGNMENT: u32 = 0x2000;
+const SECTION_RVA: u32 = 0x2000;
+const CLR_HEADER_SIZE: usize = 0x48;
+
+pub const SCALAR_EXPORT_ASSEMBLY_NAME: &str = "FerrumWeave.Generated";
+pub const SCALAR_EXPORT_ASSEMBLY_FILE: &str = "FerrumWeave.Generated.dll";
+pub const SCALAR_EXPORT_NAMESPACE: &str = "FerrumWeave";
+pub const SCALAR_EXPORT_TYPE_NAME: &str = "RustApi";
+pub const SCALAR_EXPORT_METHOD_NAME: &str = "Answer";
+
+#[must_use]
+pub fn emit_i32_export_assembly(value: i32) -> Vec<u8> {
+    emit_named_i32_export_assembly(SCALAR_EXPORT_ASSEMBLY_NAME, value)
+}
+
+#[must_use]
+pub fn emit_named_i32_export_assembly(assembly_name: &str, value: i32) -> Vec<u8> {
+    emit_named_i32_method_export_assembly(
+        assembly_name,
+        SCALAR_EXPORT_NAMESPACE,
+        SCALAR_EXPORT_TYPE_NAME,
+        SCALAR_EXPORT_METHOD_NAME,
+        value,
+    )
+}
+
+/// Emits one public static `int32` method whose CLR identity and payload are caller-owned.
+#[must_use]
+pub fn emit_named_i32_method_export_assembly(
+    assembly_name: &str,
+    namespace: &str,
+    type_name: &str,
+    method_name: &str,
+    value: i32,
+) -> Vec<u8> {
+    let method_body = build_i32_return_body(value);
+    let method_offset = CLR_HEADER_SIZE;
+    let method_rva = SECTION_RVA + to_u32(method_offset);
+    let metadata = build_metadata(method_rva, assembly_name, namespace, type_name, method_name);
+    let metadata_offset = align_usize(method_offset + method_body.len(), 4);
+    let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
+    let section_virtual_size = metadata_offset + metadata.len();
+    let section_raw_size = align_usize(section_virtual_size, FILE_ALIGNMENT);
+    let mut section = vec![0_u8; section_raw_size];
+    section[method_offset..method_offset + method_body.len()].copy_from_slice(&method_body);
+    section[metadata_offset..metadata_offset + metadata.len()].copy_from_slice(&metadata);
+    write_clr_header(
+        &mut section[..CLR_HEADER_SIZE],
+        metadata_rva,
+        to_u32(metadata.len()),
+    );
+    let mut image = vec![0_u8; HEADERS_SIZE];
+    write_pe_headers(
+        &mut image,
+        to_u32(section_virtual_size),
+        to_u32(section_raw_size),
+    );
+    image.extend_from_slice(&section);
+    image
+}
+
+fn build_i32_return_body(value: i32) -> Vec<u8> {
+    const CODE_SIZE: u8 = 6;
+    let mut body = Vec::with_capacity(usize::from(CODE_SIZE) + 1);
+    body.push((CODE_SIZE << 2) | 0b10);
+    body.push(0x20);
+    body.extend_from_slice(&value.to_le_bytes());
+    body.push(0x2A);
+    body
+}
+
+fn build_metadata(
+    method_rva: u32,
+    assembly_identity: &str,
+    namespace_value: &str,
+    type_name_value: &str,
+    method_name_value: &str,
+) -> Vec<u8> {
+    let mut strings = vec![0_u8];
+    let module_name = push_string(&mut strings, &format!("{assembly_identity}.dll"));
+    let object_name = push_string(&mut strings, "Object");
+    let system_namespace = push_string(&mut strings, "System");
+    let module_type_name = push_string(&mut strings, "<Module>");
+    let type_name = push_string(&mut strings, type_name_value);
+    let namespace = push_string(&mut strings, namespace_value);
+    let method_name = push_string(&mut strings, method_name_value);
+    let assembly_name = push_string(&mut strings, assembly_identity);
+    let system_runtime_name = push_string(&mut strings, "System.Runtime");
+    pad_vec(&mut strings, 4);
+    let guid = vec![
+        0x46, 0x57, 0x53, 0x43, 0x41, 0x4C, 0x41, 0x52, 0x45, 0x58, 0x50, 0x4F, 0x52, 0x54, 0x30,
+        0x31,
+    ];
+    let mut blobs = vec![0_u8];
+    let method_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
+    let system_public_key_token = push_blob(
+        &mut blobs,
+        &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
+    );
+    pad_vec(&mut blobs, 4);
+    let mut tables = Vec::new();
+    push_u32(&mut tables, 0);
+    tables.extend_from_slice(&[2, 0, 0, 1]);
+    let valid_tables =
+        (1_u64 << 0) | (1_u64 << 1) | (1_u64 << 2) | (1_u64 << 6) | (1_u64 << 32) | (1_u64 << 35);
+    push_u64(&mut tables, valid_tables);
+    push_u64(&mut tables, 0);
+    for count in [1_u32, 1, 2, 1, 1, 1] {
+        push_u32(&mut tables, count);
+    }
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, module_name);
+    push_u16(&mut tables, 1);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 6);
+    push_u16(&mut tables, object_name);
+    push_u16(&mut tables, system_namespace);
+    push_u32(&mut tables, 0);
+    push_u16(&mut tables, module_type_name);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 1);
+    push_u16(&mut tables, 1);
+    push_u32(&mut tables, 0x0010_0001);
+    push_u16(&mut tables, type_name);
+    push_u16(&mut tables, namespace);
+    push_u16(&mut tables, 5);
+    push_u16(&mut tables, 1);
+    push_u16(&mut tables, 1);
+    push_u32(&mut tables, method_rva);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0x0096);
+    push_u16(&mut tables, method_name);
+    push_u16(&mut tables, method_signature);
+    push_u16(&mut tables, 1);
+    push_u32(&mut tables, 0x0000_8004);
+    for value in [1_u16, 0, 0, 0] {
+        push_u16(&mut tables, value);
+    }
+    push_u32(&mut tables, 0);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, assembly_name);
+    push_u16(&mut tables, 0);
+    for value in [10_u16, 0, 0, 0] {
+        push_u16(&mut tables, value);
+    }
+    push_u32(&mut tables, 0);
+    push_u16(&mut tables, system_public_key_token);
+    push_u16(&mut tables, system_runtime_name);
+    push_u16(&mut tables, 0);
+    push_u16(&mut tables, 0);
+    pad_vec(&mut tables, 4);
+    let streams = [
+        ("#~", tables),
+        ("#Strings", strings),
+        ("#GUID", guid),
+        ("#Blob", blobs),
+    ];
+    let version = b"v4.0.30319\0\0";
+    let fixed_header_size = 16 + version.len() + 4;
+    let stream_headers_size: usize = streams
+        .iter()
+        .map(|(name, _)| 8 + align_usize(name.len() + 1, 4))
+        .sum();
+    let data_start = align_usize(fixed_header_size + stream_headers_size, 4);
+    let mut offsets = Vec::with_capacity(streams.len());
+    let mut next_offset = data_start;
+    for (_, data) in &streams {
+        offsets.push(next_offset);
+        next_offset += data.len();
+    }
+    let mut metadata = Vec::with_capacity(next_offset);
+    push_u32(&mut metadata, 0x424A_5342);
+    push_u16(&mut metadata, 1);
+    push_u16(&mut metadata, 1);
+    push_u32(&mut metadata, 0);
+    push_u32(&mut metadata, to_u32(version.len()));
+    metadata.extend_from_slice(version);
+    push_u16(&mut metadata, 0);
+    push_u16(
+        &mut metadata,
+        u16::try_from(streams.len()).expect("stream count fits u16"),
+    );
+    for ((name, data), offset) in streams.iter().zip(offsets.iter()) {
+        push_u32(&mut metadata, to_u32(*offset));
+        push_u32(&mut metadata, to_u32(data.len()));
+        metadata.extend_from_slice(name.as_bytes());
+        metadata.push(0);
+        pad_vec(&mut metadata, 4);
+    }
+    metadata.resize(data_start, 0);
+    for (_, data) in streams {
+        metadata.extend_from_slice(&data);
+    }
+    metadata
+}
+
+fn write_clr_header(header: &mut [u8], metadata_rva: u32, metadata_size: u32) {
+    write_u32_at(header, 0, to_u32(CLR_HEADER_SIZE));
+    write_u16_at(header, 4, 2);
+    write_u16_at(header, 6, 5);
+    write_u32_at(header, 8, metadata_rva);
+    write_u32_at(header, 12, metadata_size);
+    write_u32_at(header, 16, 1);
+    write_u32_at(header, 20, 0);
+}
+fn write_pe_headers(headers: &mut [u8], section_virtual_size: u32, section_raw_size: u32) {
+    headers[0..2].copy_from_slice(b"MZ");
+    write_u32_at(headers, 0x3C, to_u32(PE_OFFSET));
+    headers[PE_OFFSET..PE_OFFSET + 4].copy_from_slice(b"PE\0\0");
+    let coff = PE_OFFSET + 4;
+    write_u16_at(headers, coff, 0x014C);
+    write_u16_at(headers, coff + 2, 1);
+    write_u16_at(headers, coff + 16, to_u16(OPTIONAL_HEADER_SIZE));
+    write_u16_at(headers, coff + 18, 0x2022);
+    let optional = coff + 20;
+    write_u16_at(headers, optional, 0x010B);
+    write_u32_at(headers, optional + 4, section_raw_size);
+    write_u32_at(headers, optional + 20, SECTION_RVA);
+    write_u32_at(headers, optional + 28, 0x0040_0000);
+    write_u32_at(headers, optional + 32, SECTION_ALIGNMENT);
+    write_u32_at(headers, optional + 36, to_u32(FILE_ALIGNMENT));
+    write_u16_at(headers, optional + 40, 4);
+    write_u16_at(headers, optional + 48, 4);
+    write_u32_at(
+        headers,
+        optional + 56,
+        align_u32(SECTION_RVA + section_virtual_size, SECTION_ALIGNMENT),
+    );
+    write_u32_at(headers, optional + 60, to_u32(HEADERS_SIZE));
+    write_u16_at(headers, optional + 68, 3);
+    write_u16_at(headers, optional + 70, 0x0100);
+    write_u32_at(headers, optional + 72, 0x0010_0000);
+    write_u32_at(headers, optional + 76, 0x1000);
+    write_u32_at(headers, optional + 80, 0x0010_0000);
+    write_u32_at(headers, optional + 84, 0x1000);
+    write_u32_at(headers, optional + 92, 16);
+    let cli = optional + 96 + 14 * 8;
+    write_u32_at(headers, cli, SECTION_RVA);
+    write_u32_at(headers, cli + 4, to_u32(CLR_HEADER_SIZE));
+    let section = optional + OPTIONAL_HEADER_SIZE;
+    headers[section..section + 8].copy_from_slice(b".text\0\0\0");
+    write_u32_at(headers, section + 8, section_virtual_size);
+    write_u32_at(headers, section + 12, SECTION_RVA);
+    write_u32_at(headers, section + 16, section_raw_size);
+    write_u32_at(headers, section + 20, to_u32(HEADERS_SIZE));
+    write_u32_at(headers, section + 36, 0x6000_0020);
+}
+fn push_string(heap: &mut Vec<u8>, value: &str) -> u16 {
+    let index = to_u16(heap.len());
+    heap.extend_from_slice(value.as_bytes());
+    heap.push(0);
+    index
+}
+fn push_blob(heap: &mut Vec<u8>, value: &[u8]) -> u16 {
+    let index = to_u16(heap.len());
+    push_compressed_unsigned(heap, to_u32(value.len()));
+    heap.extend_from_slice(value);
+    index
+}
+fn push_compressed_unsigned(buffer: &mut Vec<u8>, value: u32) {
+    match value {
+        0..=0x7F => buffer.push(value as u8),
+        0x80..=0x3FFF => {
+            buffer.push(((value >> 8) | 0x80) as u8);
+            buffer.push((value & 0xFF) as u8)
+        }
+        _ => panic!("scalar export only needs compact metadata values"),
+    }
+}
+fn align_usize(value: usize, alignment: usize) -> usize {
+    (value + alignment - 1) & !(alignment - 1)
+}
+fn align_u32(value: u32, alignment: u32) -> u32 {
+    (value + alignment - 1) & !(alignment - 1)
+}
+fn pad_vec(buffer: &mut Vec<u8>, alignment: usize) {
+    buffer.resize(align_usize(buffer.len(), alignment), 0)
+}
+fn to_u16(value: usize) -> u16 {
+    u16::try_from(value).expect("scalar export metadata index fits u16")
+}
+fn to_u32(value: usize) -> u32 {
+    u32::try_from(value).expect("scalar export image size fits u32")
+}
+fn push_u16(buffer: &mut Vec<u8>, value: u16) {
+    buffer.extend_from_slice(&value.to_le_bytes())
+}
+fn push_u32(buffer: &mut Vec<u8>, value: u32) {
+    buffer.extend_from_slice(&value.to_le_bytes())
+}
+fn push_u64(buffer: &mut Vec<u8>, value: u64) {
+    buffer.extend_from_slice(&value.to_le_bytes())
+}
+fn write_u16_at(buffer: &mut [u8], offset: usize, value: u16) {
+    buffer[offset..offset + 2].copy_from_slice(&value.to_le_bytes())
+}
+fn write_u32_at(buffer: &mut [u8], offset: usize, value: u32) {
+    buffer[offset..offset + 4].copy_from_slice(&value.to_le_bytes())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn scalar_export_is_deterministic_but_value_sensitive() {
+        let first = emit_i32_export_assembly(137);
+        assert_eq!(first, emit_i32_export_assembly(137));
+        assert_ne!(first, emit_i32_export_assembly(211));
+        for expected in [
+            SCALAR_EXPORT_ASSEMBLY_NAME,
+            SCALAR_EXPORT_NAMESPACE,
+            SCALAR_EXPORT_TYPE_NAME,
+            SCALAR_EXPORT_METHOD_NAME,
+        ] {
+            assert!(
+                first
+                    .windows(expected.len())
+                    .any(|w| w == expected.as_bytes())
+            );
+        }
+    }
+    #[test]
+    fn named_scalar_export_uses_the_requested_clr_identity() {
+        let image = emit_named_i32_export_assembly("RustLibrary", 137);
+        for expected in ["RustLibrary", "RustLibrary.dll"] {
+            assert!(
+                image
+                    .windows(expected.len())
+                    .any(|w| w == expected.as_bytes())
+            );
+        }
+    }
+    #[test]
+    fn named_method_export_is_surface_and_value_sensitive() {
+        let first = emit_named_i32_method_export_assembly(
+            "RustLibrary",
+            "FerrumWeave",
+            "RustApi",
+            "ResultOkI32",
+            42,
+        );
+        let second = emit_named_i32_method_export_assembly(
+            "RustLibrary",
+            "FerrumWeave",
+            "RustApi",
+            "ResultOkI32",
+            73,
+        );
+        assert_ne!(first, second);
+        assert!(first.windows(11).any(|w| w == b"ResultOkI32"));
+    }
+}
