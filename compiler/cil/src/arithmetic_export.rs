@@ -9,7 +9,7 @@
 //! `SubWithOverflow` plus an Assert), so these operations preserve that failure
 //! semantics with the corresponding checked CIL opcodes.
 
-use crate::emit_i32_argument_export_assembly;
+use crate::emit_named_i32_argument_export_assembly;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum I32ArithmeticOp {
@@ -27,7 +27,17 @@ pub enum I32ArithmeticOp {
 /// this checked path.
 #[must_use]
 pub fn emit_i32_arithmetic_export_assembly(operation: I32ArithmeticOp) -> Vec<u8> {
-    let mut image = emit_i32_argument_export_assembly(0);
+    emit_named_i32_arithmetic_export_assembly(operation, "Answer")
+}
+
+/// Emit a caller-named public static i32 export performing the selected
+/// arithmetic operation.
+#[must_use]
+pub fn emit_named_i32_arithmetic_export_assembly(
+    operation: I32ArithmeticOp,
+    method_name: &str,
+) -> Vec<u8> {
+    let mut image = emit_named_i32_argument_export_assembly(0, method_name);
 
     const HEADERS_SIZE: usize = 0x200;
     const CLR_HEADER_SIZE: usize = 0x48;
@@ -91,5 +101,11 @@ mod tests {
 
         assert_eq!(add[METHOD_OPCODE_OFFSET], 0xD6); // add.ovf
         assert_eq!(subtract[METHOD_OPCODE_OFFSET], 0xDA); // sub.ovf
+    }
+
+    #[test]
+    fn arithmetic_export_preserves_caller_owned_method_name() {
+        let image = emit_named_i32_arithmetic_export_assembly(I32ArithmeticOp::Add, "ComputeResult");
+        assert!(image.windows(b"ComputeResult".len()).any(|window| window == b"ComputeResult"));
     }
 }
