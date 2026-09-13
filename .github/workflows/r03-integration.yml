@@ -1,4 +1,4 @@
-name: R03 Core Rust Semantics
+name: R03 Oracle Characterization — Core Rust Semantics
 
 on:
   push:
@@ -34,8 +34,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  semantics:
-    name: native parity → CLR (${{ matrix.os }})
+  oracle-characterization:
+    name: oracle characterization: native parity → CLR (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -97,7 +97,7 @@ jobs:
             --manifest-path .r03/rustc_codegen_clr/cilly/Cargo.toml \
             --bin linker
 
-      - name: Certify R03 semantic slice
+      - name: characterize upstream semantic slice
         shell: bash
         run: |
           set -euo pipefail
