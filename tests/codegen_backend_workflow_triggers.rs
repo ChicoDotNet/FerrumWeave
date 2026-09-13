@@ -3,8 +3,8 @@ use std::fs;
 #[test]
 fn backend_convergence_tracks_all_backend_evidence_inputs() {
     let path = ".github/workflows/codegen-backend-convergence.yml";
-    let text = fs::read_to_string(path)
-        .unwrap_or_else(|error| panic!("failed to read {path}: {error}"));
+    let text =
+        fs::read_to_string(path).unwrap_or_else(|error| panic!("failed to read {path}: {error}"));
 
     for required_path in [
         "compiler/codegen-backend/**",
