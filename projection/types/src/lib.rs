@@ -18,6 +18,12 @@ pub enum ManagedIntrinsic {
     SystemTextStringBuilderLength,
 }
 
+/// Stable semantic descriptor for external managed operations recognized by FerrumWeave.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExternalManagedOperation {
+    Transform,
+}
+
 /// Resolve a Rust-side marker into the managed semantic operation it represents.
 #[must_use]
 pub fn managed_intrinsic_from_marker(marker: &str) -> Option<ManagedIntrinsic> {
@@ -39,9 +45,21 @@ pub fn managed_intrinsic_from_marker(marker: &str) -> Option<ManagedIntrinsic> {
     }
 }
 
+/// Resolve a Rust-side marker into an external managed semantic operation.
+#[must_use]
+pub fn external_managed_operation_from_marker(marker: &str) -> Option<ExternalManagedOperation> {
+    match marker {
+        "ferrumweave_external_managed_transform" => Some(ExternalManagedOperation::Transform),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod managed_intrinsic_tests {
-    use super::{ManagedIntrinsic, managed_intrinsic_from_marker};
+    use super::{
+        ExternalManagedOperation, ManagedIntrinsic, external_managed_operation_from_marker,
+        managed_intrinsic_from_marker,
+    };
 
     #[test]
     fn marker_resolution_is_centralized_and_exact() {
@@ -80,5 +98,17 @@ mod managed_intrinsic_tests {
             assert_eq!(managed_intrinsic_from_marker(marker), Some(expected));
         }
         assert_eq!(managed_intrinsic_from_marker("ferrumweave_unknown"), None);
+    }
+
+    #[test]
+    fn external_managed_marker_resolution_is_centralized_and_exact() {
+        assert_eq!(
+            external_managed_operation_from_marker("ferrumweave_external_managed_transform"),
+            Some(ExternalManagedOperation::Transform)
+        );
+        assert_eq!(
+            external_managed_operation_from_marker("ferrumweave_external_managed_unknown"),
+            None
+        );
     }
 }
