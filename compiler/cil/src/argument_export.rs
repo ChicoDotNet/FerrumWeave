@@ -24,6 +24,16 @@ const METHOD_NAME: &str = "Answer";
 /// the two incoming arguments selected by Rust MIR lowering.
 #[must_use]
 pub fn emit_i32_argument_export_assembly(argument_index: u8) -> Vec<u8> {
+    emit_named_i32_argument_export_assembly(argument_index, METHOD_NAME)
+}
+
+/// Emit a caller-named public static i32 export whose result is one of the two
+/// incoming arguments selected by Rust MIR lowering.
+#[must_use]
+pub fn emit_named_i32_argument_export_assembly(
+    argument_index: u8,
+    method_name: &str,
+) -> Vec<u8> {
     assert!(
         argument_index < 2,
         "i32 argument export supports exactly two arguments"
@@ -32,7 +42,7 @@ pub fn emit_i32_argument_export_assembly(argument_index: u8) -> Vec<u8> {
     let method_body = build_method_body(argument_index);
     let method_offset = CLR_HEADER_SIZE;
     let method_rva = SECTION_RVA + to_u32(method_offset);
-    let metadata = build_metadata(method_rva);
+    let metadata = build_metadata(method_rva, method_name);
     let metadata_offset = align_usize(method_offset + method_body.len(), 4);
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
@@ -62,7 +72,7 @@ fn build_method_body(argument_index: u8) -> [u8; 3] {
     [0x0A, 0x02 + argument_index, 0x2A]
 }
 
-fn build_metadata(method_rva: u32) -> Vec<u8> {
+fn build_metadata(method_rva: u32, method_name: &str) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, ASSEMBLY_FILE);
     let object_name = push_string(&mut strings, "Object");
@@ -70,7 +80,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, TYPE_NAME);
     let ferrumweave_namespace = push_string(&mut strings, NAMESPACE);
-    let answer_name = push_string(&mut strings, METHOD_NAME);
+    let export_name = push_string(&mut strings, method_name);
     let assembly_name = push_string(&mut strings, ASSEMBLY_NAME);
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
     pad_vec(&mut strings, 4);
@@ -82,7 +92,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
 
     let mut blobs = vec![0_u8];
     // DEFAULT, two parameters, return int32, parameter int32, parameter int32.
-    let answer_signature = push_blob(&mut blobs, &[0x00, 0x02, 0x08, 0x08, 0x08]);
+    let export_signature = push_blob(&mut blobs, &[0x00, 0x02, 0x08, 0x08, 0x08]);
     let system_public_key_token = push_blob(
         &mut blobs,
         &[0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A],
@@ -128,12 +138,12 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // public static int32 Answer(int32, int32).
+    // public static int32 <caller-owned-name>(int32, int32).
     push_u32(&mut tables, method_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0096);
-    push_u16(&mut tables, answer_name);
-    push_u16(&mut tables, answer_signature);
+    push_u16(&mut tables, export_name);
+    push_u16(&mut tables, export_signature);
     push_u16(&mut tables, 1); // Param rows are optional; signature owns parameter types.
 
     // Assembly.
@@ -338,5 +348,15 @@ mod tests {
         assert_ne!(left, right);
         assert!(left.windows(3).any(|window| window == [0x0A, 0x02, 0x2A]));
         assert!(right.windows(3).any(|window| window == [0x0A, 0x03, 0x2A]));
+    }
+
+    #[test]
+    fn argument_export_public_name_is_caller_owned() {
+        let image = emit_named_i32_argument_export_assembly(0, "ComputeResult");
+        assert!(
+            image
+                .windows("ComputeResult".len())
+                .any(|window| window == b"ComputeResult")
+        );
     }
 }
