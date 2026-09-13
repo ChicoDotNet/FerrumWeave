@@ -30,6 +30,7 @@ use rustc_span::{Symbol, sym};
 
 mod borrow_boundary;
 mod disposable_resource_lowering;
+mod export_identity;
 mod external_managed_lowering;
 mod lowering;
 mod option_reference_lowering;
@@ -41,6 +42,7 @@ mod rust_type_lowering;
 mod semantic_boundary;
 use borrow_boundary::reject_escaping_borrows;
 use disposable_resource_lowering::lower_disposable_resource;
+use export_identity::managed_export_method_name;
 use external_managed_lowering::lower_external_managed_transform;
 use lowering::{LoweredI32Export, lower_exported_i32};
 use option_reference_lowering::lower_option_reference_exports;
@@ -121,7 +123,17 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
             reject_escaping_borrows(tcx).unwrap_or_else(|message| panic!("{message}"));
             let lowered = lower_exported_i32(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
             match lowered {
-                LoweredI32Export::Constant(value) => emit_named_i32_export_assembly(assembly_name, value),
+                LoweredI32Export::Constant(value) => {
+                    let export_method_name = managed_export_method_name(tcx)
+                        .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+                    emit_named_i32_method_export_assembly(
+                        assembly_name,
+                        "FerrumWeave",
+                        "RustApi",
+                        &export_method_name,
+                        value,
+                    )
+                }
                 LoweredI32Export::Argument(index) => emit_i32_argument_export_assembly(index),
                 LoweredI32Export::Arithmetic(operation) => emit_i32_arithmetic_export_assembly(operation),
                 LoweredI32Export::ControlFlow { predicate, true_argument, false_argument } => emit_i32_control_flow_export_assembly(predicate, true_argument, false_argument),
