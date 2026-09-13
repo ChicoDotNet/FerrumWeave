@@ -6,7 +6,8 @@ FerrumWeave-owned MIR diagnostic proves rustc reached the backend but the produc
 slice is still RED.
 
 `--require-artifact` is the product gate. It requires source mutation causality,
-managed execution through C#, and a negative Rust type-check test.
+managed execution through C#, public export identity causality, and a negative Rust
+type-check test.
 """
 
 from __future__ import annotations
@@ -22,8 +23,11 @@ LOWERING_MARKER = "FERRUMWEAVE_MIR_LOWERING_FAILED"
 ASSEMBLY_FILE = "FerrumWeave.Generated.dll"
 
 
-def rust_source(value: int) -> str:
-    return '#[no_mangle]\n' f'pub extern "C" fn answer() -> i32 {{ {value} }}\n'
+def rust_source(value: int, export_name: str = "answer") -> str:
+    return (
+        '#[no_mangle]\n'
+        f'pub extern "C" fn {export_name}() -> i32 {{ {value} }}\n'
+    )
 
 
 def invalid_rust_source() -> str:
@@ -64,19 +68,29 @@ def compile_source(
     return result, output
 
 
-def assert_managed_shape(path: Path) -> None:
+def assert_managed_shape(path: Path, method_name: str = "Answer") -> None:
     data = path.read_bytes()
     if not data.startswith(b"MZ"):
         raise AssertionError(f"{path} is not a PE image")
     if b"BSJB" not in data:
         raise AssertionError(f"{path} does not contain a CLR metadata root")
-    for expected in [b"FerrumWeave.Generated", b"FerrumWeave", b"RustApi", b"Answer"]:
+    for expected in [
+        b"FerrumWeave.Generated",
+        b"FerrumWeave",
+        b"RustApi",
+        method_name.encode("utf-8"),
+    ]:
         if expected not in data:
             raise AssertionError(f"{path} is missing managed metadata name {expected!r}")
 
 
-def execute_from_csharp(artifact: Path, expected: int, root: Path) -> None:
-    consumer = root / f"consumer_{expected}"
+def execute_from_csharp(
+    artifact: Path,
+    expected: int,
+    root: Path,
+    method_name: str = "Answer",
+) -> None:
+    consumer = root / f"consumer_{method_name}_{expected}"
     consumer.mkdir()
     referenced = consumer / ASSEMBLY_FILE
     shutil.copyfile(artifact, referenced)
@@ -98,7 +112,7 @@ def execute_from_csharp(artifact: Path, expected: int, root: Path) -> None:
         encoding="utf-8",
     )
     (consumer / "Program.cs").write_text(
-        "Console.WriteLine(FerrumWeave.RustApi.Answer());\n",
+        f"Console.WriteLine(FerrumWeave.RustApi.{method_name}());\n",
         encoding="utf-8",
     )
 
@@ -151,6 +165,28 @@ def product_gate(toolchain: str, backend: Path, work: Path) -> int:
         print("RED: mutating only Rust source 137 -> 211 did not change the managed artifact")
         return 1
 
+    renamed_result, renamed_artifact = compile_source(
+        toolchain,
+        backend,
+        work,
+        "compute_result_137",
+        rust_source(137, "compute_result"),
+    )
+    if renamed_result.returncode != 0:
+        print("RED: FerrumWeave failed to compile renamed constant export compute_result")
+        print(renamed_result.stdout)
+        print(renamed_result.stderr)
+        return 1
+    if not renamed_artifact.is_file():
+        print("RED: renamed constant export produced no managed artifact")
+        return 1
+    try:
+        assert_managed_shape(renamed_artifact, "ComputeResult")
+        execute_from_csharp(renamed_artifact, 137, work, "ComputeResult")
+    except AssertionError as exc:
+        print(f"RED: constant export identity is not source-causal: {exc}")
+        return 1
+
     invalid_result, invalid_artifact = compile_source(
         toolchain,
         backend,
@@ -171,7 +207,7 @@ def product_gate(toolchain: str, backend: Path, work: Path) -> int:
 
     print("GREEN: FerrumWeave owns the first source-causal MIR -> managed artifact slice")
     print("  Rust mutation: 137 -> 211 changed both assembly and managed observable")
-    print("  Consumer: C# observed 137 and 211 through FerrumWeave.RustApi.Answer()")
+    print("  Public identity: answer -> compute_result changed CLR metadata and C# call to ComputeResult")
     print("  Negative: Rust type error failed before a managed artifact was produced")
     return 0
 
