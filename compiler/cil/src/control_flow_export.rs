@@ -66,7 +66,10 @@ pub fn emit_named_i32_control_flow_export_assembly(
         true_argument, false_argument,
         "control-flow branches must remain distinguishable"
     );
-    assert!(!method_name.is_empty(), "control-flow export method name must not be empty");
+    assert!(
+        !method_name.is_empty(),
+        "control-flow export method name must not be empty"
+    );
 
     let method_body = build_method_body(predicate, true_argument, false_argument);
     let method_offset = CLR_HEADER_SIZE;
@@ -402,12 +405,8 @@ mod tests {
 
     #[test]
     fn control_flow_export_method_name_is_caller_owned() {
-        let answer = emit_named_i32_control_flow_export_assembly(
-            I32ZeroPredicate::Equal,
-            1,
-            2,
-            "Answer",
-        );
+        let answer =
+            emit_named_i32_control_flow_export_assembly(I32ZeroPredicate::Equal, 1, 2, "Answer");
         let compute = emit_named_i32_control_flow_export_assembly(
             I32ZeroPredicate::Equal,
             1,
@@ -415,6 +414,10 @@ mod tests {
             "ComputeResult",
         );
         assert_ne!(answer, compute);
-        assert!(compute.windows("ComputeResult".len()).any(|window| window == b"ComputeResult"));
+        assert!(
+            compute
+                .windows("ComputeResult".len())
+                .any(|window| window == b"ComputeResult")
+        );
     }
 }
