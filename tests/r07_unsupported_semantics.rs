@@ -16,8 +16,8 @@ fn unsupported_cross_runtime_semantics_fail_inside_the_ferrumweave_backend() {
     fs::copy(template, rust_project.join("RustLibrary.rsproj")).expect("copy canonical rsproj");
 
     for source in [
-        "#[no_mangle]\npub extern \"C\" fn answer() -> char { '\u{1F600}' }\n",
-        "#[no_mangle]\npub extern \"C\" fn answer(value: String) -> i32 { value.len() as i32 }\n",
+        "#[no_mangle]\npub extern \"C\" fn semantic_probe() -> char { '\u{1F600}' }\n",
+        "#[no_mangle]\npub extern \"C\" fn semantic_probe(value: String) -> i32 { value.len() as i32 }\n",
     ] {
         clean_outputs(&rust_project);
         fs::write(source_dir.join("main.rs"), source)
@@ -46,7 +46,7 @@ fn unsupported_cross_runtime_semantics_fail_inside_the_ferrumweave_backend() {
     clean_outputs(&rust_project);
     fs::write(
         source_dir.join("main.rs"),
-        "#[no_mangle]\npub extern \"C\" fn answer() -> i32 { 42 }\n",
+        "#[no_mangle]\npub extern \"C\" fn semantic_probe() -> i32 { 42 }\n",
     )
     .expect("write supported owned Rust source");
 
