@@ -4,7 +4,6 @@ use rustc_middle::{
 };
 
 pub const DIAGNOSTIC: &str = "FERRUMWEAVE_SEMANTIC_BOUNDARY_REJECTED";
-const EXPORT_SYMBOL: &str = "answer";
 
 /// Reject Rust ABI shapes whose CLR projection is not yet owned by FerrumWeave.
 ///
@@ -18,7 +17,11 @@ pub fn reject_unsupported_export_semantics(tcx: TyCtxt<'_>) -> Result<(), String
             let MonoItem::Fn(instance) = *item else {
                 continue;
             };
-            if !instance.def_id().is_local() || tcx.symbol_name(instance).name != EXPORT_SYMBOL {
+            if !instance.def_id().is_local()
+                || !tcx
+                    .codegen_fn_attrs(instance.def_id())
+                    .contains_extern_indicator()
+            {
                 continue;
             }
 
