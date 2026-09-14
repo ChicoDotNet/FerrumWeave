@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Falsify direct Rust function-call lowering through the FerrumWeave backend.
 
-The C# consumer and inputs stay fixed. Only the body of a non-inlined Rust helper
-changes from addition to subtraction. A passing artifact must therefore both
-contain a managed call in Answer and change its observable through Rust callee
-semantics. rustc_codegen_clr is not part of this product-path contract.
+The C# inputs stay fixed. Rust-only mutations exercise both callee semantics and
+public export identity. A passing artifact must contain a managed call in the
+export, change its observable when helper semantics change, and project a Rust
+`answer -> compute_result` rename into CLR metadata. rustc_codegen_clr is not
+part of this product-path contract.
 """
 
 from __future__ import annotations
@@ -22,16 +23,26 @@ fn helper(left: i32, right: i32) -> i32 {{
 }}
 
 #[no_mangle]
-pub extern "C" fn answer(left: i32, right: i32) -> i32 {{
+pub extern "C" fn {export_name}(left: i32, right: i32) -> i32 {{
     helper(left, right)
 }}
 '''
 
 
-def compile_variant(toolchain: str, backend: Path, work: Path, name: str, operator: str) -> Path:
+def compile_variant(
+    toolchain: str,
+    backend: Path,
+    work: Path,
+    name: str,
+    operator: str,
+    export_name: str = "answer",
+) -> Path:
     source = work / f"{name}.rs"
     artifact = work / f"{name}.dll"
-    source.write_text(SOURCE_TEMPLATE.format(operator=operator), encoding="utf-8")
+    source.write_text(
+        SOURCE_TEMPLATE.format(operator=operator, export_name=export_name),
+        encoding="utf-8",
+    )
     result = subprocess.run(
         [
             "rustc", f"+{toolchain}", "-Z", f"codegen-backend={backend}",
@@ -49,7 +60,7 @@ def compile_variant(toolchain: str, backend: Path, work: Path, name: str, operat
     return artifact
 
 
-def run_consumer(artifact: Path, root: Path, name: str) -> int:
+def run_consumer(artifact: Path, root: Path, name: str, method_name: str = "Answer") -> int:
     consumer = root / f"consumer-{name}"
     consumer.mkdir()
     shutil.copyfile(artifact, consumer / ASSEMBLY_FILE)
@@ -61,11 +72,11 @@ def run_consumer(artifact: Path, root: Path, name: str) -> int:
         encoding="utf-8",
     )
     (consumer / "Program.cs").write_text(
-        'var method = typeof(FerrumWeave.RustApi).GetMethod("Answer");\n'
+        f'var method = typeof(FerrumWeave.RustApi).GetMethod("{method_name}");\n'
         'var il = method?.GetMethodBody()?.GetILAsByteArray();\n'
         'if (il is null || System.Array.IndexOf(il, (byte)0x28) < 0)\n'
-        '    throw new System.Exception("Answer does not contain a managed call opcode");\n'
-        'System.Console.WriteLine(FerrumWeave.RustApi.Answer(137, 74));\n',
+        f'    throw new System.Exception("{method_name} does not contain a managed call opcode");\n'
+        f'System.Console.WriteLine(FerrumWeave.RustApi.{method_name}(137, 74));\n',
         encoding="utf-8",
     )
     run = subprocess.run(
@@ -101,26 +112,46 @@ def main() -> int:
             work = Path(temp)
             add_artifact = compile_variant(args.toolchain, backend, work, "helper_add", "+")
             sub_artifact = compile_variant(args.toolchain, backend, work, "helper_sub", "-")
+            renamed_artifact = compile_variant(
+                args.toolchain,
+                backend,
+                work,
+                "helper_add_renamed",
+                "+",
+                "compute_result",
+            )
 
             if add_artifact.read_bytes() == sub_artifact.read_bytes():
                 raise AssertionError("Rust-only helper mutation did not change the managed artifact")
+            if add_artifact.read_bytes() == renamed_artifact.read_bytes():
+                raise AssertionError(
+                    "changing only the Rust export name answer -> compute_result did not change managed metadata"
+                )
 
             add_observed = run_consumer(add_artifact, work, "add")
             sub_observed = run_consumer(sub_artifact, work, "sub")
-            if add_observed != 211 or sub_observed != 63:
+            renamed_observed = run_consumer(
+                renamed_artifact,
+                work,
+                "renamed",
+                "ComputeResult",
+            )
+            if add_observed != 211 or sub_observed != 63 or renamed_observed != 211:
                 raise AssertionError(
-                    "Rust helper mutation did not control the managed observable: "
-                    f"add={add_observed}, sub={sub_observed}"
+                    "Rust mutation did not control the managed observable: "
+                    f"add={add_observed}, sub={sub_observed}, renamed={renamed_observed}"
                 )
     except AssertionError as exc:
         print(f"RED: {exc}")
         return 1
 
     print("GREEN: FerrumWeave source-causally lowers a direct Rust function call")
-    print("  Fixed C# call: Answer(137, 74)")
-    print("  Rust-only mutation: helper left + right -> left - right")
+    print("  Fixed C# inputs: (137, 74)")
+    print("  Rust-only semantic mutation: helper left + right -> left - right")
     print("  Managed observable: 211 -> 63")
-    print("  Answer IL contains a managed call opcode")
+    print("  Rust-only identity mutation: answer -> compute_result")
+    print("  CLR consumer call: FerrumWeave.RustApi.ComputeResult(137, 74) -> 211")
+    print("  Export IL contains a managed call opcode")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
 
