@@ -19,20 +19,29 @@ const ASSEMBLY_NAME: &str = "FerrumWeave.Generated";
 const ASSEMBLY_FILE: &str = "FerrumWeave.Generated.dll";
 const NAMESPACE: &str = "FerrumWeave";
 const TYPE_NAME: &str = "RustApi";
-const METHOD_NAME: &str = "Answer";
+const DEFAULT_METHOD_NAME: &str = "Answer";
 const EXTERNAL_ASSEMBLY_NAME: &str = "External.Managed";
 const EXTERNAL_NAMESPACE: &str = "ExternalManaged";
 const EXTERNAL_TYPE_NAME: &str = "ExternalApi";
 const EXTERNAL_METHOD_NAME: &str = "Transform";
 
-/// Emits `FerrumWeave.RustApi.Answer()` calling
-/// `ExternalManaged.ExternalApi.Transform(int)` from `External.Managed`.
+/// Compatibility wrapper emitting `FerrumWeave.RustApi.Answer()`.
 #[must_use]
 pub fn emit_i32_export_with_external_managed_transform(payload: i32) -> Vec<u8> {
+    emit_named_i32_export_with_external_managed_transform(payload, DEFAULT_METHOD_NAME)
+}
+
+/// Emits a caller-named `FerrumWeave.RustApi` method calling
+/// `ExternalManaged.ExternalApi.Transform(int)` from `External.Managed`.
+#[must_use]
+pub fn emit_named_i32_export_with_external_managed_transform(
+    payload: i32,
+    method_name: &str,
+) -> Vec<u8> {
     let method_body = build_method_body(payload);
     let method_offset = CLR_HEADER_SIZE;
     let method_rva = SECTION_RVA + to_u32(method_offset);
-    let metadata = build_metadata(method_rva);
+    let metadata = build_metadata(method_rva, method_name);
     let metadata_offset = align_usize(method_offset + method_body.len(), 4);
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
@@ -69,7 +78,7 @@ fn build_method_body(payload: i32) -> Vec<u8> {
     body
 }
 
-fn build_metadata(method_rva: u32) -> Vec<u8> {
+fn build_metadata(method_rva: u32, method_name: &str) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, ASSEMBLY_FILE);
     let object_name = push_string(&mut strings, "Object");
@@ -79,7 +88,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, TYPE_NAME);
     let ferrumweave_namespace = push_string(&mut strings, NAMESPACE);
-    let answer_name = push_string(&mut strings, METHOD_NAME);
+    let export_name = push_string(&mut strings, method_name);
     let external_method_name = push_string(&mut strings, EXTERNAL_METHOD_NAME);
     let assembly_name = push_string(&mut strings, ASSEMBLY_NAME);
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
@@ -92,7 +101,7 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     ];
 
     let mut blobs = vec![0_u8];
-    let answer_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
+    let export_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
     let external_signature = push_blob(&mut blobs, &[0x00, 0x01, 0x08, 0x08]);
     let system_public_key_token = push_blob(
         &mut blobs,
@@ -149,12 +158,12 @@ fn build_metadata(method_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // public static int32 Answer().
+    // public static int32 <caller-owned-name>().
     push_u32(&mut tables, method_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0096);
-    push_u16(&mut tables, answer_name);
-    push_u16(&mut tables, answer_signature);
+    push_u16(&mut tables, export_name);
+    push_u16(&mut tables, export_signature);
     push_u16(&mut tables, 1);
 
     // MemberRef: static int32 [External.Managed]ExternalManaged.ExternalApi::Transform(int32).
@@ -387,5 +396,15 @@ mod tests {
                     .any(|window| window == expected.as_bytes())
             );
         }
+    }
+
+    #[test]
+    fn external_managed_export_uses_caller_owned_method_name() {
+        let image = emit_named_i32_export_with_external_managed_transform(137, "ComputeResult");
+        assert!(
+            image
+                .windows("ComputeResult".len())
+                .any(|window| window == b"ComputeResult")
+        );
     }
 }
