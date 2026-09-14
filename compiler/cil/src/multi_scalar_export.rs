@@ -25,7 +25,10 @@ pub fn emit_named_i32_constant_exports_assembly(
     type_name: &str,
     exports: &[I32ConstantExport<'_>],
 ) -> Vec<u8> {
-    assert!(!exports.is_empty(), "at least one scalar export is required");
+    assert!(
+        !exports.is_empty(),
+        "at least one scalar export is required"
+    );
 
     let mut bodies = Vec::with_capacity(exports.len());
     let mut method_rvas = Vec::with_capacity(exports.len());
@@ -37,13 +40,7 @@ pub fn emit_named_i32_constant_exports_assembly(
         bodies.push(body);
     }
 
-    let metadata = build_metadata(
-        &method_rvas,
-        assembly_name,
-        namespace,
-        type_name,
-        exports,
-    );
+    let metadata = build_metadata(&method_rvas, assembly_name, namespace, type_name, exports);
     let metadata_offset = next_offset;
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
     let section_virtual_size = metadata_offset + metadata.len();
@@ -105,8 +102,8 @@ fn build_metadata(
     pad_vec(&mut strings, 4);
 
     let guid = vec![
-        0x46, 0x57, 0x4D, 0x55, 0x4C, 0x54, 0x49, 0x45, 0x58, 0x50, 0x4F, 0x52, 0x54, 0x30,
-        0x30, 0x31,
+        0x46, 0x57, 0x4D, 0x55, 0x4C, 0x54, 0x49, 0x45, 0x58, 0x50, 0x4F, 0x52, 0x54, 0x30, 0x30,
+        0x31,
     ];
     let mut blobs = vec![0_u8];
     let method_signature = push_blob(&mut blobs, &[0x00, 0x00, 0x08]);
@@ -357,8 +354,14 @@ mod tests {
             "FerrumWeave",
             "RustApi",
             &[
-                I32ConstantExport { method_name: "AlphaValue", value: 137 },
-                I32ConstantExport { method_name: "BetaValue", value: 211 },
+                I32ConstantExport {
+                    method_name: "AlphaValue",
+                    value: 137,
+                },
+                I32ConstantExport {
+                    method_name: "BetaValue",
+                    value: 211,
+                },
             ],
         );
         let mutated = emit_named_i32_constant_exports_assembly(
@@ -366,8 +369,14 @@ mod tests {
             "FerrumWeave",
             "RustApi",
             &[
-                I32ConstantExport { method_name: "AlphaValue", value: 137 },
-                I32ConstantExport { method_name: "BetaValue", value: 212 },
+                I32ConstantExport {
+                    method_name: "AlphaValue",
+                    value: 137,
+                },
+                I32ConstantExport {
+                    method_name: "BetaValue",
+                    value: 212,
+                },
             ],
         );
         assert_ne!(first, mutated);
