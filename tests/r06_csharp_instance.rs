@@ -138,5 +138,33 @@ fn csharp_constructs_rust_source_causal_type_and_calls_instance_behavior() {
         );
     }
 
+    fs::write(
+        source_dir.join("main.rs"),
+        "pub struct RustValue;\n\nimpl RustValue {\n    pub fn answer(&self) -> i32 { 211 }\n}\n\n#[no_mangle]\npub extern \"C\" fn compute_result(value: &RustValue) -> i32 { value.answer() }\n",
+    )
+    .expect("write R06 Rust instance source with renamed export wrapper");
+    let renamed_build = dotnet_build(&repo, &rust_project);
+    assert!(
+        renamed_build.status.success(),
+        "renaming only the exported Rust wrapper answer -> compute_result must preserve rustc-owned instance projection:\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&renamed_build.stdout),
+        String::from_utf8_lossy(&renamed_build.stderr),
+    );
+    let renamed_assembly = rust_project.join("bin/Debug/net10.0/RustLibrary.dll");
+    fs::copy(&renamed_assembly, consumer.join("RustLibrary.dll"))
+        .expect("place renamed-wrapper Rust-produced assembly beside C# instance consumer");
+    let renamed_run = build_and_run_consumer(&consumer);
+    assert!(
+        renamed_run.status.success(),
+        "C# instance consumer must remain executable after Rust-only export-wrapper rename:\n{}\n{}",
+        String::from_utf8_lossy(&renamed_run.stdout),
+        String::from_utf8_lossy(&renamed_run.stderr)
+    );
+    assert_eq!(
+        String::from_utf8_lossy(&renamed_run.stdout).trim(),
+        "211",
+        "renaming only the exported Rust wrapper must not change RustValue.Answer() semantics",
+    );
+
     let _ = fs::remove_dir_all(root);
 }
