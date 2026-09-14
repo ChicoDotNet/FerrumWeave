@@ -3,9 +3,9 @@
 //! Managed export emission for a direct Rust-to-Rust i32 function call.
 //!
 //! The rustc-facing layer proves the call target and lowers the callee's MIR to
-//! an `I32ArithmeticOp`. This emitter owns only CLR/CIL projection: `Answer`
-//! forwards both managed arguments to a distinct managed helper method via a
-//! real `call` opcode, while the helper implements the lowered arithmetic.
+//! an `I32ArithmeticOp`. This emitter owns only CLR/CIL projection: the public
+//! export forwards both managed arguments to a distinct managed helper method
+//! via a real `call` opcode, while the helper implements the lowered arithmetic.
 
 use crate::I32ArithmeticOp;
 
@@ -25,26 +25,40 @@ const ANSWER_NAME: &str = "Answer";
 const HELPER_NAME: &str = "__FerrumWeaveDirectCallHelper";
 const HELPER_METHOD_TOKEN: u32 = 0x0600_0002;
 
-/// Emit `Answer(int,int)` plus a distinct helper method. `Answer` must contain
-/// a managed `call` to the helper so direct Rust call semantics remain visible
-/// in the resulting artifact instead of being silently inlined by the emitter.
+/// Emit the historical `Answer(int,int)` export plus a distinct helper method.
+///
+/// Product code should prefer [`emit_named_i32_direct_call_export_assembly`] so
+/// the public CLR identity remains source-causal from the Rust export symbol.
 #[must_use]
 pub fn emit_i32_direct_call_export_assembly(operation: I32ArithmeticOp) -> Vec<u8> {
-    let answer_body = build_answer_body();
+    emit_named_i32_direct_call_export_assembly(operation, ANSWER_NAME)
+}
+
+/// Emit a caller-named public `(int,int) -> int` export plus a distinct helper.
+///
+/// The public export contains a managed `call` to the helper so direct Rust call
+/// semantics remain visible in the resulting artifact instead of being silently
+/// inlined by the emitter.
+#[must_use]
+pub fn emit_named_i32_direct_call_export_assembly(
+    operation: I32ArithmeticOp,
+    method_name: &str,
+) -> Vec<u8> {
+    let export_body = build_export_body();
     let helper_body = build_helper_body(operation);
 
-    let answer_offset = CLR_HEADER_SIZE;
-    let answer_rva = SECTION_RVA + to_u32(answer_offset);
-    let helper_offset = align_usize(answer_offset + answer_body.len(), 4);
+    let export_offset = CLR_HEADER_SIZE;
+    let export_rva = SECTION_RVA + to_u32(export_offset);
+    let helper_offset = align_usize(export_offset + export_body.len(), 4);
     let helper_rva = SECTION_RVA + to_u32(helper_offset);
     let metadata_offset = align_usize(helper_offset + helper_body.len(), 4);
     let metadata_rva = SECTION_RVA + to_u32(metadata_offset);
-    let metadata = build_metadata(answer_rva, helper_rva);
+    let metadata = build_metadata(export_rva, helper_rva, method_name);
     let section_virtual_size = metadata_offset + metadata.len();
     let section_raw_size = align_usize(section_virtual_size, FILE_ALIGNMENT);
 
     let mut section = vec![0_u8; section_raw_size];
-    section[answer_offset..answer_offset + answer_body.len()].copy_from_slice(&answer_body);
+    section[export_offset..export_offset + export_body.len()].copy_from_slice(&export_body);
     section[helper_offset..helper_offset + helper_body.len()].copy_from_slice(&helper_body);
     section[metadata_offset..metadata_offset + metadata.len()].copy_from_slice(&metadata);
     write_clr_header(
@@ -63,7 +77,7 @@ pub fn emit_i32_direct_call_export_assembly(operation: I32ArithmeticOp) -> Vec<u
     image
 }
 
-fn build_answer_body() -> [u8; 9] {
+fn build_export_body() -> [u8; 9] {
     // Tiny header for eight bytes of IL.
     let mut body = [0_u8; 9];
     body[0] = 0x22; // (8 << 2) | tiny-format marker.
@@ -83,7 +97,7 @@ fn build_helper_body(operation: I32ArithmeticOp) -> [u8; 5] {
     [0x12, 0x02, 0x03, opcode, 0x2A]
 }
 
-fn build_metadata(answer_rva: u32, helper_rva: u32) -> Vec<u8> {
+fn build_metadata(export_rva: u32, helper_rva: u32, method_name: &str) -> Vec<u8> {
     let mut strings = vec![0_u8];
     let module_name = push_string(&mut strings, ASSEMBLY_FILE);
     let object_name = push_string(&mut strings, "Object");
@@ -91,7 +105,7 @@ fn build_metadata(answer_rva: u32, helper_rva: u32) -> Vec<u8> {
     let module_type_name = push_string(&mut strings, "<Module>");
     let rust_api_name = push_string(&mut strings, TYPE_NAME);
     let ferrumweave_namespace = push_string(&mut strings, NAMESPACE);
-    let answer_name = push_string(&mut strings, ANSWER_NAME);
+    let export_name = push_string(&mut strings, method_name);
     let helper_name = push_string(&mut strings, HELPER_NAME);
     let assembly_name = push_string(&mut strings, ASSEMBLY_NAME);
     let system_runtime_name = push_string(&mut strings, "System.Runtime");
@@ -151,11 +165,11 @@ fn build_metadata(answer_rva: u32, helper_rva: u32) -> Vec<u8> {
     push_u16(&mut tables, 1);
     push_u16(&mut tables, 1);
 
-    // public static int32 Answer(int32, int32).
-    push_u32(&mut tables, answer_rva);
+    // public static int32 <source-causal-export>(int32, int32).
+    push_u32(&mut tables, export_rva);
     push_u16(&mut tables, 0);
     push_u16(&mut tables, 0x0096);
-    push_u16(&mut tables, answer_name);
+    push_u16(&mut tables, export_name);
     push_u16(&mut tables, binary_i32_signature);
     push_u16(&mut tables, 1);
 
@@ -370,13 +384,26 @@ mod tests {
     }
 
     #[test]
-    fn answer_contains_real_call_to_second_methoddef() {
+    fn export_contains_real_call_to_second_methoddef() {
         let image = emit_i32_direct_call_export_assembly(I32ArithmeticOp::Add);
         let method = HEADERS_SIZE + CLR_HEADER_SIZE;
         assert_eq!(image[method + 3], 0x28);
         assert_eq!(
             &image[method + 4..method + 8],
             &HELPER_METHOD_TOKEN.to_le_bytes(),
+        );
+    }
+
+    #[test]
+    fn direct_call_export_uses_caller_owned_method_name() {
+        let image = emit_named_i32_direct_call_export_assembly(
+            I32ArithmeticOp::Add,
+            "ComputeResult",
+        );
+        assert!(
+            image
+                .windows("ComputeResult".len())
+                .any(|window| window == b"ComputeResult")
         );
     }
 }
