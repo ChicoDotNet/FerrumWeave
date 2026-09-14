@@ -34,10 +34,13 @@ pub(crate) fn lower_option_value_exports(
             let MonoItem::Fn(instance) = *item else {
                 continue;
             };
-            let symbol = tcx.symbol_name(instance).name;
-            if !symbol.starts_with("option_") {
+            if !tcx
+                .codegen_fn_attrs(instance.def_id())
+                .contains_extern_indicator()
+            {
                 continue;
             }
+            let symbol = tcx.symbol_name(instance).name;
 
             let mir = tcx.instance_mir(instance.def);
             let method_name = clr_method_name(symbol);
