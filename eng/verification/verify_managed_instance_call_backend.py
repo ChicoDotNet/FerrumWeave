@@ -4,7 +4,7 @@
 Rust source selects a narrow managed-instance marker and supplies an i32 payload
 that remains the public return value. FerrumWeave must observe the marker in MIR,
 emit a real CLR instance call (`callvirt`) against the selected managed type, and
-preserve source causality. The C# consumer stays fixed; only Rust source changes.
+preserve source causality, including the rustc-owned public export identity.
 `rustc_codegen_clr` is not part of this path.
 """
 
@@ -19,14 +19,14 @@ from pathlib import Path
 ASSEMBLY_FILE = "FerrumWeave.Generated.dll"
 
 
-def rust_source(marker: str, value: int) -> str:
+def rust_source(marker: str, value: int, export_name: str = "answer") -> str:
     return (
         "#[inline(never)]\n"
         "fn ferrumweave_system_object_to_string(value: i32) -> i32 { value }\n\n"
         "#[inline(never)]\n"
         "fn ferrumweave_system_text_string_builder_to_string(value: i32) -> i32 { value }\n\n"
         "#[no_mangle]\n"
-        f'pub extern "C" fn answer() -> i32 {{ {marker}({value}) }}\n'
+        f'pub extern "C" fn {export_name}() -> i32 {{ {marker}({value}) }}\n'
     )
 
 
@@ -55,14 +55,26 @@ def compile_source(toolchain: str, backend: Path, work: Path, name: str, source_
     return result, output
 
 
-def assert_instance_target(artifact: Path, required_strings: list[bytes]) -> None:
+def assert_instance_target(
+    artifact: Path, required_strings: list[bytes], method_name: str
+) -> None:
     data = artifact.read_bytes()
-    for expected in [b"MZ", b"BSJB", b"FerrumWeave.Generated", b"RustApi", b"Answer", b"ToString", *required_strings]:
+    for expected in [
+        b"MZ",
+        b"BSJB",
+        b"FerrumWeave.Generated",
+        b"RustApi",
+        method_name.encode("utf-8"),
+        b"ToString",
+        *required_strings,
+    ]:
         if expected not in data:
             raise AssertionError(f"managed instance artifact is missing {expected!r}")
 
 
-def execute_and_inspect(artifact: Path, expected: int, root: Path, name: str) -> None:
+def execute_and_inspect(
+    artifact: Path, expected: int, root: Path, name: str, method_name: str
+) -> None:
     consumer = root / f"consumer_{name}"
     consumer.mkdir()
     shutil.copyfile(artifact, consumer / ASSEMBLY_FILE)
@@ -84,10 +96,10 @@ def execute_and_inspect(artifact: Path, expected: int, root: Path, name: str) ->
     )
     (consumer / "Program.cs").write_text(
         "using System.Reflection;\n"
-        "var method = typeof(FerrumWeave.RustApi).GetMethod(\"Answer\", BindingFlags.Public | BindingFlags.Static)!;\n"
+        f'var method = typeof(FerrumWeave.RustApi).GetMethod("{method_name}", BindingFlags.Public | BindingFlags.Static)!;\n'
         "var il = method.GetMethodBody()!.GetILAsByteArray()!;\n"
-        "if (!il.Contains((byte)0x6F)) throw new Exception(\"Answer contains no managed callvirt opcode\");\n"
-        "Console.WriteLine(FerrumWeave.RustApi.Answer());\n",
+        f'if (!il.Contains((byte)0x6F)) throw new Exception("{method_name} contains no managed callvirt opcode");\n'
+        f"Console.WriteLine(FerrumWeave.RustApi.{method_name}());\n",
         encoding="utf-8",
     )
     run = subprocess.run(
@@ -117,22 +129,50 @@ def main() -> int:
         return 2
 
     cases = [
-        ("object_137", "ferrumweave_system_object_to_string", 137, [b"System", b"Object"]),
-        ("object_211", "ferrumweave_system_object_to_string", 211, [b"System", b"Object"]),
+        (
+            "object_137",
+            "ferrumweave_system_object_to_string",
+            137,
+            [b"System", b"Object"],
+            "answer",
+            "Answer",
+        ),
+        (
+            "object_211",
+            "ferrumweave_system_object_to_string",
+            211,
+            [b"System", b"Object"],
+            "answer",
+            "Answer",
+        ),
         (
             "string_builder_137",
             "ferrumweave_system_text_string_builder_to_string",
             137,
             [b"System", b"Text", b"StringBuilder"],
+            "answer",
+            "Answer",
+        ),
+        (
+            "renamed_object_137",
+            "ferrumweave_system_object_to_string",
+            137,
+            [b"System", b"Object"],
+            "compute_result",
+            "ComputeResult",
         ),
     ]
 
     with tempfile.TemporaryDirectory(prefix="ferrumweave-managed-instance-") as temp:
         work = Path(temp)
         images: dict[str, bytes] = {}
-        for name, marker, value, required_strings in cases:
+        for name, marker, value, required_strings, export_name, method_name in cases:
             result, artifact = compile_source(
-                args.toolchain, backend, work, name, rust_source(marker, value)
+                args.toolchain,
+                backend,
+                work,
+                name,
+                rust_source(marker, value, export_name),
             )
             if result.returncode != 0:
                 print(f"RED: FerrumWeave cannot lower managed instance marker {marker}({value})")
@@ -143,8 +183,8 @@ def main() -> int:
                 print(f"RED: compilation produced no managed instance artifact for {name}")
                 return 1
             try:
-                assert_instance_target(artifact, required_strings)
-                execute_and_inspect(artifact, value, work, name)
+                assert_instance_target(artifact, required_strings, method_name)
+                execute_and_inspect(artifact, value, work, name, method_name)
             except AssertionError as exc:
                 print(f"RED: {exc}")
                 return 1
@@ -156,9 +196,13 @@ def main() -> int:
         if images["object_137"] == images["string_builder_137"]:
             print("RED: changing only Rust receiver Object -> StringBuilder did not change the assembly")
             return 1
+        if images["object_137"] == images["renamed_object_137"]:
+            print("RED: changing only Rust export name answer -> compute_result did not change managed metadata")
+            return 1
 
     print("GREEN: FerrumWeave source-causally emits managed instance dispatch")
-    print("  Answer contains CLR callvirt and executes successfully under CoreCLR")
+    print("  Rust export identity answer -> compute_result changes public CLR metadata and consumer call")
+    print("  emitted export contains CLR callvirt and executes successfully under CoreCLR")
     print("  Rust receiver marker mutation Object -> StringBuilder changes managed metadata")
     print("  Rust payload mutation 137 -> 211 changes the executable observable")
     print("  rustc_codegen_clr was not used in the product path")
