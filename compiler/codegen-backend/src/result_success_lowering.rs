@@ -14,8 +14,9 @@ pub(crate) fn lower_result_success(tcx: TyCtxt<'_>) -> Result<Option<LoweredResu
     for cgu in codegen_units.codegen_units {
         for (item, _data) in cgu.items() {
             let MonoItem::Fn(instance) = *item else { continue; };
+            let attrs = tcx.codegen_fn_attrs(instance.def_id());
+            if !attrs.contains_extern_indicator() { continue; }
             let symbol = tcx.symbol_name(instance).name;
-            if !symbol.starts_with("result_") { continue; }
             let mir = tcx.instance_mir(instance.def);
             for block in mir.basic_blocks.iter() {
                 for statement in &block.statements {
