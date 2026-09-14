@@ -22,7 +22,7 @@ fn result_success_crosses_managed_boundary_from_rust_source() {
         fs::write(
             source_dir.join("main.rs"),
             format!(
-                "#[no_mangle]\npub extern \"C\" fn result_ok_i32() -> Result<i32, i32> {{ Ok({value}) }}\n"
+                "#[no_mangle]\npub extern \"C\" fn outcome_success() -> Result<i32, i32> {{ Ok({value}) }}\n"
             ),
         )
         .expect("write R07 Rust Result success source");
@@ -101,7 +101,7 @@ fn build_and_run_consumer(consumer: &Path, assembly_file: &str) -> Output {
     .expect("write R07 Result success C# consumer project");
     fs::write(
         consumer.join("Program.cs"),
-        "using System;\n\nint value = FerrumWeave.RustApi.ResultOkI32();\nConsole.WriteLine(value);\n",
+        "using System;\n\nint value = FerrumWeave.RustApi.OutcomeSuccess();\nConsole.WriteLine(value);\n",
     )
     .expect("write R07 Result success C# consumer source");
 
