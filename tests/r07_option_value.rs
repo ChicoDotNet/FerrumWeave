@@ -22,7 +22,7 @@ fn option_value_type_projects_to_nullable_from_rust_source() {
         fs::write(
             source_dir.join("main.rs"),
             format!(
-                "#[no_mangle]\npub extern \"C\" fn option_some_i32() -> Option<i32> {{ Some({value}) }}\n\n#[no_mangle]\npub extern \"C\" fn option_none_i32() -> Option<i32> {{ None }}\n"
+                "#[no_mangle]\npub extern \"C\" fn nullable_some() -> Option<i32> {{ Some({value}) }}\n\n#[no_mangle]\npub extern \"C\" fn nullable_none() -> Option<i32> {{ None }}\n"
             ),
         )
         .expect("write R07 Rust Option value source");
@@ -101,7 +101,7 @@ fn build_and_run_consumer(consumer: &Path, assembly_file: &str) -> Output {
     .expect("write R07 nullable C# consumer project");
     fs::write(
         consumer.join("Program.cs"),
-        "using System;\n\nint? some = FerrumWeave.RustApi.OptionSomeI32();\nint? none = FerrumWeave.RustApi.OptionNoneI32();\nConsole.WriteLine(some.HasValue ? some.Value : -1);\nConsole.WriteLine(none.HasValue ? none.Value : -1);\n",
+        "using System;\n\nint? some = FerrumWeave.RustApi.NullableSome();\nint? none = FerrumWeave.RustApi.NullableNone();\nConsole.WriteLine(some.HasValue ? some.Value : -1);\nConsole.WriteLine(none.HasValue ? none.Value : -1);\n",
     )
     .expect("write R07 nullable C# consumer source");
 
