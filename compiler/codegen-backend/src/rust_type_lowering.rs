@@ -3,7 +3,6 @@ use rustc_middle::{
     ty::{self, TyCtxt, TypingEnv},
 };
 
-const EXPORT_SYMBOL: &str = "answer";
 const CLR_NAMESPACE: &str = "FerrumWeave";
 
 pub(crate) struct LoweredRustInstanceType {
@@ -28,9 +27,13 @@ pub(crate) fn lower_constructible_i32_instance(
             let MonoItem::Fn(instance) = *item else {
                 continue;
             };
-            if tcx.symbol_name(instance).name != EXPORT_SYMBOL {
+            if !tcx
+                .codegen_fn_attrs(instance.def_id())
+                .contains_extern_indicator()
+            {
                 continue;
             }
+            let export_symbol = tcx.symbol_name(instance).name;
 
             let mir = tcx.instance_mir(instance.def);
             for block in mir.basic_blocks.iter() {
@@ -69,7 +72,7 @@ pub(crate) fn lower_constructible_i32_instance(
                 let callee_mir = tcx.instance_mir(ty::InstanceKind::Item(def_id));
                 if callee_mir.arg_count != 1 {
                     return Err(format!(
-                        "{EXPORT_SYMBOL} Rust instance projection requires a receiver-only method"
+                        "{export_symbol} Rust instance projection requires a receiver-only method"
                     ));
                 }
                 let Some(value) = lower_constant_i32_return(tcx, callee_mir)? else {
