@@ -22,7 +22,7 @@ fn option_reference_projection_is_rust_source_causal() {
         fs::write(
             source_dir.join("main.rs"),
             format!(
-                "#[no_mangle]\npub extern \"C\" fn option_some_string() -> Option<&'static str> {{ Some(\"{value}\") }}\n\n#[no_mangle]\npub extern \"C\" fn option_none_string() -> Option<&'static str> {{ None }}\n"
+                "#[no_mangle]\npub extern \"C\" fn reference_some() -> Option<&'static str> {{ Some(\"{value}\") }}\n\n#[no_mangle]\npub extern \"C\" fn reference_none() -> Option<&'static str> {{ None }}\n"
             ),
         )
         .expect("write R07 Rust Option reference source");
@@ -106,7 +106,7 @@ fn build_and_run_consumer(consumer: &Path, assembly_file: &str) -> Output {
     .expect("write R07 C# consumer project");
     fs::write(
         consumer.join("Program.cs"),
-        "using System;\n\nstring? some = FerrumWeave.RustApi.OptionSomeString();\nstring? none = FerrumWeave.RustApi.OptionNoneString();\nConsole.WriteLine(some ?? \"<null>\");\nConsole.WriteLine(none is null ? \"NULL\" : none);\n",
+        "using System;\n\nstring? some = FerrumWeave.RustApi.ReferenceSome();\nstring? none = FerrumWeave.RustApi.ReferenceNone();\nConsole.WriteLine(some ?? \"<null>\");\nConsole.WriteLine(none is null ? \"NULL\" : none);\n",
     )
     .expect("write R07 C# consumer source");
 
