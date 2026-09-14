@@ -22,7 +22,7 @@ fn result_failure_crosses_managed_boundary_from_rust_source() {
         fs::write(
             source_dir.join("main.rs"),
             format!(
-                "#[no_mangle]\npub extern \"C\" fn result_err_i32() -> Result<i32, i32> {{ Err({value}) }}\n"
+                "#[no_mangle]\npub extern \"C\" fn outcome_failure() -> Result<i32, i32> {{ Err({value}) }}\n"
             ),
         )
         .expect("write R07 Rust Result failure source");
@@ -106,7 +106,7 @@ fn build_and_run_consumer(consumer: &Path, assembly_file: &str) -> Output {
 
 try
 {
-    _ = FerrumWeave.RustApi.ResultErrI32();
+    _ = FerrumWeave.RustApi.OutcomeFailure();
     Console.WriteLine("NO_EXCEPTION");
 }
 catch (InvalidOperationException ex)
