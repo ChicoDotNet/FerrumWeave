@@ -6,8 +6,6 @@ use rustc_middle::{
     ty::{self, TyCtxt, TypingEnv},
 };
 
-const EXPORT_SYMBOL: &str = "answer";
-
 /// Recognize the narrow external-managed marker from rustc MIR.
 ///
 /// `Ok(None)` means this export is not the external-managed slice and lets the
@@ -22,9 +20,13 @@ pub(crate) fn lower_external_managed_transform(
             let MonoItem::Fn(instance) = *item else {
                 continue;
             };
-            if tcx.symbol_name(instance).name != EXPORT_SYMBOL {
+            if !tcx
+                .codegen_fn_attrs(instance.def_id())
+                .contains_extern_indicator()
+            {
                 continue;
             }
+            let export_symbol = tcx.symbol_name(instance).name;
 
             let mir = tcx.instance_mir(instance.def);
             for block in mir.basic_blocks.iter() {
@@ -52,7 +54,7 @@ pub(crate) fn lower_external_managed_transform(
                 }
                 if args.len() != 1 {
                     return Err(format!(
-                        "{EXPORT_SYMBOL} external managed marker requires exactly one i32 payload"
+                        "{export_symbol} external managed marker requires exactly one i32 payload"
                     ));
                 }
                 return lower_i32_constant_operand(tcx, &args[0].node).map(Some);
