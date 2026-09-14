@@ -20,12 +20,12 @@ GENERATED_ASSEMBLY = "FerrumWeave.Generated.dll"
 EXTERNAL_ASSEMBLY = "External.Managed.dll"
 
 
-def rust_source(value: int) -> str:
+def rust_source(value: int, export_name: str = "answer") -> str:
     return (
         "#[inline(never)]\n"
         "fn ferrumweave_external_managed_transform(value: i32) -> i32 { value }\n\n"
         "#[no_mangle]\n"
-        f'pub extern "C" fn answer() -> i32 {{ ferrumweave_external_managed_transform({value}) }}\n'
+        f'pub extern "C" fn {export_name}() -> i32 {{ ferrumweave_external_managed_transform({value}) }}\n'
     )
 
 
@@ -89,14 +89,14 @@ def compile_source(toolchain: str, backend: Path, work: Path, name: str, source_
     return result, output
 
 
-def assert_external_reference(artifact: Path) -> None:
+def assert_external_reference(artifact: Path, method_name: str) -> None:
     data = artifact.read_bytes()
     for expected in [
         b"MZ",
         b"BSJB",
         b"FerrumWeave.Generated",
         b"RustApi",
-        b"Answer",
+        method_name.encode("utf-8"),
         b"External.Managed",
         b"ExternalManaged",
         b"ExternalApi",
@@ -112,6 +112,7 @@ def execute_and_inspect(
     expected: int,
     root: Path,
     name: str,
+    method_name: str = "Answer",
 ) -> None:
     consumer = root / f"consumer_{name}"
     consumer.mkdir()
@@ -139,10 +140,10 @@ def execute_and_inspect(
     )
     (consumer / "Program.cs").write_text(
         "using System.Reflection;\n"
-        "var method = typeof(FerrumWeave.RustApi).GetMethod(\"Answer\", BindingFlags.Public | BindingFlags.Static)!;\n"
+        f'var method = typeof(FerrumWeave.RustApi).GetMethod("{method_name}", BindingFlags.Public | BindingFlags.Static)!;\n'
         "var il = method.GetMethodBody()!.GetILAsByteArray()!;\n"
-        "if (!il.Contains((byte)0x28)) throw new Exception(\"Answer must contain a managed call opcode\");\n"
-        "Console.WriteLine(FerrumWeave.RustApi.Answer());\n",
+        f'if (!il.Contains((byte)0x28)) throw new Exception("{method_name} must contain a managed call opcode");\n'
+        f"Console.WriteLine(FerrumWeave.RustApi.{method_name}());\n",
         encoding="utf-8",
     )
     run = subprocess.run(
@@ -198,7 +199,7 @@ def main() -> int:
                 print(f"RED: compilation produced no external managed artifact for {name}")
                 return 1
             try:
-                assert_external_reference(artifact)
+                assert_external_reference(artifact, "Answer")
                 execute_and_inspect(artifact, dependency, expected, work, name)
             except AssertionError as exc:
                 print(f"RED: {exc}")
@@ -209,10 +210,40 @@ def main() -> int:
             print("RED: changing only Rust payload 137 -> 211 did not change the assembly")
             return 1
 
+        renamed_result, renamed_artifact = compile_source(
+            args.toolchain,
+            backend,
+            work,
+            "renamed_export",
+            rust_source(137, "compute_result"),
+        )
+        if renamed_result.returncode != 0:
+            print("RED: changing only Rust export name answer -> compute_result broke external-managed lowering")
+            print(renamed_result.stdout)
+            print(renamed_result.stderr)
+            return 1
+        if not renamed_artifact.is_file():
+            print("RED: renamed Rust export produced no external managed artifact")
+            return 1
+        try:
+            assert_external_reference(renamed_artifact, "ComputeResult")
+            execute_and_inspect(
+                renamed_artifact,
+                dependency,
+                1137,
+                work,
+                "renamed_export",
+                "ComputeResult",
+            )
+        except AssertionError as exc:
+            print(f"RED: {exc}")
+            return 1
+
     print("GREEN: FerrumWeave source-causally consumes an independent managed assembly")
     print("  external C# dependency was compiled independently and held fixed")
-    print("  Answer contains a CLR call and External.Managed AssemblyRef/MemberRef metadata")
+    print("  exported method contains a CLR call and External.Managed AssemblyRef/MemberRef metadata")
     print("  Rust payload mutation 137 -> 211 changes artifact and observable 1137 -> 1211")
+    print("  Rust export mutation answer -> compute_result changes metadata and callable managed API")
     print("  artifact executes successfully with the dependency under CoreCLR")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
