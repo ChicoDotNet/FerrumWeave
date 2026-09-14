@@ -47,7 +47,7 @@ impl Drop for RustResource {{
 }}
 
 #[no_mangle]
-pub extern "C" fn answer() -> i32 {{
+pub extern "C" fn resource_probe() -> i32 {{
     let resource = RustResource::new();
     resource.release_count()
 }}
