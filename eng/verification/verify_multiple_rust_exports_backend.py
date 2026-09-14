@@ -73,8 +73,8 @@ def run_consumer(artifact: Path, root: Path) -> tuple[int, int]:
         'var alpha = type.GetMethod("AlphaValue");\n'
         'var beta = type.GetMethod("BetaValue");\n'
         'if (alpha is null || beta is null)\n'
-        '    throw new Exception($"missing exports: AlphaValue={alpha is not null}, BetaValue={beta is not null}");\n'
-        'Console.WriteLine($"{FerrumWeave.RustApi.AlphaValue()},{FerrumWeave.RustApi.BetaValue()}");\n',
+        '    throw new System.Exception($"missing exports: AlphaValue={alpha is not null}, BetaValue={beta is not null}");\n'
+        'System.Console.WriteLine($"{FerrumWeave.RustApi.AlphaValue()},{FerrumWeave.RustApi.BetaValue()}");\n',
         encoding="utf-8",
     )
     run = subprocess.run(
