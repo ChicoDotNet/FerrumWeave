@@ -19,14 +19,14 @@ from pathlib import Path
 ASSEMBLY_FILE = "FerrumWeave.Generated.dll"
 
 
-def rust_source(marker: str, value: int) -> str:
+def rust_source(marker: str, value: int, export_name: str = "answer") -> str:
     return (
         "#[inline(never)]\n"
         "fn ferrumweave_system_object_new(value: i32) -> i32 { value }\n\n"
         "#[inline(never)]\n"
         "fn ferrumweave_system_text_string_builder_new(value: i32) -> i32 { value }\n\n"
         "#[no_mangle]\n"
-        f'pub extern "C" fn answer() -> i32 {{ {marker}({value}) }}\n'
+        f'pub extern "C" fn {export_name}() -> i32 {{ {marker}({value}) }}\n'
     )
 
 
@@ -61,14 +61,32 @@ def compile_source(
     return result, output
 
 
-def assert_constructor_target(artifact: Path, required_strings: list[bytes]) -> None:
+def assert_constructor_target(
+    artifact: Path,
+    required_strings: list[bytes],
+    managed_export_name: str,
+) -> None:
     data = artifact.read_bytes()
-    for expected in [b"MZ", b"BSJB", b"FerrumWeave.Generated", b"RustApi", b"Answer", *required_strings]:
+    required = [
+        b"MZ",
+        b"BSJB",
+        b"FerrumWeave.Generated",
+        b"RustApi",
+        managed_export_name.encode("ascii"),
+        *required_strings,
+    ]
+    for expected in required:
         if expected not in data:
             raise AssertionError(f"managed construction artifact is missing {expected!r}")
 
 
-def execute_and_inspect(artifact: Path, expected: int, root: Path, name: str) -> None:
+def execute_and_inspect(
+    artifact: Path,
+    expected: int,
+    root: Path,
+    name: str,
+    managed_export_name: str,
+) -> None:
     consumer = root / f"consumer_{name}"
     consumer.mkdir()
     shutil.copyfile(artifact, consumer / ASSEMBLY_FILE)
@@ -90,10 +108,10 @@ def execute_and_inspect(artifact: Path, expected: int, root: Path, name: str) ->
     )
     (consumer / "Program.cs").write_text(
         "using System.Reflection;\n"
-        "var method = typeof(FerrumWeave.RustApi).GetMethod(\"Answer\", BindingFlags.Public | BindingFlags.Static)!;\n"
+        f'var method = typeof(FerrumWeave.RustApi).GetMethod("{managed_export_name}", BindingFlags.Public | BindingFlags.Static)!;\n'
         "var il = method.GetMethodBody()!.GetILAsByteArray()!;\n"
-        "if (!il.Contains((byte)0x73)) throw new Exception(\"Answer contains no managed newobj opcode\");\n"
-        "Console.WriteLine(FerrumWeave.RustApi.Answer());\n",
+        f'if (!il.Contains((byte)0x73)) throw new Exception("{managed_export_name} contains no managed newobj opcode");\n'
+        f"Console.WriteLine(FerrumWeave.RustApi.{managed_export_name}());\n",
         encoding="utf-8",
     )
     run = subprocess.run(
@@ -123,26 +141,50 @@ def main() -> int:
         return 2
 
     cases = [
-        ("object_137", "ferrumweave_system_object_new", 137, [b"System", b"Object", b".ctor"]),
-        ("object_211", "ferrumweave_system_object_new", 211, [b"System", b"Object", b".ctor"]),
+        (
+            "object_137",
+            "ferrumweave_system_object_new",
+            137,
+            "answer",
+            "Answer",
+            [b"System", b"Object", b".ctor"],
+        ),
+        (
+            "object_211",
+            "ferrumweave_system_object_new",
+            211,
+            "answer",
+            "Answer",
+            [b"System", b"Object", b".ctor"],
+        ),
         (
             "string_builder_137",
             "ferrumweave_system_text_string_builder_new",
             137,
+            "answer",
+            "Answer",
             [b"System", b"Text", b"StringBuilder", b".ctor"],
+        ),
+        (
+            "object_137_renamed",
+            "ferrumweave_system_object_new",
+            137,
+            "compute_result",
+            "ComputeResult",
+            [b"System", b"Object", b".ctor"],
         ),
     ]
 
     with tempfile.TemporaryDirectory(prefix="ferrumweave-managed-construction-") as temp:
         work = Path(temp)
         images: dict[str, bytes] = {}
-        for name, marker, value, required_strings in cases:
+        for name, marker, value, export_name, managed_export_name, required_strings in cases:
             result, artifact = compile_source(
                 args.toolchain,
                 backend,
                 work,
                 name,
-                rust_source(marker, value),
+                rust_source(marker, value, export_name),
             )
             if result.returncode != 0:
                 print(f"RED: FerrumWeave cannot lower managed construction marker {marker}({value})")
@@ -153,8 +195,8 @@ def main() -> int:
                 print(f"RED: compilation produced no managed construction artifact for {name}")
                 return 1
             try:
-                assert_constructor_target(artifact, required_strings)
-                execute_and_inspect(artifact, value, work, name)
+                assert_constructor_target(artifact, required_strings, managed_export_name)
+                execute_and_inspect(artifact, value, work, name, managed_export_name)
             except AssertionError as exc:
                 print(f"RED: {exc}")
                 return 1
@@ -166,11 +208,15 @@ def main() -> int:
         if images["object_137"] == images["string_builder_137"]:
             print("RED: changing only Rust constructor Object -> StringBuilder did not change the assembly")
             return 1
+        if images["object_137"] == images["object_137_renamed"]:
+            print("RED: changing only Rust export name answer -> compute_result did not change managed metadata")
+            return 1
 
     print("GREEN: FerrumWeave source-causally emits managed object construction")
-    print("  Answer contains CLR newobj and executes successfully under CoreCLR")
+    print("  exported method contains CLR newobj and executes successfully under CoreCLR")
     print("  Rust constructor marker mutation Object -> StringBuilder changes constructor metadata")
     print("  Rust payload mutation 137 -> 211 changes the executable observable")
+    print("  Rust export rename answer -> compute_result changes managed metadata and callable API")
     print("  rustc_codegen_clr was not used in the product path")
     return 0
 
