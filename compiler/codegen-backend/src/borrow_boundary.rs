@@ -7,7 +7,6 @@ use rustc_middle::{
 mod semantic_boundary;
 
 const BORROW_BOUNDARY_DIAGNOSTIC: &str = "FERRUMWEAVE_BORROW_BOUNDARY_REJECTED";
-const EXPORT_SYMBOL: &str = "answer";
 
 /// Reject Rust references that would escape FerrumWeave's currently supported managed boundary.
 ///
@@ -24,15 +23,20 @@ pub(crate) fn reject_escaping_borrows(tcx: TyCtxt<'_>) -> Result<(), String> {
             let MonoItem::Fn(instance) = *item else {
                 continue;
             };
-            if !instance.def_id().is_local() || tcx.symbol_name(instance).name != EXPORT_SYMBOL {
+            if !instance.def_id().is_local()
+                || !tcx
+                    .codegen_fn_attrs(instance.def_id())
+                    .contains_extern_indicator()
+            {
                 continue;
             }
 
+            let export_symbol = tcx.symbol_name(instance).name;
             let mir = tcx.instance_mir(instance.def);
             let return_ty = mir.local_decls[RETURN_PLACE].ty;
             if is_rust_borrow(return_ty) {
                 return Err(format!(
-                    "{BORROW_BOUNDARY_DIAGNOSTIC}: managed export `{EXPORT_SYMBOL}` returns Rust borrow `{return_ty:?}`; CLR reachability cannot preserve Rust borrow/lifetime guarantees"
+                    "{BORROW_BOUNDARY_DIAGNOSTIC}: managed export `{export_symbol}` returns Rust borrow `{return_ty:?}`; CLR reachability cannot preserve Rust borrow/lifetime guarantees"
                 ));
             }
 
@@ -40,7 +44,7 @@ pub(crate) fn reject_escaping_borrows(tcx: TyCtxt<'_>) -> Result<(), String> {
                 let argument_ty = mir.local_decls[argument].ty;
                 if is_rust_borrow(argument_ty) {
                     return Err(format!(
-                        "{BORROW_BOUNDARY_DIAGNOSTIC}: managed export `{EXPORT_SYMBOL}` accepts Rust borrow `{argument_ty:?}`; CLR reachability cannot preserve Rust borrow/lifetime guarantees"
+                        "{BORROW_BOUNDARY_DIAGNOSTIC}: managed export `{export_symbol}` accepts Rust borrow `{argument_ty:?}`; CLR reachability cannot preserve Rust borrow/lifetime guarantees"
                     ));
                 }
             }
