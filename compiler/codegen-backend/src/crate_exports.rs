@@ -1,7 +1,7 @@
 use ferrumweave_projection_types::managed_method_name_from_export_symbol;
 use rustc_middle::{
     mir::{ConstValue, Operand, Rvalue, StatementKind, RETURN_PLACE, mono::MonoItem},
-    ty::{TyCtxt, TypingEnv},
+    ty::{TyCtxt, TyKind, TypingEnv},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,7 +33,9 @@ pub(crate) fn lower_multiple_constant_exports(
             }
 
             let mir = tcx.instance_mir(instance.def);
-            if mir.arg_count != 0 || !mir.local_decls[RETURN_PLACE].ty.is_i32() {
+            if mir.arg_count != 0
+                || !matches!(mir.local_decls[RETURN_PLACE].ty.kind(), TyKind::Int(rustc_middle::ty::IntTy::I32))
+            {
                 continue;
             }
 
