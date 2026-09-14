@@ -6,7 +6,6 @@ use rustc_middle::{
     ty::{TyCtxt, TypingEnv},
 };
 
-const EXPORT_SYMBOL: &str = "answer";
 const CLR_NAMESPACE: &str = "FerrumWeave";
 
 pub(crate) struct LoweredDisposableResource {
@@ -35,7 +34,10 @@ pub(crate) fn lower_disposable_resource(
             let MonoItem::Fn(instance) = *item else {
                 continue;
             };
-            if tcx.symbol_name(instance).name == EXPORT_SYMBOL {
+            if tcx
+                .codegen_fn_attrs(instance.def_id())
+                .contains_extern_indicator()
+            {
                 saw_export = true;
             }
 
