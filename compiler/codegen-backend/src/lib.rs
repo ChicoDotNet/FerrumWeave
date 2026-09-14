@@ -12,12 +12,12 @@ extern crate rustc_span;
 use std::{any::Any, fs};
 use ferrumweave_cil::{
     emit_constructible_i32_instance_assembly, emit_disposable_resource_assembly,
-    emit_i32_export_with_external_managed_transform, emit_i32_export_with_managed_construction,
-    emit_i32_export_with_named_system_math_method_call, emit_i32_invalid_operation_export_assembly,
-    emit_named_i32_argument_export_assembly, emit_named_i32_arithmetic_export_assembly,
-    emit_named_i32_control_flow_export_assembly, emit_named_i32_direct_call_export_assembly,
-    emit_named_i32_export_assembly, emit_named_i32_export_with_managed_construction,
-    emit_named_i32_export_with_managed_instance_call,
+    emit_i32_export_with_managed_construction, emit_i32_export_with_named_system_math_method_call,
+    emit_i32_invalid_operation_export_assembly, emit_named_i32_argument_export_assembly,
+    emit_named_i32_arithmetic_export_assembly, emit_named_i32_control_flow_export_assembly,
+    emit_named_i32_direct_call_export_assembly, emit_named_i32_export_assembly,
+    emit_named_i32_export_with_external_managed_transform,
+    emit_named_i32_export_with_managed_construction, emit_named_i32_export_with_managed_instance_call,
     emit_named_i32_export_with_string_builder_length_property, emit_named_i32_method_export_assembly,
     emit_option_reference_export_assembly, emit_option_value_export_assembly,
 };
@@ -117,7 +117,9 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         } else if let Some(instance) = rust_instance {
             emit_constructible_i32_instance_assembly(assembly_name, instance.namespace, &instance.type_name, &instance.method_name, instance.value)
         } else if let Some(payload) = external_payload {
-            emit_i32_export_with_external_managed_transform(payload)
+            let export_method_name = managed_export_method_name(tcx)
+                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_export_with_external_managed_transform(payload, &export_method_name)
         } else {
             reject_unsupported_export_semantics(tcx).unwrap_or_else(|message| panic!("{message}"));
             reject_escaping_borrows(tcx).unwrap_or_else(|message| panic!("{message}"));
