@@ -16,8 +16,8 @@ fn rust_borrows_cannot_escape_the_managed_export_boundary() {
     fs::copy(template, rust_project.join("RustLibrary.rsproj")).expect("copy canonical rsproj");
 
     for source in [
-        "#[no_mangle]\npub extern \"C\" fn answer(value: &i32) -> &i32 { value }\n",
-        "#[no_mangle]\npub extern \"C\" fn answer(value: &mut i32) -> &mut i32 { value }\n",
+        "#[no_mangle]\npub extern \"C\" fn borrow_probe(value: &i32) -> &i32 { value }\n",
+        "#[no_mangle]\npub extern \"C\" fn borrow_probe(value: &mut i32) -> &mut i32 { value }\n",
     ] {
         clean_outputs(&rust_project);
         fs::write(source_dir.join("main.rs"), source).expect("write rejected Rust borrow source");
