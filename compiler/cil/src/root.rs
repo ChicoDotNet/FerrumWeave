@@ -10,6 +10,9 @@ pub use scalar_export::*;
 mod multi_scalar_export;
 pub use multi_scalar_export::*;
 
+mod heterogeneous_export;
+pub use heterogeneous_export::*;
+
 mod argument_export;
 pub use argument_export::*;
 
