@@ -1,5 +1,4 @@
 use ferrumweave_projection_types::managed_method_name_from_export_symbol;
-use rustc_index::Idx;
 use rustc_middle::{
     mir::{ConstValue, Operand, Rvalue, StatementKind, RETURN_PLACE, mono::MonoItem},
     ty::{TyCtxt, TyKind, TypingEnv},
@@ -54,7 +53,7 @@ fn direct_return_argument(mir: &rustc_middle::mir::Body<'_>) -> Option<u32> {
             if place.local != RETURN_PLACE || !place.projection.is_empty() { continue; }
             let Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) = rvalue else { continue; };
             if source.projection.is_empty() {
-                let local = source.local.index();
+                let local = source.local.as_usize();
                 if local >= 1 && local <= mir.arg_count { return u32::try_from(local - 1).ok(); }
             }
         }
@@ -62,7 +61,7 @@ fn direct_return_argument(mir: &rustc_middle::mir::Body<'_>) -> Option<u32> {
     None
 }
 
-fn direct_return_constant(tcx: TyCtxt<'_>, mir: &rustc_middle::mir::Body<'_>) -> Result<Option<i32>, String> {
+fn direct_return_constant<'tcx>(tcx: TyCtxt<'tcx>, mir: &rustc_middle::mir::Body<'tcx>) -> Result<Option<i32>, String> {
     for block in mir.basic_blocks.iter() {
         for statement in &block.statements {
             let StatementKind::Assign(assignment) = &statement.kind else { continue; };
