@@ -7,7 +7,7 @@ use rustc_middle::{
         BinOp, ConstValue, Operand, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
         RETURN_PLACE, mono::MonoItem,
     },
-    ty::{TyCtxt, TyKind, TypingEnv},
+    ty::{self, TyCtxt, TyKind, TypingEnv},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,6 +27,7 @@ pub(crate) enum LoweredCrateI32Export {
         true_argument: u8,
         false_argument: u8,
     },
+    DirectRustCall { method_name: String, operation: I32ArithmeticOp },
 }
 
 pub(crate) fn lower_heterogeneous_i32_exports(
@@ -47,7 +48,11 @@ pub(crate) fn lower_heterogeneous_i32_exports(
             } else if mir.arg_count == 1 && direct_return_argument(mir) == Some(0) {
                 Some(LoweredCrateI32Export::Argument { method_name, index: 0 })
             } else if mir.arg_count == 2 {
-                direct_return_arithmetic(mir)?.map(|operation| LoweredCrateI32Export::Arithmetic { method_name, operation })
+                if let Some(operation) = direct_rust_call(tcx, mir)? {
+                    Some(LoweredCrateI32Export::DirectRustCall { method_name, operation })
+                } else {
+                    direct_return_arithmetic(mir)?.map(|operation| LoweredCrateI32Export::Arithmetic { method_name, operation })
+                }
             } else if mir.arg_count == 3 {
                 direct_selector_control_flow(mir)?.map(|(predicate, true_argument, false_argument)| {
                     LoweredCrateI32Export::ControlFlow {
@@ -66,6 +71,7 @@ pub(crate) fn lower_heterogeneous_i32_exports(
                 LoweredCrateI32Export::Argument { .. } => 2,
                 LoweredCrateI32Export::Arithmetic { .. } => 4,
                 LoweredCrateI32Export::ControlFlow { .. } => 8,
+                LoweredCrateI32Export::DirectRustCall { .. } => 16,
             };
             shape_count |= bit;
             exports.push(lowered);
@@ -81,8 +87,30 @@ fn crate_export_name(export: &LoweredCrateI32Export) -> &str {
         LoweredCrateI32Export::Constant { method_name, .. }
         | LoweredCrateI32Export::Argument { method_name, .. }
         | LoweredCrateI32Export::Arithmetic { method_name, .. }
-        | LoweredCrateI32Export::ControlFlow { method_name, .. } => method_name,
+        | LoweredCrateI32Export::ControlFlow { method_name, .. }
+        | LoweredCrateI32Export::DirectRustCall { method_name, .. } => method_name,
     }
+}
+
+fn direct_rust_call(
+    tcx: TyCtxt<'_>,
+    mir: &rustc_middle::mir::Body<'_>,
+) -> Result<Option<I32ArithmeticOp>, String> {
+    for block in mir.basic_blocks.iter() {
+        let TerminatorKind::Call { func, args, destination, .. } = &block.terminator().kind else { continue; };
+        if destination.local != RETURN_PLACE || !destination.projection.is_empty() { continue; }
+        let func_ty = func.ty(&mir.local_decls, tcx);
+        let ty::FnDef(def_id, _) = *func_ty.kind() else { continue; };
+        if !def_id.is_local() || args.len() != 2 { continue; }
+        if direct_argument_index(mir, &args[0].node) != Some(0)
+            || direct_argument_index(mir, &args[1].node) != Some(1)
+        {
+            continue;
+        }
+        let callee_mir = tcx.instance_mir(ty::InstanceKind::Item(def_id));
+        return direct_return_arithmetic(callee_mir);
+    }
+    Ok(None)
 }
 
 fn direct_selector_control_flow(
