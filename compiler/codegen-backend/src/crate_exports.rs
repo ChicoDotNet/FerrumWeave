@@ -92,9 +92,9 @@ fn crate_export_name(export: &LoweredCrateI32Export) -> &str {
     }
 }
 
-fn direct_rust_call(
-    tcx: TyCtxt<'_>,
-    mir: &rustc_middle::mir::Body<'_>,
+fn direct_rust_call<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    mir: &rustc_middle::mir::Body<'tcx>,
 ) -> Result<Option<I32ArithmeticOp>, String> {
     for block in mir.basic_blocks.iter() {
         let TerminatorKind::Call { func, args, destination, .. } = &block.terminator().kind else { continue; };
