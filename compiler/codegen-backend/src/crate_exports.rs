@@ -1,111 +1,128 @@
 use std::collections::HashMap;
 
-use ferrumweave_cil::I32ArithmeticOp;
-use ferrumweave_projection_types::managed_method_name_from_export_symbol;
 use rustc_middle::{
-    mir::{BinOp, ConstValue, Operand, ProjectionElem, Rvalue, StatementKind, RETURN_PLACE, mono::MonoItem},
-    ty::{TyCtxt, TyKind, TypingEnv},
+    mir::{
+        mono::MonoItem, BinOp, Local, Operand, Rvalue, StatementKind, RETURN_PLACE,
+    },
+    ty::{IntTy, TyCtxt, TyKind},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LoweredConstantExport { pub(crate) method_name: String, pub(crate) value: i32 }
+use crate::{managed_contract::managed_export_name, mir_lowering::lower_exported_i32};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum LoweredCrateI32Export {
-    Constant { method_name: String, value: i32 },
-    Argument { method_name: String, index: u32 },
-    Arithmetic { method_name: String, operation: I32ArithmeticOp },
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CrateI32Arithmetic {
+    Add { left: usize, right: usize },
+    Sub { left: usize, right: usize },
 }
 
-pub(crate) fn lower_heterogeneous_i32_exports(tcx: TyCtxt<'_>) -> Result<Option<Vec<LoweredCrateI32Export>>, String> {
-    let codegen_units = tcx.collect_and_partition_mono_items(());
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LoweredCrateI32Export {
+    Constant { method_name: String, value: i32 },
+    Argument { method_name: String, argument: usize },
+    Arithmetic { method_name: String, operation: CrateI32Arithmetic },
+}
+
+pub fn lower_crate_i32_exports(tcx: TyCtxt<'_>) -> Result<Vec<LoweredCrateI32Export>, String> {
+    let mono_items = tcx.collect_and_partition_mono_items(()).0;
     let mut exports = Vec::new();
-    let mut shape_count = 0_u8;
-    for cgu in codegen_units.codegen_units {
-        for (item, _data) in cgu.items() {
-            let MonoItem::Fn(instance) = *item else { continue; };
-            if !tcx.codegen_fn_attrs(instance.def_id()).contains_extern_indicator() { continue; }
-            let mir = tcx.instance_mir(instance.def);
-            if !matches!(mir.local_decls[RETURN_PLACE].ty.kind(), TyKind::Int(rustc_middle::ty::IntTy::I32)) { continue; }
-            let method_name = managed_method_name_from_export_symbol(tcx.symbol_name(instance).name.as_ref());
-            let lowered = if mir.arg_count == 0 {
-                direct_return_constant(tcx, mir)?.map(|value| LoweredCrateI32Export::Constant { method_name, value })
-            } else if mir.arg_count == 1 && direct_return_argument(mir) == Some(0) {
-                Some(LoweredCrateI32Export::Argument { method_name, index: 0 })
-            } else if mir.arg_count == 2 {
-                direct_return_arithmetic(mir)?.map(|operation| LoweredCrateI32Export::Arithmetic { method_name, operation })
-            } else {
-                None
-            };
-            let Some(lowered) = lowered else { continue; };
-            let bit = match lowered {
-                LoweredCrateI32Export::Constant { .. } => 1,
-                LoweredCrateI32Export::Argument { .. } => 2,
-                LoweredCrateI32Export::Arithmetic { .. } => 4,
-            };
-            shape_count |= bit;
-            exports.push(lowered);
+
+    for mono_item in mono_items.iter() {
+        let MonoItem::Fn(instance) = mono_item else { continue; };
+        let def_id = instance.def_id();
+        let Some(export_name) = managed_export_name(tcx, def_id) else { continue; };
+        let signature = tcx.fn_sig(def_id).instantiate_identity().skip_binder();
+        if !matches!(signature.output().kind(), TyKind::Int(IntTy::I32)) { continue; }
+        if !signature.inputs().iter().all(|input| matches!(input.kind(), TyKind::Int(IntTy::I32))) {
+            continue;
+        }
+
+        let mir = tcx.instance_mir(instance.def);
+        if signature.inputs().is_empty() {
+            if let Some(value) = direct_return_constant(tcx, mir)? {
+                exports.push(LoweredCrateI32Export::Constant { method_name: export_name, value });
+            }
+            continue;
+        }
+
+        if signature.inputs().len() == 1 {
+            if let Some(argument) = direct_return_argument(mir) {
+                exports.push(LoweredCrateI32Export::Argument { method_name: export_name, argument });
+            }
+            continue;
+        }
+
+        if signature.inputs().len() == 2 {
+            if let Some(operation) = direct_return_arithmetic(mir)? {
+                exports.push(LoweredCrateI32Export::Arithmetic { method_name: export_name, operation });
+            }
         }
     }
-    if exports.len() < 2 || shape_count.count_ones() < 2 { return Ok(None); }
-    exports.sort_by(|left, right| crate_export_name(left).cmp(crate_export_name(right)));
-    Ok(Some(exports))
+
+    Ok(exports)
 }
 
-fn crate_export_name(export: &LoweredCrateI32Export) -> &str {
-    match export {
-        LoweredCrateI32Export::Constant { method_name, .. }
-        | LoweredCrateI32Export::Argument { method_name, .. }
-        | LoweredCrateI32Export::Arithmetic { method_name, .. } => method_name,
+pub fn lower_multiple_constant_exports(tcx: TyCtxt<'_>) -> Result<Vec<(String, i32)>, String> {
+    let mono_items = tcx.collect_and_partition_mono_items(()).0;
+    let mut exports = Vec::new();
+    for mono_item in mono_items.iter() {
+        let MonoItem::Fn(instance) = mono_item else { continue; };
+        let def_id = instance.def_id();
+        let Some(export_name) = managed_export_name(tcx, def_id) else { continue; };
+        let signature = tcx.fn_sig(def_id).instantiate_identity().skip_binder();
+        if !signature.inputs().is_empty() || !matches!(signature.output().kind(), TyKind::Int(IntTy::I32)) {
+            continue;
+        }
+        if let Some(lowered) = lower_exported_i32(tcx)? {
+            if lowered.method_name == export_name {
+                exports.push((export_name, lowered.value));
+            }
+        }
     }
+    Ok(exports)
 }
 
-fn direct_return_argument(mir: &rustc_middle::mir::Body<'_>) -> Option<u32> {
+fn direct_return_argument(mir: &rustc_middle::mir::Body<'_>) -> Option<usize> {
+    let mut aliases = HashMap::<Local, Local>::new();
     for block in mir.basic_blocks.iter() {
         for statement in &block.statements {
             let StatementKind::Assign(assignment) = &statement.kind else { continue; };
             let (place, rvalue) = assignment.as_ref();
-            if place.local != RETURN_PLACE || !place.projection.is_empty() { continue; }
-            let Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) = rvalue else { continue; };
-            if source.projection.is_empty() {
-                let local = source.local.as_usize();
-                if local >= 1 && local <= mir.arg_count { return u32::try_from(local - 1).ok(); }
-            }
+            if !place.projection.is_empty() { continue; }
+            let Rvalue::Use(operand) = rvalue else { continue; };
+            let Some(argument) = operand_place(operand) else { continue; };
+            if !argument.projection.is_empty() { continue; }
+            aliases.insert(place.local, argument.local);
         }
+    }
+    let mut local = RETURN_PLACE;
+    for _ in 0..=mir.local_decls.len() {
+        if let Some(index) = mir.args_iter().position(|argument| argument == local) { return Some(index); }
+        let Some(next) = aliases.get(&local) else { break; };
+        local = *next;
     }
     None
 }
 
-fn direct_return_arithmetic(mir: &rustc_middle::mir::Body<'_>) -> Result<Option<I32ArithmeticOp>, String> {
-    let mut aliases = HashMap::new();
-    let mut arithmetic = HashMap::new();
+fn direct_return_arithmetic(mir: &rustc_middle::mir::Body<'_>) -> Result<Option<CrateI32Arithmetic>, String> {
+    let mut aliases = HashMap::<Local, Local>::new();
+    let mut arithmetic = HashMap::<Local, CrateI32Arithmetic>::new();
     for block in mir.basic_blocks.iter() {
         for statement in &block.statements {
             let StatementKind::Assign(assignment) = &statement.kind else { continue; };
             let (place, rvalue) = assignment.as_ref();
             if !place.projection.is_empty() { continue; }
             match rvalue {
-                Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) if source.projection.is_empty() => {
-                    aliases.insert(place.local, source.local);
+                Rvalue::Use(operand) => {
+                    let Some(source) = operand_place(operand) else { continue; };
+                    if source.projection.is_empty() { aliases.insert(place.local, source.local); }
                 }
-                Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) if source.projection.len() == 1 => {
-                    if let ProjectionElem::Field(field, _) = source.projection[0] {
-                        if field.index() == 0 {
-                            if let Some(operation) = arithmetic.get(&source.local).copied() {
-                                arithmetic.insert(place.local, operation);
-                            }
-                        }
-                    }
-                }
-                Rvalue::BinaryOp(operation, operands) => {
-                    let (left, right) = operands.as_ref();
-                    if direct_argument_index(mir, left) != Some(0) || direct_argument_index(mir, right) != Some(1) {
-                        continue;
-                    }
-                    let operation = match operation {
-                        BinOp::Add | BinOp::AddWithOverflow => I32ArithmeticOp::Add,
-                        BinOp::Sub | BinOp::SubWithOverflow => I32ArithmeticOp::Subtract,
-                        other => return Err(format!("unsupported crate-level i32 arithmetic operation {other:?}")),
+                Rvalue::BinaryOp(operator, operands) | Rvalue::CheckedBinaryOp(operator, operands) => {
+                    let Some(left) = direct_argument_index(mir, &operands.0) else { continue; };
+                    let Some(right) = direct_argument_index(mir, &operands.1) else { continue; };
+                    let operation = match operator {
+                        BinOp::Add => CrateI32Arithmetic::Add { left, right },
+                        BinOp::Sub => CrateI32Arithmetic::Sub { left, right },
+                        _ => continue,
                     };
                     arithmetic.insert(place.local, operation);
                 }
@@ -123,7 +140,7 @@ fn direct_return_arithmetic(mir: &rustc_middle::mir::Body<'_>) -> Result<Option<
 }
 
 fn direct_argument_index(mir: &rustc_middle::mir::Body<'_>, operand: &Operand<'_>) -> Option<usize> {
-    let Operand::Copy(place) | Operand::Move(place) = operand else { return None; };
+    let (Operand::Copy(place) | Operand::Move(place)) = operand else { return None; };
     if !place.projection.is_empty() { return None; }
     mir.args_iter().position(|argument| argument == place.local)
 }
@@ -135,33 +152,19 @@ fn direct_return_constant<'tcx>(tcx: TyCtxt<'tcx>, mir: &rustc_middle::mir::Body
             let (place, rvalue) = assignment.as_ref();
             if place.local != RETURN_PLACE || !place.projection.is_empty() { continue; }
             let Rvalue::Use(operand) = rvalue else { continue; };
-            if matches!(operand, Operand::Constant(_)) { return lower_i32_constant_operand(tcx, operand).map(Some); }
+            let Operand::Constant(constant) = operand else { continue; };
+            let scalar = constant.const_.eval(tcx, rustc_middle::ty::TypingEnv::fully_monomorphized()).map_err(|error| format!("failed to evaluate crate export constant: {error:?}"))?;
+            if let rustc_middle::mir::ConstValue::Scalar(value) = scalar {
+                return value.to_scalar_int().map(|integer| Some(integer.to_i32())).map_err(|error| format!("crate export constant is not i32: {error:?}"));
+            }
         }
     }
     Ok(None)
 }
 
-pub(crate) fn lower_multiple_constant_exports(tcx: TyCtxt<'_>) -> Result<Option<Vec<LoweredConstantExport>>, String> {
-    let codegen_units = tcx.collect_and_partition_mono_items(());
-    let mut exports = Vec::new();
-    for cgu in codegen_units.codegen_units {
-        for (item, _data) in cgu.items() {
-            let MonoItem::Fn(instance) = *item else { continue; };
-            if !tcx.codegen_fn_attrs(instance.def_id()).contains_extern_indicator() { continue; }
-            let mir = tcx.instance_mir(instance.def);
-            if mir.arg_count != 0 || !matches!(mir.local_decls[RETURN_PLACE].ty.kind(), TyKind::Int(rustc_middle::ty::IntTy::I32)) { continue; }
-            let Some(value) = direct_return_constant(tcx, mir)? else { continue; };
-            exports.push(LoweredConstantExport { method_name: managed_method_name_from_export_symbol(tcx.symbol_name(instance).name.as_ref()), value });
-        }
+fn operand_place<'tcx>(operand: &'tcx Operand<'tcx>) -> Option<&'tcx rustc_middle::mir::Place<'tcx>> {
+    match operand {
+        Operand::Copy(place) | Operand::Move(place) => Some(place),
+        Operand::Constant(_) => None,
     }
-    if exports.len() < 2 { return Ok(None); }
-    exports.sort_by(|left, right| left.method_name.cmp(&right.method_name));
-    Ok(Some(exports))
-}
-
-fn lower_i32_constant_operand<'tcx>(tcx: TyCtxt<'tcx>, operand: &Operand<'tcx>) -> Result<i32, String> {
-    let Operand::Constant(constant) = operand else { return Err(format!("expected constant i32 MIR operand, found {operand:?}")); };
-    let evaluated = constant.const_.eval(tcx, TypingEnv::fully_monomorphized(), constant.span).map_err(|_| "could not evaluate i32 constant from MIR".to_owned())?;
-    let ConstValue::Scalar(scalar) = evaluated else { return Err(format!("MIR constant is not a scalar: {evaluated:?}")); };
-    scalar.to_i32().report_err().map_err(|_| "MIR scalar is not a valid i32".to_owned())
 }
