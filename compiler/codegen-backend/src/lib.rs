@@ -97,6 +97,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
                 let exports: Vec<I32ExportBody<'_>> = exports.iter().map(|export| match export {
                     LoweredCrateI32Export::Constant { method_name, value } => I32ExportBody::Constant { method_name, value: *value },
                     LoweredCrateI32Export::Argument { method_name, index } => I32ExportBody::Argument { method_name, index: *index },
+                    LoweredCrateI32Export::Arithmetic { method_name, operation } => I32ExportBody::Arithmetic { method_name, operation: *operation },
                 }).collect();
                 emit_named_i32_exports_assembly(assembly_name, "FerrumWeave", "RustApi", &exports)
             } else {
