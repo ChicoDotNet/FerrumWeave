@@ -4,6 +4,7 @@
 extern crate rustc_codegen_ssa;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
+extern crate rustc_index;
 extern crate rustc_metadata;
 extern crate rustc_middle;
 extern crate rustc_session;
@@ -11,12 +12,12 @@ extern crate rustc_span;
 
 use std::{any::Any, fs};
 use ferrumweave_cil::{
-    I32ConstantExport, emit_constructible_i32_instance_assembly, emit_disposable_resource_assembly,
-    emit_i32_export_with_managed_construction, emit_i32_export_with_named_system_math_method_call,
+    I32ConstantExport, I32ExportBody, emit_constructible_i32_instance_assembly,
+    emit_disposable_resource_assembly, emit_i32_export_with_named_system_math_method_call,
     emit_i32_invalid_operation_export_assembly, emit_named_i32_argument_export_assembly,
     emit_named_i32_arithmetic_export_assembly, emit_named_i32_constant_exports_assembly,
     emit_named_i32_control_flow_export_assembly, emit_named_i32_direct_call_export_assembly,
-    emit_named_i32_export_assembly, emit_named_i32_export_with_external_managed_transform,
+    emit_named_i32_exports_assembly, emit_named_i32_export_with_external_managed_transform,
     emit_named_i32_export_with_managed_construction, emit_named_i32_export_with_managed_instance_call,
     emit_named_i32_export_with_string_builder_length_property, emit_named_i32_method_export_assembly,
     emit_option_reference_export_assembly, emit_option_value_export_assembly,
@@ -42,7 +43,7 @@ mod result_success_lowering;
 mod rust_type_lowering;
 mod semantic_boundary;
 use borrow_boundary::reject_escaping_borrows;
-use crate_exports::lower_multiple_constant_exports;
+use crate_exports::{LoweredCrateI32Export, lower_heterogeneous_i32_exports, lower_multiple_constant_exports};
 use disposable_resource_lowering::lower_disposable_resource;
 use export_identity::managed_export_method_name;
 use external_managed_lowering::lower_external_managed_transform;
@@ -65,43 +66,16 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
     fn codegen_crate<'a>(&self, tcx: TyCtxt<'_>) -> Box<dyn Any> {
         reject_direct_uncontained_panics(tcx).unwrap_or_else(|message| panic!("{message}"));
         let assembly_name = tcx.sess.opts.crate_name.as_deref().unwrap_or("FerrumWeave.Generated");
-        let result_failure = lower_result_failure(tcx)
-            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-        let result_success = if result_failure.is_none() {
-            lower_result_success(tcx)
-                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
-        } else {
-            None
-        };
-        let option_value = if result_failure.is_none() && result_success.is_none() {
-            lower_option_value_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
-        } else { None };
-        let option_reference = if result_failure.is_none() && result_success.is_none() && option_value.is_none() {
-            lower_option_reference_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
-        } else { None };
-        let disposable_resource = lower_disposable_resource(tcx)
-            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-        let rust_instance = if disposable_resource.is_none() {
-            lower_constructible_i32_instance(tcx)
-                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
-        } else {
-            None
-        };
-        let external_payload = if disposable_resource.is_none() {
-            lower_external_managed_transform(tcx)
-                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"))
-        } else {
-            None
-        };
+        let result_failure = lower_result_failure(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+        let result_success = if result_failure.is_none() { lower_result_success(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}")) } else { None };
+        let option_value = if result_failure.is_none() && result_success.is_none() { lower_option_value_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}")) } else { None };
+        let option_reference = if result_failure.is_none() && result_success.is_none() && option_value.is_none() { lower_option_reference_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}")) } else { None };
+        let disposable_resource = lower_disposable_resource(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+        let rust_instance = if disposable_resource.is_none() { lower_constructible_i32_instance(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}")) } else { None };
+        let external_payload = if disposable_resource.is_none() { lower_external_managed_transform(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}")) } else { None };
 
         let image = if let Some(result) = result_failure {
-            emit_i32_invalid_operation_export_assembly(
-                assembly_name,
-                "FerrumWeave",
-                "RustApi",
-                &result.method_name,
-                &result.value.to_string(),
-            )
+            emit_i32_invalid_operation_export_assembly(assembly_name, "FerrumWeave", "RustApi", &result.method_name, &result.value.to_string())
         } else if let Some(result) = result_success {
             emit_named_i32_method_export_assembly(assembly_name, "FerrumWeave", "RustApi", &result.method_name, result.value)
         } else if let Some(option) = option_value {
@@ -109,111 +83,29 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
         } else if let Some(option) = option_reference {
             emit_option_reference_export_assembly(assembly_name, option.namespace, option.type_name, &option.some_method_name, &option.none_method_name, &option.some_value)
         } else if let Some(resource) = disposable_resource {
-            emit_disposable_resource_assembly(
-                assembly_name,
-                resource.namespace,
-                &resource.type_name,
-                resource.seed,
-                resource.release_increment,
-            )
+            emit_disposable_resource_assembly(assembly_name, resource.namespace, &resource.type_name, resource.seed, resource.release_increment)
         } else if let Some(instance) = rust_instance {
             emit_constructible_i32_instance_assembly(assembly_name, instance.namespace, &instance.type_name, &instance.method_name, instance.value)
         } else if let Some(payload) = external_payload {
-            let export_method_name = managed_export_method_name(tcx)
-                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            let export_method_name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
             emit_named_i32_export_with_external_managed_transform(payload, &export_method_name)
         } else {
             reject_unsupported_export_semantics(tcx).unwrap_or_else(|message| panic!("{message}"));
             reject_escaping_borrows(tcx).unwrap_or_else(|message| panic!("{message}"));
-            let crate_exports = lower_multiple_constant_exports(tcx)
-                .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-            if let Some(exports) = crate_exports {
-                let exports: Vec<I32ConstantExport<'_>> = exports
-                    .iter()
-                    .map(|export| I32ConstantExport {
-                        method_name: &export.method_name,
-                        value: export.value,
-                    })
-                    .collect();
-                emit_named_i32_constant_exports_assembly(
-                    assembly_name,
-                    "FerrumWeave",
-                    "RustApi",
-                    &exports,
-                )
+            let heterogeneous = lower_heterogeneous_i32_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            if let Some(exports) = heterogeneous {
+                let exports: Vec<I32ExportBody<'_>> = exports.iter().map(|export| match export {
+                    LoweredCrateI32Export::Constant { method_name, value } => I32ExportBody::Constant { method_name, value: *value },
+                    LoweredCrateI32Export::Argument { method_name, index } => I32ExportBody::Argument { method_name, index: *index },
+                }).collect();
+                emit_named_i32_exports_assembly(assembly_name, "FerrumWeave", "RustApi", &exports)
             } else {
-                let lowered = lower_exported_i32(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                match lowered {
-                    LoweredI32Export::Constant(value) => {
-                        let export_method_name = managed_export_method_name(tcx)
-                            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                        emit_named_i32_method_export_assembly(
-                            assembly_name,
-                            "FerrumWeave",
-                            "RustApi",
-                            &export_method_name,
-                            value,
-                        )
-                    }
-                    LoweredI32Export::Argument(index) => {
-                        let export_method_name = managed_export_method_name(tcx)
-                            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                        emit_named_i32_argument_export_assembly(index, &export_method_name)
-                    }
-                    LoweredI32Export::Arithmetic(operation) => {
-                        let export_method_name = managed_export_method_name(tcx)
-                            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                        emit_named_i32_arithmetic_export_assembly(operation, &export_method_name)
-                    }
-                    LoweredI32Export::ControlFlow { predicate, true_argument, false_argument } => {
-                        let export_method_name = managed_export_method_name(tcx)
-                            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                        emit_named_i32_control_flow_export_assembly(
-                            predicate,
-                            true_argument,
-                            false_argument,
-                            &export_method_name,
-                        )
-                    }
-                    LoweredI32Export::DirectRustCall(operation) => {
-                        let export_method_name = managed_export_method_name(tcx)
-                            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                        emit_named_i32_direct_call_export_assembly(operation, &export_method_name)
-                    }
-                    LoweredI32Export::SystemMath { export_method_name, method, argument } => {
-                        emit_i32_export_with_named_system_math_method_call(
-                            assembly_name,
-                            &export_method_name,
-                            method,
-                            argument,
-                        )
-                    }
-                    LoweredI32Export::ManagedConstruction { constructor, payload } => {
-                        let export_method_name = managed_export_method_name(tcx)
-                            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                        emit_named_i32_export_with_managed_construction(
-                            constructor,
-                            payload,
-                            &export_method_name,
-                        )
-                    }
-                    LoweredI32Export::ManagedInstance { receiver, payload } => {
-                        let export_method_name = managed_export_method_name(tcx)
-                            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                        emit_named_i32_export_with_managed_instance_call(
-                            receiver,
-                            payload,
-                            &export_method_name,
-                        )
-                    }
-                    LoweredI32Export::ManagedStringBuilderLength { payload } => {
-                        let export_method_name = managed_export_method_name(tcx)
-                            .unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
-                        emit_named_i32_export_with_string_builder_length_property(
-                            payload,
-                            &export_method_name,
-                        )
-                    }
+                let crate_exports = lower_multiple_constant_exports(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+                if let Some(exports) = crate_exports {
+                    let exports: Vec<I32ConstantExport<'_>> = exports.iter().map(|export| I32ConstantExport { method_name: &export.method_name, value: export.value }).collect();
+                    emit_named_i32_constant_exports_assembly(assembly_name, "FerrumWeave", "RustApi", &exports)
+                } else {
+                    emit_single_export(tcx, assembly_name)
                 }
             }
         };
@@ -235,8 +127,46 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
 
     fn link(&self, _sess: &Session, codegen_results: CodegenResults, _metadata: EncodedMetadata, outputs: &OutputFilenames) {
         let source = codegen_results.modules.iter().find_map(|module| module.object.as_ref()).expect("FerrumWeave link phase did not receive a managed artifact");
-        let destination = outputs.path(OutputType::Exe);
-        fs::copy(source, destination.as_path()).expect("FerrumWeave could not publish the managed assembly");
+        fs::copy(source, outputs.path(OutputType::Exe).as_path()).expect("FerrumWeave could not publish the managed assembly");
+    }
+}
+
+fn emit_single_export(tcx: TyCtxt<'_>, assembly_name: &str) -> Vec<u8> {
+    let lowered = lower_exported_i32(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+    match lowered {
+        LoweredI32Export::Constant(value) => {
+            let name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_method_export_assembly(assembly_name, "FerrumWeave", "RustApi", &name, value)
+        }
+        LoweredI32Export::Argument(index) => {
+            let name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_argument_export_assembly(index, &name)
+        }
+        LoweredI32Export::Arithmetic(operation) => {
+            let name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_arithmetic_export_assembly(operation, &name)
+        }
+        LoweredI32Export::ControlFlow { predicate, true_argument, false_argument } => {
+            let name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_control_flow_export_assembly(predicate, true_argument, false_argument, &name)
+        }
+        LoweredI32Export::DirectRustCall(operation) => {
+            let name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_direct_call_export_assembly(operation, &name)
+        }
+        LoweredI32Export::SystemMath { export_method_name, method, argument } => emit_i32_export_with_named_system_math_method_call(assembly_name, &export_method_name, method, argument),
+        LoweredI32Export::ManagedConstruction { constructor, payload } => {
+            let name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_export_with_managed_construction(constructor, payload, &name)
+        }
+        LoweredI32Export::ManagedInstance { receiver, payload } => {
+            let name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_export_with_managed_instance_call(receiver, payload, &name)
+        }
+        LoweredI32Export::ManagedStringBuilderLength { payload } => {
+            let name = managed_export_method_name(tcx).unwrap_or_else(|message| panic!("FERRUMWEAVE_MIR_LOWERING_FAILED: {message}"));
+            emit_named_i32_export_with_string_builder_length_property(payload, &name)
+        }
     }
 }
 
