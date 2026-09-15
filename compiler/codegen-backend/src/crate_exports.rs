@@ -1,23 +1,37 @@
 use std::collections::HashMap;
 
-use ferrumweave_cil::I32ArithmeticOp;
+use ferrumweave_cil::{I32ArithmeticOp, I32ZeroPredicate};
 use ferrumweave_projection_types::managed_method_name_from_export_symbol;
 use rustc_middle::{
-    mir::{BinOp, ConstValue, Operand, ProjectionElem, Rvalue, StatementKind, RETURN_PLACE, mono::MonoItem},
+    mir::{
+        BinOp, ConstValue, Operand, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
+        RETURN_PLACE, mono::MonoItem,
+    },
     ty::{TyCtxt, TyKind, TypingEnv},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LoweredConstantExport { pub(crate) method_name: String, pub(crate) value: i32 }
+pub(crate) struct LoweredConstantExport {
+    pub(crate) method_name: String,
+    pub(crate) value: i32,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum LoweredCrateI32Export {
     Constant { method_name: String, value: i32 },
     Argument { method_name: String, index: u32 },
     Arithmetic { method_name: String, operation: I32ArithmeticOp },
+    ControlFlow {
+        method_name: String,
+        predicate: I32ZeroPredicate,
+        true_argument: u8,
+        false_argument: u8,
+    },
 }
 
-pub(crate) fn lower_heterogeneous_i32_exports(tcx: TyCtxt<'_>) -> Result<Option<Vec<LoweredCrateI32Export>>, String> {
+pub(crate) fn lower_heterogeneous_i32_exports(
+    tcx: TyCtxt<'_>,
+) -> Result<Option<Vec<LoweredCrateI32Export>>, String> {
     let codegen_units = tcx.collect_and_partition_mono_items(());
     let mut exports = Vec::new();
     let mut shape_count = 0_u8;
@@ -34,6 +48,15 @@ pub(crate) fn lower_heterogeneous_i32_exports(tcx: TyCtxt<'_>) -> Result<Option<
                 Some(LoweredCrateI32Export::Argument { method_name, index: 0 })
             } else if mir.arg_count == 2 {
                 direct_return_arithmetic(mir)?.map(|operation| LoweredCrateI32Export::Arithmetic { method_name, operation })
+            } else if mir.arg_count == 3 {
+                direct_selector_control_flow(mir)?.map(|(predicate, true_argument, false_argument)| {
+                    LoweredCrateI32Export::ControlFlow {
+                        method_name,
+                        predicate,
+                        true_argument,
+                        false_argument,
+                    }
+                })
             } else {
                 None
             };
@@ -42,6 +65,7 @@ pub(crate) fn lower_heterogeneous_i32_exports(tcx: TyCtxt<'_>) -> Result<Option<
                 LoweredCrateI32Export::Constant { .. } => 1,
                 LoweredCrateI32Export::Argument { .. } => 2,
                 LoweredCrateI32Export::Arithmetic { .. } => 4,
+                LoweredCrateI32Export::ControlFlow { .. } => 8,
             };
             shape_count |= bit;
             exports.push(lowered);
@@ -56,8 +80,69 @@ fn crate_export_name(export: &LoweredCrateI32Export) -> &str {
     match export {
         LoweredCrateI32Export::Constant { method_name, .. }
         | LoweredCrateI32Export::Argument { method_name, .. }
-        | LoweredCrateI32Export::Arithmetic { method_name, .. } => method_name,
+        | LoweredCrateI32Export::Arithmetic { method_name, .. }
+        | LoweredCrateI32Export::ControlFlow { method_name, .. } => method_name,
     }
+}
+
+fn direct_selector_control_flow(
+    mir: &rustc_middle::mir::Body<'_>,
+) -> Result<Option<(I32ZeroPredicate, u8, u8)>, String> {
+    for block in mir.basic_blocks.iter() {
+        let TerminatorKind::SwitchInt { discr, targets } = &block.terminator().kind else { continue; };
+        let (Operand::Copy(condition) | Operand::Move(condition)) = discr else { continue; };
+        if !condition.projection.is_empty()
+            || mir.args_iter().position(|argument| argument == condition.local) != Some(0)
+        {
+            continue;
+        }
+        let zero_target = targets
+            .iter()
+            .find_map(|(value, target)| (value == 0).then_some(target))
+            .ok_or_else(|| "crate-level selector SwitchInt does not expose a zero target".to_owned())?;
+        let nonzero_target = targets.otherwise();
+        return Ok(Some((
+            I32ZeroPredicate::Equal,
+            branch_result_argument(mir, zero_target)?,
+            branch_result_argument(mir, nonzero_target)?,
+        )));
+    }
+    Ok(None)
+}
+
+fn branch_result_argument(
+    mir: &rustc_middle::mir::Body<'_>,
+    mut block: rustc_middle::mir::BasicBlock,
+) -> Result<u8, String> {
+    let mut aliases = HashMap::new();
+    for _ in 0..=mir.basic_blocks.len() {
+        let data = &mir.basic_blocks[block];
+        for statement in &data.statements {
+            let StatementKind::Assign(assignment) = &statement.kind else { continue; };
+            let (place, rvalue) = assignment.as_ref();
+            if !place.projection.is_empty() { continue; }
+            let Rvalue::Use(operand) = rvalue else { continue; };
+            if let Some(index) = direct_argument_index(mir, operand) {
+                let index = u8::try_from(index).map_err(|_| "argument index does not fit u8")?;
+                aliases.insert(place.local, index);
+                if place.local == RETURN_PLACE { return Ok(index); }
+                continue;
+            }
+            let (Operand::Copy(source) | Operand::Move(source)) = operand else { continue; };
+            if source.projection.is_empty() {
+                if let Some(index) = aliases.get(&source.local).copied() {
+                    aliases.insert(place.local, index);
+                    if place.local == RETURN_PLACE { return Ok(index); }
+                }
+            }
+        }
+        match &data.terminator().kind {
+            TerminatorKind::Goto { target } => block = *target,
+            TerminatorKind::Return => break,
+            other => return Err(format!("crate-level i32 branch encountered unsupported terminator {other:?}")),
+        }
+    }
+    Err("crate-level i32 branch does not resolve to a direct argument".to_owned())
 }
 
 fn direct_return_argument(mir: &rustc_middle::mir::Body<'_>) -> Option<u32> {
@@ -85,23 +170,17 @@ fn direct_return_arithmetic(mir: &rustc_middle::mir::Body<'_>) -> Result<Option<
             let (place, rvalue) = assignment.as_ref();
             if !place.projection.is_empty() { continue; }
             match rvalue {
-                Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) if source.projection.is_empty() => {
-                    aliases.insert(place.local, source.local);
-                }
+                Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) if source.projection.is_empty() => { aliases.insert(place.local, source.local); }
                 Rvalue::Use(Operand::Copy(source) | Operand::Move(source)) if source.projection.len() == 1 => {
                     if let ProjectionElem::Field(field, _) = source.projection[0] {
                         if field.index() == 0 {
-                            if let Some(operation) = arithmetic.get(&source.local).copied() {
-                                arithmetic.insert(place.local, operation);
-                            }
+                            if let Some(operation) = arithmetic.get(&source.local).copied() { arithmetic.insert(place.local, operation); }
                         }
                     }
                 }
                 Rvalue::BinaryOp(operation, operands) => {
                     let (left, right) = operands.as_ref();
-                    if direct_argument_index(mir, left) != Some(0) || direct_argument_index(mir, right) != Some(1) {
-                        continue;
-                    }
+                    if direct_argument_index(mir, left) != Some(0) || direct_argument_index(mir, right) != Some(1) { continue; }
                     let operation = match operation {
                         BinOp::Add | BinOp::AddWithOverflow => I32ArithmeticOp::Add,
                         BinOp::Sub | BinOp::SubWithOverflow => I32ArithmeticOp::Subtract,
