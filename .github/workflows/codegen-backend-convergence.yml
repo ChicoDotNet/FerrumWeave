@@ -162,6 +162,14 @@ jobs:
             --toolchain nightly-2025-10-14 \
             --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
 
+      - name: Falsify mixed constant/control-flow FerrumWeave crate aggregation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python eng/verification/verify_mixed_constant_control_flow_exports_backend.py \
+            --toolchain nightly-2025-10-14 \
+            --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
+
       - name: Require FerrumWeave managed static call lowering
         shell: bash
         run: |
