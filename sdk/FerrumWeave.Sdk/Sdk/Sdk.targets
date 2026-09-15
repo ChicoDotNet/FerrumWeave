@@ -1,11 +1,23 @@
 <Project>
   <Import Project="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/Sdk/Sdk.targets" Condition="'$(FerrumWeaveImportsMicrosoftNETSdk)' == 'true'" />
 
+  <PropertyGroup>
+    <FerrumWeaveRustToolchain Condition="'$(FerrumWeaveRustToolchain)' == ''">nightly-2025-10-14</FerrumWeaveRustToolchain>
+    <FerrumWeaveCodegenBackendFileName Condition="'$(OS)' == 'Windows_NT'">ferrumweave_codegen_backend.dll</FerrumWeaveCodegenBackendFileName>
+    <FerrumWeaveCodegenBackendFileName Condition="'$(FerrumWeaveCodegenBackendFileName)' == ''">libferrumweave_codegen_backend.so</FerrumWeaveCodegenBackendFileName>
+    <FerrumWeaveCodegenBackendPath Condition="'$(FerrumWeaveCodegenBackendPath)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveRepoRoot)/compiler/codegen-backend/target/release/$(FerrumWeaveCodegenBackendFileName)'))</FerrumWeaveCodegenBackendPath>
+  </PropertyGroup>
+
   <Target Name="CreateManifestResourceNames" />
 
-  <Target Name="CoreCompile">
+  <Target Name="BuildFerrumWeaveCodegenBackend" BeforeTargets="CoreCompile">
+    <Exec Command="cargo +$(FerrumWeaveRustToolchain) build --ignore-rust-version --release --manifest-path &quot;$(FerrumWeaveRepoRoot)/compiler/codegen-backend/Cargo.toml&quot;" />
+    <Error Condition="!Exists('$(FerrumWeaveCodegenBackendPath)')" Text="FerrumWeave CodegenBackend was not produced at $(FerrumWeaveCodegenBackendPath)." />
+  </Target>
+
+  <Target Name="CoreCompile" DependsOnTargets="BuildFerrumWeaveCodegenBackend">
     <MakeDir Directories="$(IntermediateOutputPath)" />
-    <Exec Command="cargo run --quiet --manifest-path &quot;$(FerrumWeaveRepoRoot)/compiler/cil/Cargo.toml&quot; --bin ferrumweave_emit -- &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot; &quot;$(MSBuildProjectDirectory)/src/main.rs&quot; &quot;$(TargetName)&quot;" />
+    <Exec Command="rustc +$(FerrumWeaveRustToolchain) -Z codegen-backend=&quot;$(FerrumWeaveCodegenBackendPath)&quot; --edition 2021 --crate-type lib --crate-name &quot;$(TargetName)&quot; &quot;$(MSBuildProjectDirectory)/src/main.rs&quot; -o &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot;" />
   </Target>
 
   <Target Name="VSTest">

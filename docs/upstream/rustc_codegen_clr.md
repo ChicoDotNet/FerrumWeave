@@ -1,8 +1,26 @@
 # Upstream: `rustc_codegen_clr`
 
-FerrumWeave treats [`FractalFir/rustc_codegen_clr`](https://github.com/FractalFir/rustc_codegen_clr) as major prior art and an upstream dependency/contribution target for real Rust → CLR code generation.
+FerrumWeave treats [`FractalFir/rustc_codegen_clr`](https://github.com/FractalFir/rustc_codegen_clr) as important prior art and a pinned **characterization oracle / differential reference** for Rust → CLR behavior. It is **not a FerrumWeave runtime, SDK, or product dependency**, and it no longer occupies the product-backend slot.
 
-## R02 pinned integration snapshot
+The current product path is owned by the FerrumWeave `rustc` CodegenBackend:
+
+```text
+.rs / .rsproj
+    ↓
+rustc frontend + type system + borrow checker + MIR
+    ↓
+FerrumWeave `rustc` CodegenBackend
+    ↓
+FerrumWeave-owned MIR lowering
+    ↓
+FerrumWeave CTS / projection / CIL / metadata
+    ↓
+managed assembly
+    ↓
+CoreCLR
+```
+
+## R02 pinned oracle snapshot
 
 - Repository: `FractalFir/rustc_codegen_clr`
 - Branch inspected: `main`
@@ -14,42 +32,33 @@ FerrumWeave treats [`FractalFir/rustc_codegen_clr`](https://github.com/FractalFi
 
 At this revision the upstream workspace contains both the `rustc_codegen_clr` compiler backend and `cilly`, the assembly/linker infrastructure used to produce managed output.
 
-R02 checks out this exact upstream commit in CI, builds the backend and linker from source, and invokes real `rustc` with the backend through `-Z codegen-backend`. The generated PE/CLI artifact is then independently inspected and executed by CoreCLR on Linux and Windows.
+The R02/R03 oracle workflows check out this exact upstream commit in CI, build the backend and linker from source, and invoke real `rustc` through `-Z codegen-backend`. The generated PE/CLI artifacts are independently inspected and executed by CoreCLR on Linux and Windows. This remains valuable historical bootstrap and differential evidence, but its evidence level is `oracle-proven`, not FerrumWeave implementation ownership.
 
-## Why the integration is isolated
+## Why the oracle integration is isolated
 
-FerrumWeave's normal repository development stays on its supported stable Rust baseline. `rustc_codegen_clr` necessarily integrates with private/nightly rustc compiler APIs, so R02 keeps that dependency in a dedicated compatibility lane instead of forcing the whole repository onto nightly.
+FerrumWeave's normal repository development stays on its supported stable Rust baseline. Compiler codegen backends necessarily integrate with private/nightly rustc compiler APIs, so the historical oracle remains in dedicated characterization lanes instead of forcing the stable workspace onto nightly.
 
 This isolation is intentional:
 
-- application/repository code remains stable-Rust-first;
+- normal repository code remains stable-Rust-first;
 - compiler-internals coupling is explicit and reproducibly pinned;
-- upstream source is checked out by CI rather than vendored;
-- changes in rustc internals cannot silently redefine the certified R02 contract;
-- upgrading the pin is a deliberate compatibility change that must pass the same Linux/Windows contract suite.
+- upstream source is checked out by characterization CI rather than vendored;
+- upstream drift cannot silently redefine FerrumWeave product evidence;
+- the FerrumWeave-owned backend has its own pinned compiler-private lane and causal certifiers;
+- changing the oracle pin is a deliberate characterization change, not a product-backend upgrade.
 
-The architectural decision is recorded in [`ADR 0002`](../architecture/adr/0002-r02-isolated-upstream-codegen-lane.md).
+The lifecycle change is recorded in [`ADR 0002`](../architecture/adr/0002-r02-isolated-upstream-codegen-lane.md).
 
-## Upstream-first policy
+## Oracle policy
 
-FerrumWeave does not copy or permanently fork `rustc_codegen_clr` merely to make local progress.
+Every remaining use of `rustc_codegen_clr` must answer a concrete characterization question: what observable behavior, marker shape, compiler integration fact, or differential expectation are we learning that FerrumWeave must reproduce independently?
 
-Preferred lifecycle:
+A successful oracle run is never sufficient PASS evidence for a FerrumWeave product capability. Product claims require `FerrumWeave-backend-proven` evidence and, when Rust-source semantics are claimed, source-causal certification through FerrumWeave MIR lowering and CIL/metadata emission.
 
-```text
-consume
-  ↓
-patch locally only if necessary
-  ↓
-upstream contribution
-  ↓
-remove local divergence
-```
+The oracle may be refreshed when differential characterization genuinely needs a newer upstream behavior. Product milestones do not depend on refreshing this pin merely to gain implementation capability.
 
-R02 required no FerrumWeave-maintained source patch to the pinned upstream backend. The integration work lives in FerrumWeave's fixtures, verifier, CI wiring, contracts, and compatibility documentation.
+## No-copy / provenance rule
 
-Future milestones must refresh the upstream snapshot when they require new semantics rather than assuming the R02 pin is permanent.
+FerrumWeave may study public interfaces, architecture, integration patterns, and observable behavior from upstream projects. FerrumWeave does not copy `rustc_codegen_clr` lowering or IR implementation as a shortcut to product ownership.
 
-## Provenance rule
-
-FerrumWeave may learn from and execute the public architecture and behavior of upstream projects, but copied/adapted source must never enter the repository without explicit provenance and license review.
+If a small piece of generic compiler-interface glue is ever adapted, it must have explicit provenance and license review. MIR lowering, CTS/projection integration, CIL emission, and product causality remain FerrumWeave-owned.

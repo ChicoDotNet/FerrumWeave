@@ -1,6 +1,6 @@
 # ADR 0002: R02 isolated upstream codegen lane
 
-- **Status:** Accepted for R02
+- **Status:** Accepted for R02 bootstrap; superseded for the product backend path by the 2026-09-09 convergence amendment below
 - **Date:** 2026-09-01
 - **Scope:** R02 — Rust → CLR vertical slice
 
@@ -70,9 +70,9 @@ R02 therefore uses the smallest real integration that preserves rustc parsing, t
 - FerrumWeave temporarily depends on an experimental upstream implementation whose supported Rust subset is much smaller than the language as a whole.
 - R02 certification does not imply broad `std`, CTS projection, `.rsproj`, or interoperability support.
 
-## Upstream convergence policy
+## Upstream convergence policy — original R02 bootstrap
 
-The default lifecycle remains:
+The original lifecycle was:
 
 ```text
 consume upstream
@@ -84,18 +84,64 @@ contribute the fix upstream
 remove local divergence
 ```
 
-R02 required no FerrumWeave-maintained source patch to the pinned upstream backend. If a future milestone does require a patch, its provenance, reason, upstream issue/PR, and removal condition must be recorded explicitly.
+R02 required no FerrumWeave-maintained source patch to the pinned upstream backend. That remains historically correct for the R02 bootstrap proof.
+
+## 2026-09-09 convergence amendment
+
+A strict causal audit of R05-R09 exposed an architectural split that R02 did not need to solve: R02/R03 used real `rustc` semantics through the upstream backend, while later `.rsproj`/SDK work used FerrumWeave-owned emitters that could synthesize managed behavior without deriving it from Rust MIR. Continuing to expand interoperability only through `rustc_codegen_clr` would therefore certify the upstream backend rather than transfer compiler ownership to FerrumWeave.
+
+The product architecture is now explicitly:
+
+```text
+.rs / .rsproj
+    ↓
+rustc frontend + type system + borrow checker + MIR
+    ↓
+FerrumWeave CodegenBackend adapter
+    ↓
+FerrumWeave-owned MIR lowering
+    ↓
+FerrumWeave CTS / projection / CIL / metadata
+    ↓
+managed assembly
+    ↓
+CoreCLR
+```
+
+Accordingly:
+
+- `rustc` and the compiler-private `CodegenBackend` interface remain legitimate dependencies of FerrumWeave's compiler lane.
+- `rustc_codegen_clr` is no longer the intended product backend.
+- The pinned upstream backend is retained only as a characterization/differential oracle where it helps establish expected semantics or discover compiler-integration behavior.
+- A FerrumWeave product claim is not certified merely because the same Rust source works through the oracle; FerrumWeave itself must be in the causal codegen path.
+- FerrumWeave will not copy the upstream lowering implementation as a shortcut. Small compiler-interface glue may be informed by public rustc/upstream examples with provenance and license compatibility, while MIR lowering remains FerrumWeave-owned.
+- The compiler-private adapter is isolated from the stable workspace so normal repository development remains on stable Rust.
+
+The first convergence gate is intentionally smaller than code generation: build FerrumWeave's own `dylib`, load it through `rustc -Z codegen-backend=...`, and prove that execution reaches FerrumWeave's `codegen_crate`. Until MIR lowering exists, that boundary fails explicitly and diagnostically. This proves ownership of the compiler handoff without pretending that code generation is already implemented.
+
+After that handshake, capabilities migrate from oracle-only evidence to FerrumWeave-owned evidence incrementally: basic MIR values/control flow, function calls, managed calls, construction, instance/property access, external assemblies, then SDK/MSBuild integration.
+
+## Retirement condition for the upstream oracle
+
+`rustc_codegen_clr` can be removed from a product-critical test path once the corresponding FerrumWeave capability has:
+
+1. a FerrumWeave-backend causal test from Rust source;
+2. mutation/falsification evidence;
+3. Linux and Windows evidence when portable;
+4. replay against earlier compiler contracts; and
+5. no product build dependency on the upstream checkout/backend.
+
+The oracle may remain as an optional differential test or historical reference after product dependency reaches zero.
 
 ## Revisit conditions
 
-This decision should be revisited when one of the following becomes true:
+Revisit this amended decision when one of the following becomes true:
 
-- `rustc_codegen_clr` exposes a more stable integration surface;
-- rustc gains a materially different supported mechanism for external codegen backends;
-- FerrumWeave needs backend behavior that upstream cannot reasonably provide;
-- R03 or later semantic work demonstrates that the current pin cannot support the next coherent subset;
-- CI build cost becomes significant enough to justify caching or packaging the pinned backend without weakening reproducibility.
+- rustc exposes a materially more stable external codegen interface;
+- FerrumWeave's own lowering demonstrates that the pinned compiler-private API is no longer appropriate;
+- a new upstream standard makes maintaining a separate adapter clearly wasteful without surrendering FerrumWeave's product ownership;
+- compatibility or CI cost requires repackaging the compiler-private adapter without weakening reproducibility.
 
 ## Non-decision
 
-This ADR does not define Rust ↔ CTS type mappings, ownership/GC semantics, managed API projection, `.rsproj`, NuGet integration, or debugger behavior. Those remain owned by later milestones.
+This ADR does not by itself define the full Rust ↔ CTS mapping, ownership/GC policy, managed API projection, `.rsproj`, NuGet integration, or debugger behavior. Those capabilities still require their own causal contracts and implementation evidence.

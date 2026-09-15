@@ -1,3 +1,4 @@
-fn main() {
-    println!("Hello from FerrumWeave!");
+#[no_mangle]
+pub extern "C" fn answer() -> i32 {
+    42
 }
