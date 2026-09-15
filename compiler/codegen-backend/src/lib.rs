@@ -98,6 +98,7 @@ impl CodegenBackend for FerrumWeaveCodegenBackend {
                     LoweredCrateI32Export::Constant { method_name, value } => I32ExportBody::Constant { method_name, value: *value },
                     LoweredCrateI32Export::Argument { method_name, index } => I32ExportBody::Argument { method_name, index: *index },
                     LoweredCrateI32Export::Arithmetic { method_name, operation } => I32ExportBody::Arithmetic { method_name, operation: *operation },
+                    LoweredCrateI32Export::ControlFlow { method_name, predicate, true_argument, false_argument } => I32ExportBody::ControlFlow { method_name, predicate: *predicate, true_argument: *true_argument, false_argument: *false_argument },
                 }).collect();
                 emit_named_i32_exports_assembly(assembly_name, "FerrumWeave", "RustApi", &exports)
             } else {
