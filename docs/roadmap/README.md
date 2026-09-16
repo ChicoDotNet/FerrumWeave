@@ -6,6 +6,8 @@ A milestone is complete only when it changes a technical fact about the project 
 
 > **Executable evidence outranks diagrams, estimates, and aspirations.**
 
+The prerelease project-template sequence from `0.1-alpha` through `1.0` is defined in [Template release plan](template-release-plan.md). ADR 0004 records the decision that Rust participates as a .NET **language choice** through `dotnet new <template> -lang Rust`, rather than as a standalone project type named `rust`.
+
 ## Current status
 
 | Milestone | Status | New technical truth |
@@ -413,16 +415,18 @@ Make a Rust project feel native to the .NET SDK experience after the compiler/in
 Target experience:
 
 ```bash
-dotnet new rust -n HelloFerrum
+dotnet new console -lang Rust -n HelloFerrum
 cd HelloFerrum
 dotnet run
 ```
+
+Rust is a **language choice** for a .NET project family, not a project type named `rust`. The template-resolution decision and coexistence requirements are recorded in [ADR 0004](../architecture/adr/0004-r10-rust-as-dotnet-template-language.md).
 
 ## DoD
 
 R08 is Done when, from a clean machine/environment with documented prerequisites:
 
-- `dotnet new rust` creates a valid Rust/.NET project;
+- `dotnet new console -lang Rust` creates a valid Rust/.NET console project;
 - `.rsproj` is an SDK-style project owned by `FerrumWeave.Sdk`;
 - `dotnet restore` performs the supported restore responsibilities;
 - `dotnet build` produces the managed FerrumWeave assembly;
@@ -497,6 +501,7 @@ Expected areas include:
 
 - installation and versioned packaging;
 - FerrumWeave SDK distribution;
+- Rust-as-language template integration through `dotnet new <template> -lang Rust`;
 - rust-analyzer integration/awareness of projected CLR symbols;
 - diagnostics that preserve useful Rust source locations;
 - initial source mapping / PDB / debugger experience;
@@ -504,15 +509,29 @@ Expected areas include:
 - compatibility and limitation documentation;
 - reproducible release artifacts.
 
+The `0.1-alpha` template surface is:
+
+```text
+console
+classlib
+xunit
+nunit
+mstest
+web
+webapi
+```
+
+The full prerelease sequence and per-template evidence requirements are defined in [Template release plan](template-release-plan.md).
+
 ## DoD
 
 R10 is Done when an external contributor, following only published documentation, can:
 
 1. install the alpha toolchain;
-2. create a FerrumWeave project;
+2. create each supported 0.1 project family with `dotnet new <template> -lang Rust`;
 3. edit Rust with useful Rust diagnostics;
 4. consume a supported .NET API/NuGet dependency;
-5. build and run through normal `dotnet` commands;
+5. build and run/test through normal `dotnet` commands as appropriate to the project family;
 6. build the canonical mixed `.slnx` example;
 7. perform at least basic source-level debugging for the supported scenario;
 8. understand from the compatibility matrix what is and is not implemented.
@@ -521,9 +540,28 @@ Additionally:
 
 - release artifacts are reproducible and versioned;
 - the alpha packaging path includes NuGet where appropriate for the SDK/tooling model;
-- no documented getting-started step depends on unpublished maintainer knowledge;
+- no documented getting-started step depends on unpublished maintainer knowledge or a FerrumWeave source checkout;
+- installing FerrumWeave does not break existing C#, F#, or Visual Basic template variants;
 - public status is still explicitly alpha and limitations remain visible.
 
 When these conditions are met, FerrumWeave may reasonably publish its first **0.1 alpha** rather than tagging a release merely because some CIL exists.
 
 ---
+
+# Prerelease template sequence and stable gate
+
+The agreed project-family sequence is:
+
+| Release | Stage | Template families |
+| --- | --- | --- |
+| `0.1` | Alpha | `console`, `classlib`, `xunit`, `nunit`, `mstest`, `web`, `webapi` |
+| `0.2` | Alpha | `mvc`, `winforms` |
+| `0.3` | Beta | `worker` |
+| `0.4` | Beta | `wpf` |
+| `0.5` | Beta | `grpc` |
+| `0.6` | Beta | `blazor` |
+| `1.0` | Stable | Every committed template family is certified and has at least one real FerrumWeave project |
+
+A template is not supported merely because scaffolding succeeds. It must satisfy the runnable/testable contract for that project family through the real FerrumWeave backend.
+
+FerrumWeave reaches `1.0.0` only after **every template family above has survived at least one real project**. Compiler fixtures, template smoke tests, documentation samples, and synthetic conformance projects do not satisfy that stable-release gate. The real project must have a genuine application/library purpose and reproducible evidence appropriate to the template family.
