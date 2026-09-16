@@ -6,6 +6,8 @@ A milestone is complete only when it changes a technical fact about the project 
 
 > **Executable evidence outranks diagrams, estimates, and aspirations.**
 
+The prerelease project-template sequence from `0.1-alpha` through `1.0` is defined in [Template release plan](template-release-plan.md). ADR 0004 records the decision that Rust participates as a .NET **language choice** through `dotnet new <template> -lang Rust`, rather than as a standalone project type named `rust`.
+
 ## Current status
 
 | Milestone | Status | New technical truth |
@@ -19,8 +21,8 @@ A milestone is complete only when it changes a technical fact about the project 
 | R06 — .NET consumes Rust | **Done — FerrumWeave backend re-certified** | C#/VB consumers, reflection and no-native-ABI contracts consume Rust-source-causal assemblies emitted through the FerrumWeave `rustc` CodegenBackend on Linux and Windows. |
 | R07 — Semantic interoperability | **Done — FerrumWeave backend re-certified** | All declared semantic-interoperability contracts are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; unsupported crossings fail diagnostically before CLR emission. |
 | R08 — `.rsproj` and FerrumWeave SDK | **Done — FerrumWeave backend re-certified** | Normal `.rsproj` build now follows `FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend`; Rust-only mutation changes the managed artifact and CoreCLR observable on Linux and Windows without `ferrumweave_emit` in the product path. |
-| R09 — Mixed `.slnx` proof | **Done — FerrumWeave backend re-certified** | The canonical mixed-language `.slnx` is source-causal through `.rsproj -> rustc -> FerrumWeave`; a Rust-only `42 -> 73` mutation changes `RiskEngine.dll` and the C# CoreCLR business observable on Linux and Windows while preserving the managed dependency call. |
-| R10 — Developer experience / 0.1 alpha | **Paused pending explicit post-convergence replay** | Draft DX work is preserved. R05-R09 causal convergence is complete, but R10 remains paused until the current convergence PR is certified and governance explicitly resumes the release milestone. |
+| R09 — Mixed `.slnx` proof | **Done — promoted and re-certified on `main`** | The canonical mixed-language `.slnx` is source-causal through `.rsproj -> rustc -> FerrumWeave`; the final R09 promotion is independently GREEN at `main@eab90a620b0598dbbce8ea6bf51f7d5b725f5818`. |
+| R10 — Developer experience / 0.1 alpha | **Active — resumed after R09 certification** | R10 now owns the installed-package DX contract: Rust participates as a .NET language through `dotnet new <template> -lang Rust`, with uncertified commands kept explicitly as release targets rather than current capability claims. |
 
 ### Evidence lifecycle after the convergence audit
 
@@ -421,16 +423,18 @@ Make a Rust project feel native to the .NET SDK experience after the compiler/in
 Target experience:
 
 ```bash
-dotnet new rust -n HelloFerrum
+dotnet new console -lang Rust -n HelloFerrum
 cd HelloFerrum
 dotnet run
 ```
+
+Rust is a **language choice** for a .NET project family, not a project type named `rust`. The template-resolution decision and coexistence requirements are recorded in [ADR 0004](../architecture/adr/0004-r10-rust-as-dotnet-template-language.md).
 
 ## DoD
 
 R08 is Done when, from a clean machine/environment with documented prerequisites:
 
-- `dotnet new rust` creates a valid Rust/.NET project;
+- `dotnet new console -lang Rust` creates a valid Rust/.NET console project;
 - `.rsproj` is an SDK-style project owned by `FerrumWeave.Sdk`;
 - `dotnet restore` performs the supported restore responsibilities;
 - `dotnet build` produces the managed FerrumWeave assembly through the real supported Rust compiler/codegen path;
@@ -446,7 +450,7 @@ Exact product-path replay SHA `9b08fa42e0a0c5ad12700b544a670aabc045569c` passed 
 
 # R09 — Mixed `.slnx` proof
 
-**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows.**
+**Status: Done — promoted and independently re-certified on `main`.**
 
 ## Goal
 
@@ -494,7 +498,7 @@ R09 is Done when:
 - the solution works on Linux and Windows where all chosen project types support the scenario;
 - functional contracts prove the language crossings rather than merely checking that projects compile.
 
-The source-causal closure is certified at exact SHA `5d02490e8f4ac71383f915464e47199b4badfb6a`: Rust CI #569, FerrumWeave backend convergence #206, R02 #245, R03 #272 and R04 #421 all completed GREEN. `tests/r09_source_causality.rs` replays the canonical mixed solution and changes only `RiskEngine/src/main.rs` from `42` to `73`; `RiskEngine.dll` bytes and the independent C# CoreCLR observable both change while the emitted method retains its CLR call to `System.Math.Abs` and no `ferrumweave_emit` trace is permitted.
+The final promoted R09 boundary is `main@eab90a620b0598dbbce8ea6bf51f7d5b725f5818`, a squash of the certified `dev@96a189159cd865726ebf48b502ac8fe501ea9a6f` state with the same tree `2f37276650272b79316780b9792e47e60d4683b9`. That exact `main` SHA independently completed GREEN in Rust CI #720, FerrumWeave codegen backend convergence #350, R02 #390, R03 #417, R04 #570, and managed-consumption causality #273. The source-causal contract remains the same: a Rust-only mutation changes `RiskEngine.dll` and the independent CoreCLR observable while preserving the managed dependency call and rejecting `ferrumweave_emit` from the product path.
 
 This is the canonical **0.1 proof moment**:
 
@@ -504,7 +508,7 @@ This is the canonical **0.1 proof moment**:
 
 # R10 — Developer experience / 0.1 alpha
 
-**Status: Paused pending explicit post-convergence replay. R05-R09 are now causally re-certified, but existing R10 draft work remains preserved and subordinate until governance explicitly resumes this release milestone.**
+**Status: Active — resumed after certified R09 promotion.**
 
 ## Goal
 
@@ -514,6 +518,7 @@ Expected areas include:
 
 - installation and versioned packaging;
 - FerrumWeave SDK distribution;
+- Rust-as-language template integration through `dotnet new <template> -lang Rust`;
 - rust-analyzer integration/awareness of projected CLR symbols;
 - diagnostics that preserve useful Rust source locations;
 - initial source mapping / PDB / debugger experience;
@@ -521,15 +526,29 @@ Expected areas include:
 - compatibility and limitation documentation;
 - reproducible release artifacts.
 
+The `0.1-alpha` target template surface is:
+
+```text
+console
+classlib
+xunit
+nunit
+mstest
+web
+webapi
+```
+
+The full prerelease sequence and per-template evidence requirements are defined in [Template release plan](template-release-plan.md).
+
 ## DoD
 
 R10 is Done when an external contributor, following only published documentation, can:
 
 1. install the alpha toolchain;
-2. create a FerrumWeave project;
+2. create each supported 0.1 project family with `dotnet new <template> -lang Rust`;
 3. edit Rust with useful Rust diagnostics;
 4. consume a supported .NET API/NuGet dependency;
-5. build and run through normal `dotnet` commands;
+5. build and run/test through normal `dotnet` commands as appropriate to the project family;
 6. build the canonical mixed `.slnx` example;
 7. perform at least basic source-level debugging for the supported scenario;
 8. understand from the compatibility matrix what is and is not implemented.
@@ -538,9 +557,30 @@ Additionally:
 
 - release artifacts are reproducible and versioned;
 - the alpha packaging path includes NuGet where appropriate for the SDK/tooling model;
-- no documented getting-started step depends on unpublished maintainer knowledge;
+- no documented getting-started step depends on unpublished maintainer knowledge or a FerrumWeave source checkout;
+- installing FerrumWeave does not break existing C#, F#, or Visual Basic template variants;
 - public status is still explicitly alpha and limitations remain visible.
+
+Commands documented in `docs/getting-started.md` are release contracts until the corresponding executable CI evidence is GREEN; they must not be interpreted as already released capability merely because they are documented.
 
 When these conditions are met, FerrumWeave may reasonably publish its first **0.1 alpha** rather than tagging a release merely because some CIL exists.
 
 ---
+
+# Prerelease template sequence and stable gate
+
+The agreed project-family sequence is:
+
+| Release | Stage | Template families |
+| --- | --- | --- |
+| `0.1` | Alpha | `console`, `classlib`, `xunit`, `nunit`, `mstest`, `web`, `webapi` |
+| `0.2` | Alpha | `mvc`, `winforms` |
+| `0.3` | Beta | `worker` |
+| `0.4` | Beta | `wpf` |
+| `0.5` | Beta | `grpc` |
+| `0.6` | Beta | `blazor` |
+| `1.0` | Stable | Every committed template family is certified and has at least one real FerrumWeave project |
+
+A template is not supported merely because scaffolding succeeds. It must satisfy the runnable/testable contract for that project family through the real FerrumWeave backend.
+
+FerrumWeave reaches `1.0.0` only after **every template family above has survived at least one real project**. Compiler fixtures, template smoke tests, documentation samples, and synthetic conformance projects do not satisfy that stable-release gate. The real project must have a genuine application/library purpose and reproducible evidence appropriate to the template family.
