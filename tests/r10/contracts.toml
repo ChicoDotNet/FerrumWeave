@@ -12,6 +12,12 @@ target_percent_when_done = 100.0
 # percentage while the milestone is still RED.
 
 [[contracts]]
+id = "FW-R10-DIST-001"
+family = "FerrumWeave.Sdk installs and builds an external Rust console from a NuGet package"
+implemented = false
+proof = "RED / pending. Pack FerrumWeave.Sdk 0.1.0-alpha.1 as a real NuGet package, install it by package ID and version from an isolated feed, run 'dotnet new console -lang Rust' outside the repository, and build without MSBuildSDKsPath or repository-relative compiler paths. The package must carry the MSBuild SDK, the Rust console template, and the FerrumWeave codegen backend sources required to build the product backend into project-local intermediate output. Rust-only mutation 137 -> 211 must change the managed DLL and an independent CoreCLR consumer observable. This is distribution/build evidence only; FW-R10-DX-003 remains RED until the generated console itself has the required direct 'dotnet run' Rust-source-causal observable."
+
+[[contracts]]
 id = "FW-R10-DX-003"
 family = "installed alpha registers Rust as a .NET console-template language"
 implemented = false
