@@ -114,7 +114,9 @@ pub fn run_managed_consumer(project: &Path, context: &str) -> Output {
         .env("DOTNET_CLI_TELEMETRY_OPTOUT", "1")
         .env("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
         .output()
-        .unwrap_or_else(|error| panic!("{context}: dotnet should start the managed consumer: {error}"))
+        .unwrap_or_else(|error| {
+            panic!("{context}: dotnet should start the managed consumer: {error}")
+        })
 }
 
 pub fn last_stdout_line(output: &Output) -> String {
