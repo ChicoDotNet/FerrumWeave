@@ -139,7 +139,10 @@ if (!il.Contains((byte)0x73)) throw new System.Exception(\"{method_name} contain
 System.Console.WriteLine(FerrumWeave.RustApi.{method_name}());\n"
     );
     let project = make_csharp_consumer(artifact, root, name, &program);
-    let output = run_managed_consumer(&project, &format!("managed construction consumer for {name}"));
+    let output = run_managed_consumer(
+        &project,
+        &format!("managed construction consumer for {name}"),
+    );
     assert_success(
         &output,
         &format!("managed construction consumer should pass for {name}"),
