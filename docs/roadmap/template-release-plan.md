@@ -1,5 +1,7 @@
 # FerrumWeave template release plan
 
+**English** · [Deutsch](template-release-plan.de.md) · [Español](template-release-plan.es.md) · [Français](template-release-plan.fr.md) · [Italiano](template-release-plan.it.md) · [Português (Brasil)](template-release-plan.pt-BR.md) · [Русский](template-release-plan.ru.md) · [简体中文](template-release-plan.zh-Hans.md) · [日本語](template-release-plan.ja.md)
+
 FerrumWeave's developer-experience roadmap treats Rust as a **.NET project language**, not as a project type of its own.
 
 The primary template UX is therefore:
