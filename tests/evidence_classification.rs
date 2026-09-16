@@ -95,7 +95,9 @@ fn r05_managed_consumption_source_causality_census_is_complete() {
             .unwrap_or_else(|| panic!("R05 source-causality census is missing {required_id}"));
 
         assert!(
-            block.lines().any(|line| line.trim() == "implemented = true"),
+            block
+                .lines()
+                .any(|line| line.trim() == "implemented = true"),
             "{required_id} must remain implemented"
         );
         assert_eq!(
