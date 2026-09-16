@@ -3,6 +3,7 @@
   "author": "FerrumWeave contributors",
   "classifications": ["Rust", ".NET", "Console"],
   "identity": "FerrumWeave.Templates.Rust.Console",
+  "groupIdentity": "Microsoft.Common.Console",
   "name": "Console App",
   "shortName": "console",
   "sourceName": "HelloFerrum",

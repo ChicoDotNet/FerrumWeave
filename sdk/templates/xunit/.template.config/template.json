@@ -3,6 +3,7 @@
   "author": "FerrumWeave contributors",
   "classifications": ["Rust", ".NET", "Test", "xUnit"],
   "identity": "FerrumWeave.Templates.Rust.XUnit",
+  "groupIdentity": "Microsoft.Test.xUnit",
   "name": "xUnit Test Project",
   "shortName": "xunit",
   "sourceName": "RustTests",
