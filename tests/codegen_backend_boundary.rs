@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use support::{
-    assert_success, build_codegen_backend, compile_rust_source, create_work_dir,
-    make_csharp_consumer, remove_work_dir, run_managed_consumer, TOOLCHAIN,
+    TOOLCHAIN, assert_success, build_codegen_backend, compile_rust_source, create_work_dir,
+    make_csharp_consumer, remove_work_dir, run_managed_consumer,
 };
 
 const LOWERING_MARKER: &str = "FERRUMWEAVE_MIR_LOWERING_FAILED";
@@ -24,8 +24,14 @@ fn codegen_backend_boundary_is_source_causal_and_rejects_invalid_rust() {
     assert_managed_shape(&answer_211, "Answer");
     assert_managed_shape(&renamed, "ComputeResult");
 
-    assert_eq!(run_consumer(&answer_137, &work, "answer_137", "Answer"), 137);
-    assert_eq!(run_consumer(&answer_211, &work, "answer_211", "Answer"), 211);
+    assert_eq!(
+        run_consumer(&answer_137, &work, "answer_137", "Answer"),
+        137
+    );
+    assert_eq!(
+        run_consumer(&answer_211, &work, "answer_211", "Answer"),
+        211
+    );
     assert_eq!(
         run_consumer(&renamed, &work, "compute_result_137", "ComputeResult"),
         137
