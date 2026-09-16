@@ -28,8 +28,11 @@ A Python verifier remains only while it protects a current observable that Rust 
 | Managed property read/write | `tests/managed_property_backend.rs` | no Python witness retained |
 | Independent external managed assembly consumption | `tests/external_managed_assembly_backend.rs` | no Python witness retained |
 | Multiple, heterogeneous and mixed crate aggregation | `tests/crate_aggregation_backend.rs` | no Python witness retained |
+| Rust line-coverage gate | pinned `cargo-llvm-cov 0.8.7 --fail-under-lines 80` in `.github/workflows/rust-ci.yml` | no Python parser retained |
 
 The managed-consumption replays preserve end-to-end observables rather than only emitter primitives: Rust source mutation, managed metadata/IL shape, export identity, managed artifact causality and CoreCLR execution are asserted from Rust integration tests. The external-assembly replay additionally builds its dependency independently and requires AssemblyRef/MemberRef/call behavior. The crate-aggregation replay preserves multiple exports, heterogeneous signatures, mixed arithmetic/control-flow shapes and the managed direct-call opcode in same-artifact scenarios.
+
+Coverage policy is enforced directly by the pinned Rust coverage tool. The hard gate remains 80% line coverage. The preferred 80%–96% operating band remains guidance; coverage above 96% is allowed and therefore requires no separate executable upper-bound parser.
 
 Historical upstream-only R02/R03/`rustc_codegen_clr` characterization is retired from the current verification inventory. Git retains its provenance; it is not a product dependency or current gate.
 
@@ -37,12 +40,12 @@ Historical upstream-only R02/R03/`rustc_codegen_clr` characterization is retired
 
 | Entry point | Current responsibility | Existing Rust evidence | Missing before deletion | State |
 | --- | --- | --- | --- | --- |
-| `eng/verification/verify_codegen_backend_boundary.py` | Full `rustc → FerrumWeave` boundary: backend loading, source mutation causality, managed execution, export identity and invalid-Rust rejection | Rust unit/integration tests cover individual backend and repository-boundary pieces | One Rust E2E replay covering the complete positive and negative boundary contract | `RUST_PARTIAL` |
-| `tools/quality/check_code_coverage.py` | Enforce the Rust line-coverage threshold/policy over `cargo llvm-cov` output | Coverage production is already Rust-native tooling | Rust-native or otherwise non-Python policy enforcement | `PYTHON_ONLY` |
+| `eng/verification/verify_codegen_backend_boundary.py` | Full `rustc → FerrumWeave` boundary: backend loading, source mutation causality, managed execution, export identity and invalid-Rust rejection | `tests/codegen_backend_boundary.rs` replays the complete positive and negative product contract | One clean Windows/Linux DUAL run before cutover | `DUAL` |
 
 ## Migration order
 
-1. Complete codegen-backend boundary replay, including its negative invalid-Rust contract.
-2. Line-coverage policy parser, independently from product semantics.
+1. Certify `tests/codegen_backend_boundary.rs` on Windows and Linux alongside the existing Python boundary gate.
+2. Remove the final Python boundary steps and delete `verify_codegen_backend_boundary.py`.
+3. Confirm the repository contains zero `.py` files and re-run the final Rust-native gates.
 
 A verifier may be deleted only under the current cutover policy in `r09-rust-authority-cutover.md`. The goal is not to preserve duplicate implementations; it is to preserve observable product confidence while continuously reducing obsolete verification LOC.
