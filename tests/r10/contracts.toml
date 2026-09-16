@@ -16,3 +16,9 @@ id = "FW-R10-DX-003"
 family = "installed alpha registers Rust as a .NET console-template language"
 implemented = false
 proof = "RED / pending. From a clean external environment with the supported .NET SDK and FerrumWeave installed through its distributable package boundary, 'dotnet new console -lang Rust -n HelloFerrum' must generate an SDK-style .rsproj and src/main.rs; dotnet build/run must reach .rsproj -> FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend -> managed CIL/metadata -> CoreCLR with a Rust-source-causal observable. Installation must coexist with ordinary console, VB, and F# template variants. Repository-local template installation, 'dotnet new rust', generated C#, legacy emitters, native sidecars, and rustc_codegen_clr are not valid proof of this contract."
+
+[[contracts]]
+id = "FW-R10-TPL-WEBAPI-001"
+family = "ASP.NET Core Web API participates as the Rust language variant of the standard webapi template"
+implemented = false
+proof = "RED / staged. T0 requires repository-local 'dotnet new webapi -lang Rust' scaffolding under the standard Microsoft.Web.WebApi group while preserving the built-in C# and F# variants. T1 remains required before support can be claimed: the generated project must build and run through the FerrumWeave product backend, start ASP.NET Core, answer a real HTTP request with a Rust-source-causal response, and pass Windows/Linux certification through the distributable package boundary. T0 scaffolding alone is not release proof."
