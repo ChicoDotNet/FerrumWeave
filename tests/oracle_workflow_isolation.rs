@@ -1,44 +1,40 @@
 use std::fs;
-
-fn workflow(path: &str) -> String {
-    fs::read_to_string(path).unwrap_or_else(|error| panic!("failed to read {path}: {error}"))
-}
+use std::path::PathBuf;
 
 #[test]
-fn historical_upstream_workflows_are_explicitly_oracle_characterization() {
-    let cases = [
-        (
-            ".github/workflows/r02-integration.yml",
-            "name: R02 Oracle Characterization — Rust to CLR",
-            "name: characterize upstream Rust to CLR",
-            "Certify R02 contracts",
-        ),
-        (
-            ".github/workflows/r03-integration.yml",
-            "name: R03 Oracle Characterization — Core Rust Semantics",
-            "name: characterize upstream semantic slice",
-            "Certify R03 semantic slice",
-        ),
-    ];
+fn historical_upstream_oracle_lanes_are_retired_from_active_ci() {
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-    for (path, workflow_name, characterization_step, forbidden_certification_step) in cases {
-        let text = workflow(path);
+    for retired_path in [
+        ".github/workflows/r02-integration.yml",
+        ".github/workflows/r03-integration.yml",
+        ".github/workflows/managed-consumption-causality.yml",
+        "eng/r02/verify.py",
+        "eng/r03/verify.py",
+        "eng/verification/verify_managed_static_call_causality.py",
+    ] {
+        assert!(
+            !repo.join(retired_path).exists(),
+            "retired upstream oracle lane must not return to active CI without an explicit evidence-lifecycle decision: {retired_path}"
+        );
+    }
 
+    let upstream = fs::read_to_string(repo.join("docs/upstream/rustc_codegen_clr.md"))
+        .expect("upstream oracle history must remain documented after executable retirement");
+    assert!(upstream.contains("historical **characterization oracle / differential reference**"));
+    assert!(upstream.contains("retired from active CI"));
+    assert!(upstream.contains("fixtures and contract ledgers remain"));
+
+    let inventory = fs::read_to_string(repo.join("docs/quality/r09-python-to-rust-inventory.md"))
+        .expect("R09 migration inventory must remain readable");
+    for retired_entry in [
+        "retired `eng/r02/verify.py`",
+        "retired `eng/r03/verify.py`",
+        "retired `eng/verification/verify_managed_static_call_causality.py`",
+    ] {
         assert!(
-            text.contains("repository: FractalFir/rustc_codegen_clr"),
-            "{path} must remain an explicit pinned rustc_codegen_clr oracle lane"
-        );
-        assert!(
-            text.contains(workflow_name),
-            "{path} must identify itself as Oracle Characterization in GitHub Actions UI"
-        );
-        assert!(
-            text.contains(characterization_step),
-            "{path} must describe upstream execution as characterization, not product certification"
-        );
-        assert!(
-            !text.contains(forbidden_certification_step),
-            "{path} must not label rustc_codegen_clr execution as FerrumWeave certification"
+            inventory.contains(retired_entry),
+            "migration inventory must preserve the retired oracle history: {retired_entry}"
         );
     }
 }
