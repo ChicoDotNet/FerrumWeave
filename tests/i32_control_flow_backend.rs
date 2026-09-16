@@ -21,14 +21,7 @@ fn i32_control_flow_is_source_causal_through_the_ferrumweave_backend() {
     execute_from_csharp(&eq_artifact, 1, 211, &work, "eq", "Answer");
     execute_from_csharp(&ne_artifact, 0, 211, &work, "ne", "Answer");
     execute_from_csharp(&ne_artifact, 1, 137, &work, "ne", "Answer");
-    execute_from_csharp(
-        &renamed_artifact,
-        0,
-        137,
-        &work,
-        "renamed",
-        "ComputeResult",
-    );
+    execute_from_csharp(&renamed_artifact, 0, 137, &work, "renamed", "ComputeResult");
     execute_from_csharp(
         &renamed_artifact,
         1,
