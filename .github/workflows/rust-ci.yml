@@ -13,9 +13,7 @@ on:
       - "compiler/**"
       - "projection/**"
       - "sdk/**"
-      - "eng/verification/**"
       - "tests/**"
-      - "tools/quality/**"
       - "docs/quality/**"
       - ".github/workflows/rust-ci.yml"
   pull_request:
@@ -31,9 +29,7 @@ on:
       - "compiler/**"
       - "projection/**"
       - "sdk/**"
-      - "eng/verification/**"
       - "tests/**"
-      - "tools/quality/**"
       - "docs/quality/**"
       - ".github/workflows/rust-ci.yml"
   workflow_dispatch:
@@ -142,17 +138,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p target/coverage
+          echo "Coverage policy: minimum 80%; preferred operating band 80%-96% (coverage above 96% remains allowed)."
           cargo llvm-cov \
             --workspace \
             --all-targets \
             --locked \
             --json \
+            --fail-under-lines 80 \
             --ignore-filename-regex '(^|/)tests/' \
             --output-path target/coverage/coverage.json
-          python3 tools/quality/check_code_coverage.py \
-            target/coverage/coverage.json \
-            --minimum 80 \
-            --preferred-maximum 96
+          cargo llvm-cov report \
+            --summary-only \
+            --ignore-filename-regex '(^|/)tests/'
           cargo llvm-cov report \
             --lcov \
             --ignore-filename-regex '(^|/)tests/' \
