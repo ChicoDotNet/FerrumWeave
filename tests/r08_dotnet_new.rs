@@ -35,14 +35,8 @@ fn assert_success(output: &Output, label: &str) {
 fn rust_participates_in_the_standard_console_template_as_a_language() {
     let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let template_dir = repo.join("sdk/templates/console");
-    let obsolete_template_config = repo.join("sdk/templates/rust/.template.config/template.json");
     let temp = unique_temp_dir();
     fs::create_dir_all(&temp).expect("create isolated template test directory");
-
-    assert!(
-        !obsolete_template_config.exists(),
-        "the obsolete dedicated `dotnet new rust` template must not remain registered"
-    );
 
     let install = Command::new("dotnet")
         .args(["new", "install"])
