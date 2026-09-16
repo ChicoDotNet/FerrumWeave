@@ -13,9 +13,7 @@ on:
       - "compiler/**"
       - "projection/**"
       - "sdk/**"
-      - "eng/verification/**"
       - "tests/**"
-      - "tools/quality/**"
       - "docs/quality/**"
       - ".github/workflows/rust-ci.yml"
   pull_request:
@@ -31,9 +29,7 @@ on:
       - "compiler/**"
       - "projection/**"
       - "sdk/**"
-      - "eng/verification/**"
       - "tests/**"
-      - "tools/quality/**"
       - "docs/quality/**"
       - ".github/workflows/rust-ci.yml"
   workflow_dispatch:
