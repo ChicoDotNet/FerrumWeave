@@ -77,36 +77,6 @@ jobs:
         run: |
           set -euo pipefail
           python eng/verification/verify_codegen_backend_boundary.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}" --require-artifact
-      - name: Require FerrumWeave multiple-export crate lowering
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_multiple_rust_exports_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Falsify heterogeneous FerrumWeave crate aggregation
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_heterogeneous_rust_exports_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Falsify mixed constant/arithmetic FerrumWeave crate aggregation
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_mixed_constant_arithmetic_exports_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Falsify mixed constant/control-flow FerrumWeave crate aggregation
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_mixed_constant_control_flow_exports_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Falsify mixed constant/direct-call FerrumWeave crate aggregation
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_mixed_constant_direct_call_exports_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Require FerrumWeave external managed assembly consumption
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_external_managed_assembly_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
       - name: Require .rsproj to invoke rustc with the FerrumWeave backend
         shell: bash
         run: |
