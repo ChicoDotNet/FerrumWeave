@@ -148,7 +148,7 @@ fn run_consumer(artifact: &Path, root: &Path, name: &str, method_name: &str) -> 
         "using System.Reflection;\n\
 var method = typeof(FerrumWeave.RustApi).GetMethod(\"{method_name}\", BindingFlags.Public | BindingFlags.Static)!;\n\
 var il = method.GetMethodBody()!.GetILAsByteArray()!;\n\
-if (!il.Contains((byte)0x73)) throw new System.Exception(\"{method_name} contains no managed newobj opcode\");\n\
+if (System.Array.IndexOf(il, (byte)0x73) < 0) throw new System.Exception(\"{method_name} contains no managed newobj opcode\");\n\
 System.Console.WriteLine(FerrumWeave.RustApi.{method_name}());\n"
     );
     let project = make_csharp_consumer(artifact, root, name, &program);
