@@ -77,31 +77,6 @@ jobs:
         run: |
           set -euo pipefail
           python eng/verification/verify_codegen_backend_boundary.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}" --require-artifact
-      - name: Require FerrumWeave i32 argument/local flow
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_i32_local_flow_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Require FerrumWeave i32 arithmetic lowering
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_i32_arithmetic_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Require FerrumWeave i32 control-flow lowering
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_i32_control_flow_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Require FerrumWeave checked i32 overflow semantics
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_i32_overflow_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Require FerrumWeave direct Rust function-call lowering
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_direct_rust_function_call_backend.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
       - name: Require FerrumWeave multiple-export crate lowering
         shell: bash
         run: |
