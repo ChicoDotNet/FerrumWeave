@@ -59,7 +59,7 @@ R04 preserves FerrumWeave-owned CTS/projection and CLR reflection evidence. It e
 
 ## R05-R09 — Current FerrumWeave product path
 
-**Status: Done — FerrumWeave backend re-certified on the declared portable claims.**
+**Status: Done — promoted to `main` and re-certified on the declared portable claims.**
 
 R05-R09 carry current product evidence through the FerrumWeave-owned backend rather than the oracle. The certified path includes Rust-source causal managed calls and interop families, managed consumption of FerrumWeave-produced assemblies, `.rsproj` / MSBuild integration, and the mixed `.slnx` proof.
 
@@ -74,11 +74,17 @@ At the declared contract scope, the product evidence demonstrates:
 - mutation/falsification checks reject hardcoded substitute behavior;
 - Linux and Windows evidence is required where the claim is portable.
 
+The final R09 promotion is `main@eab90a620b0598dbbce8ea6bf51f7d5b725f5818`, whose tree is identical to the certified `dev@96a189159cd865726ebf48b502ac8fe501ea9a6f` state. The promoted SHA independently replayed GREEN in Rust CI #720, FerrumWeave codegen backend convergence #350, R02 #390, R03 #417, R04 #570, and the managed-consumption causality lane #273.
+
 This does **not** imply general Rust or `std` compatibility, complete CTS coverage, general NuGet semantics, debugger completeness, or production readiness beyond the explicit contracts.
 
-## R10
+## R10 — Developer experience / 0.1 alpha
 
-R10 remains paused pending explicit post-convergence replay and governance. Draft developer-experience work is preserved but is not being extended while backend ownership and evidence boundaries are converged.
+**Status: Active — resumed after certified R09 promotion.**
+
+R10 now owns the release/developer-experience boundary. Its primary product contract treats Rust as a .NET **language choice**: `dotnet new <template> -lang Rust`. Commands documented for the alpha remain target contracts until their corresponding executable CI evidence is GREEN; documentation must not present an uncertified target as released capability.
+
+The architecture decision is recorded in [`../architecture/adr/0004-r10-rust-as-dotnet-template-language.md`](../architecture/adr/0004-r10-rust-as-dotnet-template-language.md), and the prerelease project-family sequence is defined in [`../roadmap/template-release-plan.md`](../roadmap/template-release-plan.md).
 
 ## Evidence rule
 
