@@ -20,9 +20,13 @@ The R10 public template model is:
 dotnet new <template> -lang Rust
 ```
 
-Do **not** treat historical `dotnet new rust`, `sdk/templates/rust/`, or `tests/r08_dotnet_new.rs` as the R10 target merely because they remain in the tree. They are R08 historical evidence until an explicit, certified migration supersedes or retires them.
+Do **not** treat historical `dotnet new rust` or `sdk/templates/rust/` behavior as the R10 target merely because historical evidence remains in the tree.
 
-The first active R10 contract is `FW-R10-DX-003` in `tests/r10/contracts.toml`.
+Do not infer evidence authority from a milestone-looking filename alone. During an explicit migration, an older R08/R09-named test or fixture may be under `COPY`, `TRANSFORM`, `ADAPT`, retirement, or reclassification. Fresh-read the active branch diff, the milestone ledger, and the authority-cutover documentation before restoring, deleting, or classifying it.
+
+The primary installed-package R10 contract is `FW-R10-DX-003` in `tests/r10/contracts.toml`.
+
+R10 work may proceed in **parallel lanes** when dependencies allow it. In particular, template-family lanes may advance `classlib`, test templates, `web`, or `webapi` while the distribution/console lane drives `FW-R10-DX-003`. A family-local T0/T1 GREEN does not by itself make that template supported: release/support claims still require the meaningful installed/distributable workflow and the real FerrumWeave backend path.
 
 ## Non-negotiable engineering rules
 
@@ -34,6 +38,7 @@ The first active R10 contract is `FW-R10-DX-003` in `tests/r10/contracts.toml`.
 - Cross-platform product claims require Windows and Linux evidence.
 - Do not reduce tests, contracts, or coverage denominators to make CI green.
 - Do not claim target/release behavior from generated files alone; prove the installed/external developer workflow where R10 requires it.
+- Before editing a template family in R10, inspect overlapping PRs and keep the increment within its owned family or contract boundary.
 
 ## Branch discipline
 
@@ -54,7 +59,7 @@ Before ending an iteration, leave enough repository evidence for the next agent 
 - the exact certified SHA;
 - the CI runs that certify Windows/Linux and relevant quality gates;
 - the causal observable protected by the change;
-- historical/oracle evidence intentionally preserved;
+- historical/oracle evidence intentionally preserved, migrated, or retired;
 - the next smallest contract.
 
 If those facts exist only in chat context, the iteration is not ready to hand off.
