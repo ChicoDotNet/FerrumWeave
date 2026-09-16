@@ -38,9 +38,12 @@ The first active R10 contract is `FW-R10-DX-003` in `tests/r10/contracts.toml`.
 ## Branch discipline
 
 - Short-lived branches and ordinary feature PRs target `dev`.
-- `dev` keeps detailed causal/TDD/fix history.
-- `main` keeps milestone/release promotion history.
-- Promotion to `main` should be selective/squashed rather than replaying all detailed `dev` history.
+- Merge topic/increment PRs into `dev` normally so `dev` retains detailed causal/TDD/fix history.
+- `main` records milestone/release promotion history only.
+- Promotion is a **direct `dev -> main` pull request**. Do not manufacture a synthetic promotion branch from `main` merely to compress history.
+- Merge `dev -> main` with **squash** so the promotion becomes one clean commit on `main` while detailed history remains reachable from `dev`.
+- A squash merge does not preserve ancestry. Immediately after a successful promotion, reconcile the new `main` commit back into `dev` with a content-preserving merge. The reconciliation must leave the `dev` tree unchanged and exists only to make the promoted `main` commit an ancestor of `dev`.
+- Before the next `dev -> main` promotion, verify the merge base is the current promoted `main`; a PR that unexpectedly shows old already-promoted files indicates ancestry has not been reconciled.
 - Do not force-update shared branches without explicit maintainer authorization.
 
 ## Safe handoff requirement
