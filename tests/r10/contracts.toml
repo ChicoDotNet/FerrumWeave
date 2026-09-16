@@ -27,13 +27,25 @@ proof = "RED / pending. From a clean external environment with the supported .NE
 id = "FW-R10-CLR-ENTRY-001"
 family = "ordinary Rust main projects to a real managed .NET executable entry point"
 implemented = false
-proof = "RED / pending. ADR 0005 defines the source/CLR identity boundary. Rust source remains ordinary Rust and keeps fn main; FerrumWeave must project executable .rsproj output to a managed <RootNamespace>.Program.Main adapter that is static and whose MethodDef is designated as the PE/CLI entry point. The portable managed artifact remains <AssemblyName>.dll; a normal SDK/apphost may additionally produce HelloFerrum.exe on Windows or HelloFerrum on Unix. dotnet run must execute Rust-source-causal main behavior on Linux and Windows with no generated C#, native sidecar, legacy emitter, or upstream oracle substitution. Exact Result/error and args semantics remain separate explicit contracts."
+proof = "RED / pending. ADR 0005 defines the source/CLR identity boundary and ADR 0006 defines the naming/collision policy. Rust source remains ordinary Rust and keeps fn main; FerrumWeave must project the rustc-resolved semantic entry point to a managed <RootNamespace>.Program.Main adapter that is static and whose MethodDef is designated as the PE/CLI entry point. The portable managed artifact remains <AssemblyName>.dll; a normal SDK/apphost may additionally produce HelloFerrum.exe on Windows or HelloFerrum on Unix. dotnet run must execute Rust-source-causal main behavior on Linux and Windows with no generated C#, native sidecar, legacy emitter, or upstream oracle substitution. Exact Result/error and args semantics remain separate explicit contracts."
 
 [[contracts]]
 id = "FW-R10-CLR-SURFACE-001"
 family = "Rust modules and exported items project to stable namespace-qualified CLR identities"
 implemented = false
-proof = "RED / pending. ADR 0005 defines the general projection rule. Project/root identity must deterministically provide AssemblyName and RootNamespace; semantic Rust module paths project to CLR namespace segments; CLR-exportable public Rust types project under those namespaces; supported Rust members project to normal CLR members with deterministic .NET-facing names while Rust source naming and rustc semantics remain unchanged. Acceptance must include at least one nested module and multiple projected types (for example HelloFerrum.Controllers.ApiDeClima, ServicioDeClima, RepositorioDeClima, and ContextoDbDeClima) discovered and consumed from an independent .NET project. A long-term application surface consisting only of synthetic FerrumWeave.RustApi exports is not sufficient proof."
+proof = "RED / pending. ADR 0005 defines the general projection rule; ADR 0006 defines naming uniqueness and visibility derivation. Project/root identity must deterministically provide AssemblyName and RootNamespace; semantic Rust module paths project to CLR namespace segments; CLR-exportable public Rust types project under those namespaces; supported Rust members project to normal CLR members with deterministic .NET-facing names while Rust source naming and rustc semantics remain unchanged. Acceptance must include at least one nested module and multiple projected types (for example HelloFerrum.Controllers.ApiDeClima, ServicioDeClima, RepositorioDeClima, and ContextoDbDeClima) discovered and consumed from an independent .NET project. A long-term application surface consisting only of synthetic FerrumWeave.RustApi exports is not sufficient proof."
+
+[[contracts]]
+id = "FW-R10-CLR-NAMING-001"
+family = "Rust source identities project to deterministic cross-language-safe CLR names without silent collisions"
+implemented = false
+proof = "RED / pending. ADR 0006 is authoritative. Rust source naming remains valid Rust and is not rewritten to imitate C#. The rustc-resolved semantic entry point projects to the accepted managed Main facade rather than being found by textual name scanning. Snake-case modules/members receive deterministic .NET-facing names; raw identifier escape syntax does not leak into CLR names. Public projection must reject case-insensitive collisions, keyword/interoperability ambiguity, transformation-induced collisions, and collisions with reserved FerrumWeave generated identities instead of silently suffixing or hashing public APIs. Acceptance must include independent C#, Visual Basic, and F# consumers addressing the same projected identities unambiguously."
+
+[[contracts]]
+id = "FW-R10-CLR-VISIBILITY-001"
+family = "effective Rust visibility projects to non-widening CLR accessibility"
+implemented = false
+proof = "RED / pending. ADR 0006 is authoritative and amends ADR 0005's earlier broad visibility wording. An exportable Rust item that rustc determines is effectively externally reachable projects to CLR Public by default; syntactic pub hidden behind a private ancestor must not become CLR public merely because of its declaration token, while public re-exports must honor their effective visibility. pub(crate) maps to CLR Assembly/internal by default. pub(super), pub(in ...), and private items remain non-public implementation and must never be widened into external CLR API. Any explicit CLR accessibility override may narrow Rust-authorized accessibility but must not widen it. CLR Family/protected-family access is emitted only under an explicit managed inheritance projection and is never inferred from Rust module visibility."
 
 [[contracts]]
 id = "FW-R10-WEB-HOST-001"
