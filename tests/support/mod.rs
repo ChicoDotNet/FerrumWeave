@@ -119,16 +119,6 @@ pub fn run_managed_consumer(project: &Path, context: &str) -> Output {
         })
 }
 
-pub fn last_stdout_line(output: &Output) -> String {
-    String::from_utf8(output.stdout.clone())
-        .expect("consumer stdout should be UTF-8")
-        .lines()
-        .next_back()
-        .unwrap_or_default()
-        .trim()
-        .to_owned()
-}
-
 pub fn assert_success(output: &Output, context: &str) {
     assert!(
         output.status.success(),
