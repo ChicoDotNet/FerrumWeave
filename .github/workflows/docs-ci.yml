@@ -1,0 +1,62 @@
+name: Documentation graph CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "**/*.md"
+      - "tools/docgraph/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/docs-ci.yml"
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "**/*.md"
+      - "tools/docgraph/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/docs-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docgraph:
+    name: docgraph
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain
+        run: rustup show
+      - name: Docgraph tests
+        run: cargo test --locked -p ferrumweave-docgraph
+      - name: Render documentation graph
+        run: cargo run --locked -p ferrumweave-docgraph -- render
+      - name: Generated documentation is committed
+        id: generated_docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git diff --exit-code
+      - name: Upload rendered documentation diagnostic
+        if: failure() && steps.generated_docs.outcome == 'failure'
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: docgraph-rendered-${{ github.run_id }}
+          path: docs/architecture/**/*.md
+          if-no-files-found: error
+          retention-days: 3

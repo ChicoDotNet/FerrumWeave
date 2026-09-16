@@ -1,7 +1,7 @@
 <!--
 translation-of: docs/README.md
 locale: ru
-source-revision: 22aef36588bd35a433ff9564ab947703afd39c4f
+source-revision: d50e9029e372521bd00a7b6c8cbc29e234c80009
 -->
 
 # Документация FerrumWeave
@@ -23,11 +23,9 @@ source-revision: 22aef36588bd35a433ff9564ab947703afd39c4f
 
 ## Архитектура
 
-Следующие страницы пока используют каноническую английскую версию:
-
-- [Repository layout](architecture/repository-layout.md) — границы ownership и структура репозитория.
-- [ADR 0004 — Rust as a .NET template language](architecture/adr/0004-r10-rust-as-dotnet-template-language.md) — почему публичный контракт — `dotnet new <template> -lang Rust`.
-- [Architecture Decision Records](architecture/adr/) — исторические архитектурные решения.
+- [Структура репозитория](architecture/repository-layout.ru.md) — границы ownership и структура репозитория.
+- [ADR 0004 — Rust как язык шаблонов .NET](architecture/adr/0004-r10-rust-as-dotnet-template-language.ru.md) — почему публичный контракт — `dotnet new <template> -lang Rust`.
+- [Architecture Decision Records](architecture/adr/) — исторические архитектурные решения. *(английский)*
 
 ## Возможности и совместимость
 
@@ -63,4 +61,4 @@ README проекта
     → Раздел / документ
 ```
 
-Локализованные документы должны возвращаться на эту главную страницу на том же языке. Следующий инкремент docgraph будет автоматически генерировать и проверять раздел «Что ссылается сюда?». 
+Документы с metadata `doc-id` получают сгенерированные ссылки назад на главную документации и README проекта в той же локали. `ferrumweave-docgraph` также генерирует и сертифицирует локализованный раздел «Что ссылается сюда» из Markdown-ссылок, написанных людьми; сгенерированные области сохраняются в репозитории и проверяются Documentation graph CI.

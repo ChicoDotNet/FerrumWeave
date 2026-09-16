@@ -49,7 +49,7 @@ Not every specialized or historical document is translated yet. When no localize
 
 ## Navigation model
 
-Public documentation should expose a stable semantic path rather than relying on browser history:
+Public documentation exposes a stable semantic path rather than relying on browser history:
 
 ```text
 Project README
@@ -57,4 +57,4 @@ Project README
     → Section / document
 ```
 
-Localized documents should link back to this documentation home in the same locale when that home exists. A later documentation-graph increment will generate and certify “What links here” backlinks rather than maintaining those lists manually.
+Documents carrying `doc-id` metadata receive generated links back to this documentation home and the project README in the same locale. `ferrumweave-docgraph` also generates and certifies localized “What links here” backlinks from human-authored Markdown links; generated regions are committed and verified by Documentation graph CI.
