@@ -1,6 +1,6 @@
 # Upstream: `rustc_codegen_clr`
 
-FerrumWeave treats [`FractalFir/rustc_codegen_clr`](https://github.com/FractalFir/rustc_codegen_clr) as important prior art and a historical **characterization oracle / differential reference** for Rust → CLR behavior. It is **not a FerrumWeave runtime, SDK, product dependency, or active CI dependency**, and it no longer occupies the product-backend slot.
+FerrumWeave treats [`FractalFir/rustc_codegen_clr`](https://github.com/FractalFir/rustc_codegen_clr) as important prior art and a historical **characterization oracle / differential reference** for Rust → CLR behavior. It is **not a FerrumWeave runtime, SDK, or product dependency** and is no longer an active CI dependency; it no longer occupies the product-backend slot.
 
 The current product path is owned by the FerrumWeave `rustc` CodegenBackend:
 
