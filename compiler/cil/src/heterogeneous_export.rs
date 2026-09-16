@@ -39,18 +39,6 @@ pub enum I32ExportBody<'a> {
     },
 }
 
-impl I32ExportBody<'_> {
-    fn method_name(&self) -> &str {
-        match self {
-            Self::Constant { method_name, .. }
-            | Self::Argument { method_name, .. }
-            | Self::Arithmetic { method_name, .. }
-            | Self::ControlFlow { method_name, .. }
-            | Self::DirectRustCall { method_name, .. } => method_name,
-        }
-    }
-}
-
 #[derive(Clone, Copy)]
 enum MethodSignature {
     Constant,
