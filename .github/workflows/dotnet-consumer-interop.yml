@@ -1,0 +1,90 @@
+name: .NET consumer interoperability
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "compiler/**"
+      - "eng/dotnet-consumers/**"
+      - "sdk/**"
+      - "src/**"
+      - "tests/fixtures/r09/**"
+      - "rust-toolchain.toml"
+      - ".github/workflows/dotnet-consumer-interop.yml"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "compiler/**"
+      - "eng/dotnet-consumers/**"
+      - "sdk/**"
+      - "src/**"
+      - "tests/fixtures/r09/**"
+      - "rust-toolchain.toml"
+      - ".github/workflows/dotnet-consumer-interop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotnet-consumer-interop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  csharp-frameworks:
+    name: C# / ${{ matrix.framework }} (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        framework:
+          - xunit
+          - mstest
+          - nunit
+    runs-on: ${{ matrix.os }}
+    env:
+      CONSUMER_ROOT: ${{ runner.temp }}/ferrumweave-consumer
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "10.0.400"
+      - name: Provision pinned Rust backend components
+        run: rustup component add --toolchain nightly-2025-10-14 rustc-dev rust-src llvm-tools-preview
+      - name: Generate official C# consumer
+        shell: pwsh
+        run: |
+          ./eng/dotnet-consumers/New-CSharpConsumer.ps1 `
+            -Framework "${{ matrix.framework }}" `
+            -OutputRoot "$env:CONSUMER_ROOT" `
+            -RepoRoot "$env:GITHUB_WORKSPACE"
+      - name: Restore
+        shell: pwsh
+        run: |
+          $projects = @(Get-ChildItem -LiteralPath "$env:CONSUMER_ROOT" -Filter "*.csproj" -File -Recurse)
+          if ($projects.Count -ne 1) { throw "Expected exactly one generated consumer project, found $($projects.Count)" }
+          dotnet restore $projects[0].FullName
+          if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed with exit code $LASTEXITCODE" }
+      - name: Build
+        shell: pwsh
+        run: |
+          $projects = @(Get-ChildItem -LiteralPath "$env:CONSUMER_ROOT" -Filter "*.csproj" -File -Recurse)
+          if ($projects.Count -ne 1) { throw "Expected exactly one generated consumer project, found $($projects.Count)" }
+          dotnet build $projects[0].FullName --no-restore --configuration Release --nologo
+          if ($LASTEXITCODE -ne 0) { throw "dotnet build failed with exit code $LASTEXITCODE" }
+      - name: Test
+        shell: pwsh
+        run: |
+          $projects = @(Get-ChildItem -LiteralPath "$env:CONSUMER_ROOT" -Filter "*.csproj" -File -Recurse)
+          if ($projects.Count -ne 1) { throw "Expected exactly one generated consumer project, found $($projects.Count)" }
+          dotnet test $projects[0].FullName --no-build --configuration Release --nologo
+          if ($LASTEXITCODE -ne 0) { throw "dotnet test failed with exit code $LASTEXITCODE" }
