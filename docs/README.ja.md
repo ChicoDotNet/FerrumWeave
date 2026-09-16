@@ -1,7 +1,7 @@
 <!--
 translation-of: docs/README.md
 locale: ja
-source-revision: 22aef36588bd35a433ff9564ab947703afd39c4f
+source-revision: d50e9029e372521bd00a7b6c8cbc29e234c80009
 -->
 
 # FerrumWeave ドキュメント
@@ -23,11 +23,9 @@ FerrumWeave のドキュメントは、読者が実際にたどる経路を基�
 
 ## アーキテクチャ
 
-次のページは現在、正本の英語版を使用します。
-
-- [Repository layout](architecture/repository-layout.md) — ownership 境界とリポジトリ構造。
-- [ADR 0004 — Rust as a .NET template language](architecture/adr/0004-r10-rust-as-dotnet-template-language.md) — 公開契約が `dotnet new <template> -lang Rust` である理由。
-- [Architecture Decision Records](architecture/adr/) — 過去のアーキテクチャ判断とその根拠。
+- [リポジトリ構成](architecture/repository-layout.ja.md) — ownership 境界とリポジトリ構造。
+- [ADR 0004 — Rust を .NET template language として登録する](architecture/adr/0004-r10-rust-as-dotnet-template-language.ja.md) — 公開契約が `dotnet new <template> -lang Rust` である理由。
+- [Architecture Decision Records](architecture/adr/) — 過去のアーキテクチャ判断とその根拠。*（英語）*
 
 ## 機能と互換性
 
@@ -63,4 +61,4 @@ FerrumWeave のドキュメントは、読者が実際にたどる経路を基�
     → セクション / ドキュメント
 ```
 
-ローカライズされたドキュメントは同じ言語のドキュメントホームへ戻れるようにします。次の docgraph 増分で「ここにリンクしているページ」を自動生成・検証し、backlink を手作業で維持しないようにします。
+`doc-id` metadata を持つドキュメントには、同じ locale のドキュメントホームとプロジェクト README へ戻るリンクが生成されます。`ferrumweave-docgraph` は人が書いた Markdown リンクからローカライズされた「ここへのリンク」backlink も生成・検証します。生成領域はリポジトリに commit され、Documentation graph CI が最新状態を確認します。

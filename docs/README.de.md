@@ -1,7 +1,7 @@
 <!--
 translation-of: docs/README.md
 locale: de
-source-revision: 22aef36588bd35a433ff9564ab947703afd39c4f
+source-revision: d50e9029e372521bd00a7b6c8cbc29e234c80009
 -->
 
 # FerrumWeave-Dokumentation
@@ -23,11 +23,9 @@ Die FerrumWeave-Dokumentation folgt dem Weg, den Leserinnen und Leser tatsächli
 
 ## Architektur
 
-Die folgenden Seiten verwenden derzeit noch die kanonische englische Fassung:
-
-- [Repository layout](architecture/repository-layout.md) — Ownership-Grenzen und Repository-Struktur.
-- [ADR 0004 — Rust as a .NET template language](architecture/adr/0004-r10-rust-as-dotnet-template-language.md) — warum der Vertrag `dotnet new <template> -lang Rust` lautet.
-- [Architecture Decision Records](architecture/adr/) — historische Architekturentscheidungen.
+- [Repository-Struktur](architecture/repository-layout.de.md) — Ownership-Grenzen und Repository-Struktur.
+- [ADR 0004 — Rust als .NET-Template-Sprache](architecture/adr/0004-r10-rust-as-dotnet-template-language.de.md) — warum der Vertrag `dotnet new <template> -lang Rust` lautet.
+- [Architecture Decision Records](architecture/adr/) — historische Architekturentscheidungen. *(Englisch)*
 
 ## Capability und Kompatibilität
 
@@ -63,4 +61,4 @@ Projekt-README
     → Abschnitt / Dokument
 ```
 
-Lokalisierte Dokumente sollen zu dieser Startseite in derselben Sprache zurückführen. Ein späterer Docgraph-Increment wird „Was verweist hierher?“ automatisch erzeugen und prüfen.
+Dokumente mit `doc-id`-Metadaten erhalten automatisch erzeugte Links zurück zu dieser Dokumentations-Startseite und zum Projekt-README im selben Locale. `ferrumweave-docgraph` erzeugt und prüft außerdem lokalisierte „Was hierher verlinkt“-Backlinks aus von Menschen geschriebenen Markdown-Links; die generierten Bereiche werden committed und durch Documentation graph CI verifiziert.

@@ -1,7 +1,7 @@
 <!--
 translation-of: docs/README.md
 locale: es
-source-revision: 22aef36588bd35a433ff9564ab947703afd39c4f
+source-revision: d50e9029e372521bd00a7b6c8cbc29e234c80009
 -->
 
 # Documentación de FerrumWeave
@@ -23,11 +23,9 @@ La documentación de FerrumWeave se organiza alrededor del camino que intenta se
 
 ## Arquitectura
 
-Las siguientes piezas todavía usan su fuente canónica en inglés:
-
-- [Repository layout](architecture/repository-layout.md) — límites de ownership, estructura del repositorio y ubicación del trabajo de compiler/SDK/sitio.
-- [ADR 0004 — Rust as a .NET template language](architecture/adr/0004-r10-rust-as-dotnet-template-language.md) — por qué el contrato público es `dotnet new <template> -lang Rust`.
-- [Architecture Decision Records](architecture/adr/) — decisiones históricas y su justificación.
+- [Estructura del repositorio](architecture/repository-layout.es.md) — límites de ownership, estructura del repositorio y ubicación del trabajo de compiler/SDK/sitio.
+- [ADR 0004 — Rust como lenguaje de templates .NET](architecture/adr/0004-r10-rust-as-dotnet-template-language.es.md) — por qué el contrato público es `dotnet new <template> -lang Rust`.
+- [Architecture Decision Records](architecture/adr/) — decisiones históricas y su justificación. *(Inglés)*
 
 ## Capacidad y compatibilidad
 
@@ -63,4 +61,4 @@ README del proyecto
     → Sección / documento
 ```
 
-Los documentos localizados deben regresar a este home en el mismo idioma. Un incremento posterior de grafo documental generará y certificará “Qué enlaza aquí” en vez de mantener esos backlinks manualmente.
+Los documentos con metadatos `doc-id` reciben enlaces generados de regreso a este home documental y al README del proyecto en el mismo locale. `ferrumweave-docgraph` también genera y certifica “Qué enlaza aquí” a partir de enlaces Markdown escritos por personas; las regiones generadas se mantienen committed y Documentation graph CI verifica que estén actualizadas.

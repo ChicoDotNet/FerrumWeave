@@ -10,7 +10,7 @@ publish = false
 
 [workspace]
 resolver = "3"
-members = [".", "compiler/cil", "projection/types"]
+members = [".", "compiler/cil", "projection/types", "tools/docgraph"]
 exclude = ["compiler/codegen-backend"]
 
 [dev-dependencies]
