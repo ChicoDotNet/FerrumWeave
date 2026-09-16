@@ -9,7 +9,10 @@ fn temp_repo() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("clock after unix epoch")
         .as_nanos();
-    std::env::temp_dir().join(format!("ferrumweave-docgraph-{}-{nonce}", std::process::id()))
+    std::env::temp_dir().join(format!(
+        "ferrumweave-docgraph-{}-{nonce}",
+        std::process::id()
+    ))
 }
 
 #[test]
