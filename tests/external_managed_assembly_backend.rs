@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use support::{
-    assert_success, build_codegen_backend, compile_rust_source, create_work_dir, remove_work_dir,
-    run_managed_consumer, ASSEMBLY_FILE,
+    ASSEMBLY_FILE, assert_success, build_codegen_backend, compile_rust_source, create_work_dir,
+    remove_work_dir, run_managed_consumer,
 };
 
 const EXTERNAL_ASSEMBLY: &str = "External.Managed.dll";
@@ -44,10 +44,12 @@ fn external_managed_assembly_is_source_causal_through_the_ferrumweave_backend() 
         1137
     );
 
-    let baseline = fs::read(&payload_137).expect("baseline external-managed artifact should be readable");
+    let baseline =
+        fs::read(&payload_137).expect("baseline external-managed artifact should be readable");
     assert_ne!(
         baseline,
-        fs::read(&payload_211).expect("payload-mutated external-managed artifact should be readable"),
+        fs::read(&payload_211)
+            .expect("payload-mutated external-managed artifact should be readable"),
         "changing only Rust payload 137 -> 211 must change the external-managed artifact"
     );
     assert_ne!(
@@ -105,7 +107,10 @@ fn build_external_dependency(root: &Path) -> PathBuf {
         .env("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
         .output()
         .expect("dotnet should start the independent external dependency build");
-    assert_success(&output, "independent external managed assembly should build");
+    assert_success(
+        &output,
+        "independent external managed assembly should build",
+    );
 
     let assembly = project
         .join("bin")
@@ -169,10 +174,7 @@ fn run_external_consumer(
     .expect("external-managed consumer source should be written");
 
     let project = consumer.join("Consumer.csproj");
-    let output = run_managed_consumer(
-        &project,
-        &format!("external-managed consumer for {label}"),
-    );
+    let output = run_managed_consumer(&project, &format!("external-managed consumer for {label}"));
     assert_success(
         &output,
         &format!("external-managed consumer should pass for {label}"),
