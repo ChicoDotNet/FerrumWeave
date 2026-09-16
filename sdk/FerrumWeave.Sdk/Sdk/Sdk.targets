@@ -5,13 +5,20 @@
     <FerrumWeaveRustToolchain Condition="'$(FerrumWeaveRustToolchain)' == ''">nightly-2025-10-14</FerrumWeaveRustToolchain>
     <FerrumWeaveCodegenBackendFileName Condition="'$(OS)' == 'Windows_NT'">ferrumweave_codegen_backend.dll</FerrumWeaveCodegenBackendFileName>
     <FerrumWeaveCodegenBackendFileName Condition="'$(FerrumWeaveCodegenBackendFileName)' == ''">libferrumweave_codegen_backend.so</FerrumWeaveCodegenBackendFileName>
-    <FerrumWeaveCodegenBackendPath Condition="'$(FerrumWeaveCodegenBackendPath)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveRepoRoot)/compiler/codegen-backend/target/release/$(FerrumWeaveCodegenBackendFileName)'))</FerrumWeaveCodegenBackendPath>
+
+    <FerrumWeaveCodegenBackendManifest Condition="'$(FerrumWeavePackageMode)' == 'true'">$(FerrumWeavePackagedBackendManifest)</FerrumWeaveCodegenBackendManifest>
+    <FerrumWeaveCodegenBackendManifest Condition="'$(FerrumWeaveCodegenBackendManifest)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveRepoRoot)/compiler/codegen-backend/Cargo.toml'))</FerrumWeaveCodegenBackendManifest>
+
+    <FerrumWeaveCargoTargetDir Condition="'$(FerrumWeaveCargoTargetDir)' == ''">$([System.IO.Path]::GetFullPath('$(BaseIntermediateOutputPath)ferrumweave/backend'))</FerrumWeaveCargoTargetDir>
+    <FerrumWeaveCodegenBackendPath Condition="'$(FerrumWeaveCodegenBackendPath)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveCargoTargetDir)/release/$(FerrumWeaveCodegenBackendFileName)'))</FerrumWeaveCodegenBackendPath>
   </PropertyGroup>
 
   <Target Name="CreateManifestResourceNames" />
 
   <Target Name="BuildFerrumWeaveCodegenBackend" BeforeTargets="CoreCompile">
-    <Exec Command="cargo +$(FerrumWeaveRustToolchain) build --ignore-rust-version --release --manifest-path &quot;$(FerrumWeaveRepoRoot)/compiler/codegen-backend/Cargo.toml&quot;" />
+    <Error Condition="!Exists('$(FerrumWeaveCodegenBackendManifest)')" Text="FerrumWeave CodegenBackend manifest was not found at $(FerrumWeaveCodegenBackendManifest)." />
+    <MakeDir Directories="$(FerrumWeaveCargoTargetDir)" />
+    <Exec Command="cargo +$(FerrumWeaveRustToolchain) build --ignore-rust-version --release --target-dir &quot;$(FerrumWeaveCargoTargetDir)&quot; --manifest-path &quot;$(FerrumWeaveCodegenBackendManifest)&quot;" />
     <Error Condition="!Exists('$(FerrumWeaveCodegenBackendPath)')" Text="FerrumWeave CodegenBackend was not produced at $(FerrumWeaveCodegenBackendPath)." />
   </Target>
 
