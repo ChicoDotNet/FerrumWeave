@@ -15,13 +15,8 @@ fn direct_rust_function_call_is_source_causal_through_the_ferrumweave_backend() 
 
     let add_artifact = compile_variant(&backend, &work, "helper_add", "+", "answer");
     let sub_artifact = compile_variant(&backend, &work, "helper_sub", "-", "answer");
-    let renamed_artifact = compile_variant(
-        &backend,
-        &work,
-        "helper_add_renamed",
-        "+",
-        "compute_result",
-    );
+    let renamed_artifact =
+        compile_variant(&backend, &work, "helper_add_renamed", "+", "compute_result");
 
     assert_ne!(
         fs::read(&add_artifact).expect("add artifact should be readable"),
@@ -87,7 +82,7 @@ System.Console.WriteLine(FerrumWeave.RustApi.{method_name}(137, 74));\n"
         .next_back()
         .expect("managed consumer should produce a direct-call observable")
         .trim();
-    observed
-        .parse::<i32>()
-        .unwrap_or_else(|error| panic!("unexpected managed observable for {name}: {observed:?}: {error}"))
+    observed.parse::<i32>().unwrap_or_else(|error| {
+        panic!("unexpected managed observable for {name}: {observed:?}: {error}")
+    })
 }
