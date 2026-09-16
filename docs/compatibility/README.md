@@ -84,7 +84,7 @@ These remain future work unless and until their roadmap milestones are certified
 - Rust ↔ CTS type mappings;
 - consuming .NET APIs from Rust;
 - consuming Rust APIs from C#/VB/F#;
-- `.rsproj` / MSBuild / `dotnet new rust`;
+- `.rsproj` / MSBuild / .NET template language integration through `dotnet new <template> -lang Rust`;
 - NuGet and ProjectReference integration.
 
 Those claims advance only when their roadmap milestones meet their Definition of Done.
