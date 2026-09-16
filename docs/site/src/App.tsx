@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Badge, Button, Tooltip } from '@fluentui/react-components';
-import { localeFromPath, localeHref, localeNames, locales, messages, type Locale } from './i18n';
+import { localeNames, locales, messages, type Locale } from './i18n';
+import { useSiteRuntime } from './siteRuntime';
 
 const repositoryUrl = 'https://github.com/ChicoDotNet/FerrumWeave';
 const issuesUrl = `${repositoryUrl}/issues`;
@@ -71,23 +72,14 @@ function LocalizedHeroTitle({ title }: { title: string }) {
 }
 
 export function App() {
-  const locale = localeFromPath(window.location.pathname);
+  const { locale, navigateLocale } = useSiteRuntime();
   const m = messages[locale];
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.lang = locale;
-    document.title = `FerrumWeave — ${m.heroTitle}`;
-  }, [locale, m.heroTitle]);
 
   async function copyCommand() {
     await navigator.clipboard.writeText(command);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
-  }
-
-  function changeLocale(nextLocale: Locale) {
-    window.location.assign(localeHref(nextLocale, import.meta.env.BASE_URL));
   }
 
   return (
@@ -101,7 +93,7 @@ export function App() {
             <select
               aria-label={m.language}
               value={locale}
-              onChange={(event) => changeLocale(event.target.value as Locale)}
+              onChange={(event) => navigateLocale(event.target.value as Locale)}
               style={{ maxWidth: '11rem', padding: '0.4rem 0.55rem', borderRadius: '0.45rem' }}
             >
               {locales.map((item) => <option value={item} key={item}>{localeNames[item]}</option>)}
