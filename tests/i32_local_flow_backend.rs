@@ -48,7 +48,12 @@ fn build_codegen_backend(root: &Path) -> PathBuf {
     let manifest = root.join("compiler/codegen-backend/Cargo.toml");
     let output = Command::new("cargo")
         .arg(format!("+{TOOLCHAIN}"))
-        .args(["build", "--ignore-rust-version", "--release", "--manifest-path"])
+        .args([
+            "build",
+            "--ignore-rust-version",
+            "--release",
+            "--manifest-path",
+        ])
         .arg(&manifest)
         .current_dir(root)
         .output()
@@ -138,9 +143,7 @@ fn execute_from_csharp(
     .expect("C# consumer project should be written");
     fs::write(
         consumer.join("Program.cs"),
-        format!(
-            "System.Console.WriteLine(FerrumWeave.RustApi.{method_name}(137, 211));\n"
-        ),
+        format!("System.Console.WriteLine(FerrumWeave.RustApi.{method_name}(137, 211));\n"),
     )
     .expect("C# consumer source should be written");
 
