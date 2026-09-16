@@ -12,7 +12,11 @@ fn contract_blocks(text: &str) -> Vec<&str> {
 fn field_value<'a>(block: &'a str, key: &str) -> Option<&'a str> {
     block.lines().find_map(|line| {
         let (name, value) = line.trim().split_once('=')?;
-        (name.trim() == key).then(|| value.trim())
+        if name.trim() == key {
+            Some(value.trim())
+        } else {
+            None
+        }
     })
 }
 
@@ -78,9 +82,11 @@ fn functional_contract_ledger_is_mapped_to_rust_tests_at_or_above_policy_minimum
         .lines()
         .find_map(|line| {
             let (name, value) = line.trim().split_once('=')?;
-            (name.trim() == "minimum_percent")
-                .then(|| value.trim().parse::<f64>().ok())
-                .flatten()
+            if name.trim() == "minimum_percent" {
+                value.trim().parse::<f64>().ok()
+            } else {
+                None
+            }
         })
         .expect("functional contract ledger must declare a numeric minimum_percent");
 
@@ -122,4 +128,9 @@ fn functional_contract_ledger_is_mapped_to_rust_tests_at_or_above_policy_minimum
         "functional coverage is {covered}/{} = {percent:.2}%, below the {minimum_percent:.2}% gate",
         contracts.len()
     );
+
+    // ADAPT from the Python harness: this test owns ledger/mapping policy, while
+    // the same authoritative `cargo test --workspace --tests` invocation runs
+    // every mapped test in `tests/functional.rs`. A mapped test failure therefore
+    // still fails the Rust certification run without recursively spawning Cargo.
 }
