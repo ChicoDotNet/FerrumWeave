@@ -32,6 +32,44 @@ fn assert_success(label: &str, output: &Output) {
     );
 }
 
+fn consume_managed_answer(assembly: &Path, temp: &Path) -> Output {
+    let consumer = temp.join("consumer");
+    fs::create_dir_all(&consumer).expect("create managed consumer directory");
+    fs::write(
+        consumer.join("Consumer.csproj"),
+        r#"<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+"#,
+    )
+    .expect("write managed consumer project");
+    fs::write(
+        consumer.join("Program.cs"),
+        r#"using System.Reflection;
+var assembly = Assembly.LoadFrom(args[0]);
+var type = assembly.GetType("FerrumWeave.RustApi", throwOnError: true)!;
+var answer = type.GetMethod("Answer", BindingFlags.Public | BindingFlags.Static)!;
+System.Console.Write(answer.Invoke(null, null));
+"#,
+    )
+    .expect("write managed consumer program");
+
+    Command::new("dotnet")
+        .args([
+            "run",
+            "--project",
+            "Consumer.csproj",
+            "--",
+            assembly.to_str().expect("assembly path must be UTF-8"),
+        ])
+        .current_dir(&consumer)
+        .output()
+        .expect("managed consumer must execute")
+}
+
 #[test]
 fn documented_prerequisites_drive_the_complete_supported_sdk_lifecycle() {
     let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -98,16 +136,12 @@ fn documented_prerequisites_drive_the_complete_supported_sdk_lifecycle() {
         "dotnet build must materialize HelloFerrum.dll"
     );
 
-    let run_output = run(
-        "dotnet",
-        &["run", "--project", "HelloFerrum.rsproj", "--no-build"],
-        &temp,
-        &repo,
-    );
-    assert_success("dotnet run", &run_output);
-    assert!(
-        String::from_utf8_lossy(&run_output.stdout).contains("Hello from FerrumWeave!"),
-        "dotnet run must execute the FerrumWeave-emitted program",
+    let consume = consume_managed_answer(&assembly, &temp);
+    assert_success("managed consumer", &consume);
+    assert_eq!(
+        String::from_utf8_lossy(&consume.stdout).trim(),
+        "42",
+        "the SDK lifecycle must expose behavior originating in the canonical Rust source through the managed artifact",
     );
 
     let test_output = run(

@@ -16,9 +16,5 @@ path = "src/root.rs"
 name = "clr_probe"
 path = "src/bin/clr_probe.rs"
 
-[[bin]]
-name = "ferrumweave_emit"
-path = "src/bin/ferrumweave_emit.rs"
-
 [lints.rust]
 unsafe_code = "forbid"
