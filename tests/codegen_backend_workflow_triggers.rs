@@ -11,7 +11,6 @@ fn backend_convergence_tracks_all_backend_evidence_inputs() {
         "compiler/cil/**",
         "projection/**",
         "sdk/**",
-        "eng/verification/**",
         "tests/r05/**",
         "tests/**",
         "docs/architecture/**",

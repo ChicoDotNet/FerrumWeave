@@ -9,7 +9,6 @@ on:
       - "compiler/cil/**"
       - "projection/**"
       - "sdk/**"
-      - "eng/verification/**"
       - "tests/r05/**"
       - "tests/**"
       - "Cargo.toml"
@@ -23,7 +22,6 @@ on:
       - "compiler/cil/**"
       - "projection/**"
       - "sdk/**"
-      - "eng/verification/**"
       - "tests/r05/**"
       - "tests/**"
       - "Cargo.toml"
@@ -67,16 +65,11 @@ jobs:
         run: |
           set -euo pipefail
           cargo +nightly-2025-10-14 build --ignore-rust-version --release --manifest-path compiler/codegen-backend/Cargo.toml
-      - name: Certify rustc loads FerrumWeave
+      - name: Certify Rust-native FerrumWeave codegen boundary
         shell: bash
         run: |
           set -euo pipefail
-          python eng/verification/verify_codegen_backend_boundary.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}"
-      - name: Require FerrumWeave-owned MIR lowering
-        shell: bash
-        run: |
-          set -euo pipefail
-          python eng/verification/verify_codegen_backend_boundary.py --toolchain nightly-2025-10-14 --backend "$GITHUB_WORKSPACE/compiler/codegen-backend/target/release/${{ matrix.backend }}" --require-artifact
+          cargo test --locked --test codegen_backend_boundary -- --nocapture
       - name: Require .rsproj to invoke rustc with the FerrumWeave backend
         shell: bash
         run: |
