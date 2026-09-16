@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>FerrumWeave.Sdk</PackageId>
+    <PackageVersion>0.1.0-alpha.1</PackageVersion>
+    <Title>FerrumWeave SDK</Title>
+    <Authors>FerrumWeave contributors</Authors>
+    <Description>MSBuild SDK and .NET language templates for compiling Rust to managed .NET assemblies with FerrumWeave.</Description>
+    <PackageTags>rust;dotnet;msbuild-sdk;dotnet-new;templates</PackageTags>
+    <RepositoryUrl>https://github.com/ChicoDotNet/FerrumWeave</RepositoryUrl>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <PackageType>Template</PackageType>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeContentInPack>false</IncludeContentInPack>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <NoWarn>$(NoWarn);NU5127;NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Sdk/Sdk.props" Pack="true" PackagePath="Sdk/Sdk.props" />
+    <None Include="Sdk/Sdk.targets" Pack="true" PackagePath="Sdk/Sdk.targets" />
+
+    <!-- R10 distribution begins with the console family. Other 0.1-alpha
+         families enter the package only after their own meaningful workflow
+         reaches the corresponding support gate. -->
+    <None Include="../templates/console/**/*" Pack="true" PackagePath="content/console/%(RecursiveDir)%(Filename)%(Extension)" />
+
+    <!-- The alpha package carries the minimal FerrumWeave backend source
+         closure. Sdk.targets builds it into the consuming project's obj/
+         directory so the global NuGet cache remains immutable. -->
+    <None Include="../../compiler/codegen-backend/Cargo.toml" Pack="true" PackagePath="tools/compiler/codegen-backend/Cargo.toml" />
+    <None Include="../../compiler/codegen-backend/src/**/*" Pack="true" PackagePath="tools/compiler/codegen-backend/src/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="../../compiler/cil/Cargo.toml" Pack="true" PackagePath="tools/compiler/cil/Cargo.toml" />
+    <None Include="../../compiler/cil/src/**/*" Pack="true" PackagePath="tools/compiler/cil/src/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="../../projection/types/Cargo.toml" Pack="true" PackagePath="tools/projection/types/Cargo.toml" />
+    <None Include="../../projection/types/src/**/*" Pack="true" PackagePath="tools/projection/types/src/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
