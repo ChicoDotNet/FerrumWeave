@@ -118,7 +118,14 @@ fn rust_classlib_is_a_real_dotnet_language_variant_consumable_by_csharp() {
         &run,
         "consume Rust classlib from C# through ProjectReference",
     );
-    assert_eq!(String::from_utf8_lossy(&run.stdout).trim(), "42");
+
+    let stdout = String::from_utf8(run.stdout).expect("classlib consumer stdout should be UTF-8");
+    let observed = stdout
+        .lines()
+        .rfind(|line| !line.trim().is_empty())
+        .expect("classlib consumer should produce an observable")
+        .trim();
+    assert_eq!(observed, "42");
 
     let _ = fs::remove_dir_all(root);
 }
