@@ -50,9 +50,25 @@ if ($LASTEXITCODE -ne 0) {
     throw "dotnet add reference failed with exit code $LASTEXITCODE"
 }
 
-$testFiles = @(Get-ChildItem -LiteralPath $projectDirectory -Filter "*.fs" -File)
+$testMarker = switch ($Framework) {
+    "xunit"  { "[<Fact>]" }
+    "mstest" { "[<TestMethod>]" }
+    "nunit"  { "[<Test>]" }
+}
+
+$testFiles = @(
+    Get-ChildItem -LiteralPath $projectDirectory -Filter "*.fs" -File |
+        Where-Object {
+            (Get-Content -LiteralPath $_.FullName -Raw).Contains($testMarker)
+        }
+)
+
 if ($testFiles.Count -ne 1) {
-    throw "Expected exactly one template F# test source, found $($testFiles.Count) in $projectDirectory"
+    $allSources = @(
+        Get-ChildItem -LiteralPath $projectDirectory -Filter "*.fs" -File |
+            ForEach-Object { $_.Name }
+    ) -join ", "
+    throw "Expected exactly one F# template test source containing $testMarker, found $($testFiles.Count). Sources: $allSources"
 }
 
 $testSource = switch ($Framework) {
