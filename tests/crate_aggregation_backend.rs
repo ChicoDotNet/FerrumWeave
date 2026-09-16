@@ -168,13 +168,7 @@ fn assert_metadata(artifact: &Path, expected_methods: &[&str]) {
     }
 }
 
-fn assert_observable(
-    artifact: &Path,
-    work: &Path,
-    label: &str,
-    program: &str,
-    expected: &str,
-) {
+fn assert_observable(artifact: &Path, work: &Path, label: &str, program: &str, expected: &str) {
     let project = make_csharp_consumer(artifact, work, label, program);
     let output = run_managed_consumer(
         &project,
