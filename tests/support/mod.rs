@@ -83,6 +83,10 @@ pub fn compile_rust_source(
     artifact
 }
 
+// `tests/support` is compiled independently into each integration-test crate.
+// This helper is intentionally shared even though some crates build their own
+// specialized C# consumer and therefore do not reference it.
+#[allow(dead_code)]
 pub fn make_csharp_consumer(
     artifact: &Path,
     root: &Path,
