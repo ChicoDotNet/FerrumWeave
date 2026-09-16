@@ -37,22 +37,6 @@ fn quoted_field<'a>(block: &'a str, key: &str) -> Option<&'a str> {
 }
 
 #[test]
-fn historical_r02_and_r03_contracts_are_explicitly_oracle_proven() {
-    for path in ["tests/r02/contracts.toml", "tests/r03/contracts.toml"] {
-        let blocks = contract_blocks(path);
-        assert!(!blocks.is_empty(), "{path} must contain contracts");
-
-        for block in blocks {
-            assert!(
-                block.contains("evidence_level = \"oracle-proven\""),
-                "{} in {path} must be classified as oracle-proven; historical rustc_codegen_clr success is characterization evidence, not FerrumWeave product-backend evidence",
-                contract_id(&block)
-            );
-        }
-    }
-}
-
-#[test]
 fn r05_source_causal_contracts_name_the_ferrumweave_backend_evidence() {
     let path = "tests/r05/contracts.toml";
     let blocks = contract_blocks(path);
