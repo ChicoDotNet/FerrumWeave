@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use support::{
-    assert_success, build_codegen_backend, compile_rust_source, create_work_dir, last_stdout_line,
+    assert_success, build_codegen_backend, compile_rust_source, create_work_dir,
     make_csharp_consumer, remove_work_dir, run_managed_consumer,
 };
 
@@ -103,8 +103,10 @@ fn execute_from_csharp(
         &format!("C# consumer should execute Rust control flow {label}, selector={selector}"),
     );
 
+    let stdout = String::from_utf8(output.stdout).expect("consumer stdout should be UTF-8");
+    let observed = stdout.lines().next_back().unwrap_or_default().trim();
     assert_eq!(
-        last_stdout_line(&output),
+        observed,
         expected.to_string(),
         "Rust control flow {label}, selector={selector} should drive the managed observable"
     );
