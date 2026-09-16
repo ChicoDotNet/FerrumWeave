@@ -114,7 +114,10 @@ fn rust_classlib_is_a_real_dotnet_language_variant_consumable_by_csharp() {
         .env("MSBuildSDKsPath", repo.join("sdk"))
         .output()
         .expect("C# consumer must execute through ProjectReference to Rust classlib");
-    assert_success(&run, "consume Rust classlib from C# through ProjectReference");
+    assert_success(
+        &run,
+        "consume Rust classlib from C# through ProjectReference",
+    );
     assert_eq!(String::from_utf8_lossy(&run.stdout).trim(), "42");
 
     let _ = fs::remove_dir_all(root);
