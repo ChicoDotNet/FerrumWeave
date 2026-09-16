@@ -46,8 +46,17 @@ jobs:
       - name: Render documentation graph
         run: cargo run --locked -p ferrumweave-docgraph -- render
       - name: Generated documentation is committed
+        id: generated_docs
         shell: bash
         run: |
           set -euo pipefail
           git diff --check
           git diff --exit-code
+      - name: Upload rendered documentation diagnostic
+        if: failure() && steps.generated_docs.outcome == 'failure'
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: docgraph-rendered-${{ github.run_id }}
+          path: docs/architecture/**/*.md
+          if-no-files-found: error
+          retention-days: 3
