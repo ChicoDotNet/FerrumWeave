@@ -55,8 +55,14 @@ fn managed_construction_is_source_causal_through_the_ferrumweave_backend() {
     );
     assert_constructor_target(&renamed, &["System", "Object", ".ctor"], "ComputeResult");
 
-    assert_eq!(run_consumer(&object_137, &work, "object_137", "Answer"), 137);
-    assert_eq!(run_consumer(&object_211, &work, "object_211", "Answer"), 211);
+    assert_eq!(
+        run_consumer(&object_137, &work, "object_137", "Answer"),
+        137
+    );
+    assert_eq!(
+        run_consumer(&object_211, &work, "object_211", "Answer"),
+        211
+    );
     assert_eq!(
         run_consumer(&string_builder_137, &work, "string_builder_137", "Answer"),
         137
@@ -66,7 +72,8 @@ fn managed_construction_is_source_causal_through_the_ferrumweave_backend() {
         137
     );
 
-    let baseline = fs::read(&object_137).expect("baseline construction artifact should be readable");
+    let baseline =
+        fs::read(&object_137).expect("baseline construction artifact should be readable");
     assert_ne!(
         baseline,
         fs::read(&object_211).expect("payload-mutated construction artifact should be readable"),
@@ -117,9 +124,15 @@ fn compile_variant(
 
 fn assert_constructor_target(artifact: &Path, required: &[&str], export_method: &str) {
     let image = fs::read(artifact).expect("managed construction artifact should be readable");
-    for expected in ["MZ", "BSJB", "FerrumWeave.Generated", "RustApi", export_method]
-        .into_iter()
-        .chain(required.iter().copied())
+    for expected in [
+        "MZ",
+        "BSJB",
+        "FerrumWeave.Generated",
+        "RustApi",
+        export_method,
+    ]
+    .into_iter()
+    .chain(required.iter().copied())
     {
         assert!(
             image
