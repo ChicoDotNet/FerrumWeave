@@ -19,13 +19,7 @@ fn i32_arithmetic_is_source_causal_through_the_ferrumweave_backend() {
 
     execute_from_csharp(&add_artifact, 211, &work, "add", "Answer");
     execute_from_csharp(&sub_artifact, 63, &work, "sub", "Answer");
-    execute_from_csharp(
-        &renamed_artifact,
-        211,
-        &work,
-        "renamed",
-        "ComputeResult",
-    );
+    execute_from_csharp(&renamed_artifact, 211, &work, "renamed", "ComputeResult");
 
     let add_bytes = fs::read(&add_artifact).expect("add artifact should be readable");
     let sub_bytes = fs::read(&sub_artifact).expect("sub artifact should be readable");
