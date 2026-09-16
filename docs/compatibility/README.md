@@ -1,6 +1,6 @@
 # Compatibility status
 
-This document records **implemented and evidenced capability**, with evidence ownership stated explicitly. Historical oracle characterization is preserved, but it is not interchangeable with FerrumWeave product implementation evidence.
+This document records **implemented and evidenced capability in the current tree**. Historical bootstrap experiments remain available through Git history; they are not carried forward as executable compatibility machinery.
 
 ## R00 — Native Rust bootstrap
 
@@ -19,9 +19,7 @@ R00 does not claim managed CLR code generation.
 
 R01 proves that FerrumWeave-owned stable-Rust infrastructure can emit a deterministic IL-only PE/CLI assembly, expose valid CLR metadata and a managed entry point, and execute it directly on CoreCLR on Linux and Windows. It does not claim Rust-language lowering.
 
-## Evidence lifecycle
-
-R02/R03 historical evidence is `oracle-proven`. Those milestones remain useful bootstrap history and differential characterization through the pinned `rustc_codegen_clr` backend, but they do not establish FerrumWeave ownership of the product backend.
+## Evidence ownership
 
 Current product capability requires `FerrumWeave-backend-proven` evidence. Where a claim begins with Rust source, the required causal path is:
 
@@ -33,23 +31,11 @@ Current product capability requires `FerrumWeave-backend-proven` evidence. Where
         -> CoreCLR
 ```
 
-The upstream oracle may support differential verification, but it is not a FerrumWeave runtime, SDK, or product dependency and cannot be the primary PASS evidence for current product capability.
+`rustc_codegen_clr` remains acknowledged prior art, but it is not a FerrumWeave runtime, SDK, product dependency, test dependency, or active certification lane. The retired R02/R03 oracle implementation is preserved by repository history rather than by executable code in the current tree.
 
-## R02 — Rust → CLR vertical slice
+## R02-R03 — Historical bootstrap
 
-**Status: Done as historical bootstrap / oracle characterization.**
-
-The pinned R02 lane demonstrates that real `.rs` source can enter the real `rustc` frontend, pass through borrow checking and MIR, reach CLR-oriented code generation, produce an IL-only PE/CLI artifact, and execute on CoreCLR on Linux and Windows. The lane pins `FractalFir/rustc_codegen_clr@a9aa553b136fce00eceb41fba30758830500a63f` with `nightly-2025-10-14`.
-
-That evidence remains reproducible and valuable, but its ownership level is `oracle-proven`. It characterizes expected Rust → CLR behavior; it does not certify that FerrumWeave itself implements that backend path.
-
-## R03 — Core Rust semantics
-
-**Status: Done as historical differential / oracle characterization.**
-
-The R03 lane preserves a small safe-Rust characterization set across Linux and Windows: primitive values, locals, arithmetic, calls/returns, conditionals, loops, tuples/structs, field access, shared/mutable references, and an invalid-borrowing negative case. Positive cases compare native Rust behavior against the pinned CLR oracle; the negative case preserves the expected Rust compiler rejection.
-
-These families remain `oracle-proven` historical evidence. They are useful as differential expectations while FerrumWeave expands its own MIR lowering, but they do not substitute for FerrumWeave backend certification of the same family.
+R02 and R03 established early Rust-to-CLR characterization while the product architecture was still being discovered. Those experiments no longer define an executable compatibility surface in the current tree. Current Rust semantic claims must be certified through the FerrumWeave-owned backend.
 
 ## R04 — CLR / CTS foundation
 
@@ -61,7 +47,7 @@ R04 preserves FerrumWeave-owned CTS/projection and CLR reflection evidence. It e
 
 **Status: Done — promoted to `main` and re-certified on the declared portable claims.**
 
-R05-R09 carry current product evidence through the FerrumWeave-owned backend rather than the oracle. The certified path includes Rust-source causal managed calls and interop families, managed consumption of FerrumWeave-produced assemblies, `.rsproj` / MSBuild integration, and the mixed `.slnx` proof.
+R05-R09 carry current product evidence through the FerrumWeave-owned backend. The certified path includes Rust-source causal managed calls and interop families, managed consumption of FerrumWeave-produced assemblies, `.rsproj` / MSBuild integration, and the mixed `.slnx` proof.
 
 At the declared contract scope, the product evidence demonstrates:
 
@@ -74,18 +60,16 @@ At the declared contract scope, the product evidence demonstrates:
 - mutation/falsification checks reject hardcoded substitute behavior;
 - Linux and Windows evidence is required where the claim is portable.
 
-The final R09 promotion is `main@eab90a620b0598dbbce8ea6bf51f7d5b725f5818`, whose tree is identical to the certified `dev@96a189159cd865726ebf48b502ac8fe501ea9a6f` state. The promoted SHA independently replayed GREEN in Rust CI #720, FerrumWeave codegen backend convergence #350, R02 #390, R03 #417, R04 #570, and the managed-consumption causality lane #273.
-
 This does **not** imply general Rust or `std` compatibility, complete CTS coverage, general NuGet semantics, debugger completeness, or production readiness beyond the explicit contracts.
 
 ## R10 — Developer experience / 0.1 alpha
 
 **Status: Active — resumed after certified R09 promotion.**
 
-R10 now owns the release/developer-experience boundary. Its primary product contract treats Rust as a .NET **language choice**: `dotnet new <template> -lang Rust`. Commands documented for the alpha remain target contracts until their corresponding executable CI evidence is GREEN; documentation must not present an uncertified target as released capability.
+R10 owns the release/developer-experience boundary. Its primary product contract treats Rust as a .NET **language choice**: `dotnet new <template> -lang Rust`. Commands documented for the alpha remain target contracts until their corresponding executable CI evidence is GREEN; documentation must not present an uncertified target as released capability.
 
 The architecture decision is recorded in [`../architecture/adr/0004-r10-rust-as-dotnet-template-language.md`](../architecture/adr/0004-r10-rust-as-dotnet-template-language.md), and the prerelease project-family sequence is defined in [`../roadmap/template-release-plan.md`](../roadmap/template-release-plan.md).
 
 ## Evidence rule
 
-Compatibility claims advance only when the implementation that owns the capability is in the causal path. For current product capability, successful `rustc_codegen_clr` execution may be secondary oracle evidence, never primary FerrumWeave PASS evidence.
+Compatibility claims advance only when the implementation that owns the capability is in the causal path.
