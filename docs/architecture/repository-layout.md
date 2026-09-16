@@ -1,4 +1,11 @@
+<!--
+doc-id: architecture.repository-layout
+locale: en
+-->
+
 # Repository layout
+
+**English** · [Deutsch](repository-layout.de.md) · [Español](repository-layout.es.md) · [Français](repository-layout.fr.md) · [Italiano](repository-layout.it.md) · [Português (Brasil)](repository-layout.pt-BR.md) · [Русский](repository-layout.ru.md) · [简体中文](repository-layout.zh-Hans.md) · [日本語](repository-layout.ja.md)
 
 FerrumWeave is intentionally a **capability-first monorepo**. The repository should feel familiar to contributors coming from either Rust or .NET without dividing the product into a permanent “Rust side” and “.NET side”.
 
@@ -37,6 +44,9 @@ FerrumWeave/
 │   ├── debugger/
 │   ├── vscode/
 │   └── visualstudio/
+├── tools/
+│   ├── docgraph/
+│   └── quality/
 ├── tests/
 │   ├── ui/
 │   ├── codegen/
@@ -54,8 +64,9 @@ FerrumWeave/
 │   ├── consumed-by-dotnet/
 │   └── mixed-solution/
 ├── docs/
+│   ├── README.md
+│   ├── i18n.md
 │   ├── architecture/
-│   │   ├── README.md
 │   │   └── adr/
 │   ├── compatibility/
 │   ├── design/
@@ -90,6 +101,8 @@ FerrumWeave/
 Top-level product folders describe responsibilities: `compiler`, `projection`, `sdk`, and `tooling`. Avoid a root such as `src/rust` next to `src/dotnet`; that would create an architectural boundary FerrumWeave exists to dissolve.
 
 Within a capability, use the conventions native to the ecosystem implementing it. Rust crates use idiomatic `Cargo.toml` + `src/`; .NET components use SDK-style projects and normal .NET naming.
+
+Repository-maintenance utilities that are not product tooling live under `tools/`. `tools/docgraph`, for example, maintains the documentation graph; it is not part of the compiler or the developer-facing FerrumWeave toolchain.
 
 ### Keep the rustc backend boundary owned by FerrumWeave
 

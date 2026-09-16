@@ -1,4 +1,11 @@
+<!--
+doc-id: architecture.adr.0004-rust-as-dotnet-template-language
+locale: en
+-->
+
 # ADR 0004 — Register Rust as a .NET template language
+
+**English** · [Deutsch](0004-r10-rust-as-dotnet-template-language.de.md) · [Español](0004-r10-rust-as-dotnet-template-language.es.md) · [Français](0004-r10-rust-as-dotnet-template-language.fr.md) · [Italiano](0004-r10-rust-as-dotnet-template-language.it.md) · [Português (Brasil)](0004-r10-rust-as-dotnet-template-language.pt-BR.md) · [Русский](0004-r10-rust-as-dotnet-template-language.ru.md) · [简体中文](0004-r10-rust-as-dotnet-template-language.zh-Hans.md) · [日本語](0004-r10-rust-as-dotnet-template-language.ja.md)
 
 - Status: Accepted for R10 and the prerelease roadmap
 - Date: 2026-09-15
