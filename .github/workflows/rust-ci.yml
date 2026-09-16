@@ -12,6 +12,8 @@ on:
       - "src/**"
       - "compiler/**"
       - "projection/**"
+      - "sdk/**"
+      - "eng/verification/**"
       - "tests/**"
       - "tools/quality/**"
       - "docs/quality/**"
@@ -28,6 +30,8 @@ on:
       - "src/**"
       - "compiler/**"
       - "projection/**"
+      - "sdk/**"
+      - "eng/verification/**"
       - "tests/**"
       - "tools/quality/**"
       - "docs/quality/**"
@@ -52,7 +56,27 @@ jobs:
       - name: Toolchain
         run: rustup show
       - name: Formatting
-        run: cargo fmt --all --check
+        id: formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p target/quality
+          cargo fmt --all
+          git diff -- . > target/quality/rustfmt.diff
+          if [[ -s target/quality/rustfmt.diff ]]; then
+            cat target/quality/rustfmt.diff
+            exit 1
+          fi
+      - name: Upload rustfmt diagnostic
+        if: failure() && steps.formatting.outcome == 'failure'
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: rustfmt-diagnostic
+          path: |
+            target/quality/rustfmt.diff
+            compiler/cil/src/*.rs
+          if-no-files-found: error
+          retention-days: 3
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
@@ -74,12 +98,27 @@ jobs:
           dotnet-version: "10.0.400"
       - name: Toolchain
         run: rustup show
+      - name: Provision pinned rustc backend components
+        run: rustup component add --toolchain nightly-2025-10-14 rustc-dev rust-src llvm-tools-preview
       - name: Build
         run: cargo build --workspace --all-targets --locked
       - name: Unit tests
         run: cargo test --workspace --lib --locked
       - name: Integration tests
-        run: cargo test --workspace --tests --locked
+        id: integration_tests
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p target/quality
+          cargo test --workspace --tests --locked 2>&1 | tee "target/quality/integration-tests-${RUNNER_OS}.log"
+      - name: Upload integration first-divergence log
+        if: failure() && steps.integration_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: integration-first-divergence-${{ matrix.os }}
+          path: target/quality/integration-tests-${{ runner.os }}.log
+          if-no-files-found: error
+          retention-days: 3
 
   code-coverage:
     name: code coverage
@@ -93,6 +132,8 @@ jobs:
           dotnet-version: "10.0.400"
       - name: Toolchain
         run: rustup show
+      - name: Provision pinned rustc backend components
+        run: rustup component add --toolchain nightly-2025-10-14 rustc-dev rust-src llvm-tools-preview
       - name: Install pinned cargo-llvm-cov
         shell: bash
         run: cargo install --locked --force --version 0.8.7 cargo-llvm-cov
@@ -131,3 +172,5 @@ jobs:
         run: rustup show
       - name: Enforce functional contract coverage
         run: python3 tools/quality/check_functional_coverage.py
+      - name: Enforce managed-consumption source causality
+        run: python3 eng/verification/check_managed_consumption_causality.py
