@@ -1,0 +1,18 @@
+milestone = "R10"
+status = "active"
+minimum_percent_when_done = 96.0
+target_percent_when_done = 100.0
+
+# R10 owns the installed-package developer experience for Rust as a language
+# choice in standard .NET template families. Historical R08 evidence for
+# `dotnet new rust` remains history; it is not the R10 public target.
+#
+# This ledger is intentionally independent from tests/functional/contracts.toml.
+# Declaring an R10 contract here does not lower the existing functional coverage
+# percentage while the milestone is still RED.
+
+[[contracts]]
+id = "FW-R10-DX-003"
+family = "installed alpha registers Rust as a .NET console-template language"
+implemented = false
+proof = "RED / pending. From a clean external environment with the supported .NET SDK and FerrumWeave installed through its distributable package boundary, 'dotnet new console -lang Rust -n HelloFerrum' must generate an SDK-style .rsproj and src/main.rs; dotnet build/run must reach .rsproj -> FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend -> managed CIL/metadata -> CoreCLR with a Rust-source-causal observable. Installation must coexist with ordinary console, VB, and F# template variants. Repository-local template installation, 'dotnet new rust', generated C#, legacy emitters, native sidecars, and rustc_codegen_clr are not valid proof of this contract."
