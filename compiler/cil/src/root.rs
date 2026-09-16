@@ -13,6 +13,9 @@ pub use multi_scalar_export::*;
 mod heterogeneous_export;
 pub use heterogeneous_export::*;
 
+mod executable_export;
+pub use executable_export::*;
+
 mod argument_export;
 pub use argument_export::*;
 
