@@ -3,7 +3,7 @@ import { Badge, Button, Tooltip } from '@fluentui/react-components';
 
 const repositoryUrl = 'https://github.com/ChicoDotNet/FerrumWeave';
 const issuesUrl = `${repositoryUrl}/issues`;
-const command = `dotnet new rust -n HelloFerrum\ncd HelloFerrum\ndotnet run`;
+const command = `dotnet new install FerrumWeave.Sdk::0.1.0-alpha.1\ndotnet new console -lang Rust -n HelloFerrum\ncd HelloFerrum\ndotnet run`;
 const heroUrl = `${import.meta.env.BASE_URL}hero/ferrumweave-readme-cover.png`;
 
 const pillars = [
@@ -105,7 +105,7 @@ export function App() {
           <a className="brand-link" href="#top" aria-label="FerrumWeave home">Ferrum<span>Weave</span></a>
           <nav className="d-flex align-items-center gap-3" aria-label="Primary navigation">
             <a href="#vision">Vision</a>
-            <a href="#milestone">First proof</a>
+            <a href="#milestone">Certified foundation</a>
             <Button as="a" appearance="primary" href={repositoryUrl}>GitHub</Button>
           </nav>
         </div>
@@ -116,16 +116,16 @@ export function App() {
           <div className="container py-5 py-lg-6">
             <div className="row align-items-center g-5">
               <div className="col-12 col-lg-6">
-                <Badge appearance="outline" color="informative" className="status-badge">Pre-alpha · architectural discovery</Badge>
+                <Badge appearance="outline" color="informative" className="status-badge">R10 · 0.1 alpha in progress</Badge>
                 <h1>Bringing Rust into the <span>.NET ecosystem.</span></h1>
                 <p className="hero-lead">FerrumWeave aims to make Rust a first-class .NET language so organizations can introduce Rust&apos;s safety model into new and critical components without abandoning the software, libraries, languages, and operational knowledge they already have.</p>
                 <div className="d-flex flex-wrap gap-3 mt-4">
                   <Button as="a" appearance="primary" size="large" href={repositoryUrl}>Explore the repository</Button>
-                  <Button as="a" appearance="secondary" size="large" href="#milestone">See the first proof</Button>
+                  <Button as="a" appearance="secondary" size="large" href="#milestone">See the certified foundation</Button>
                 </div>
                 <div className="command-card mt-4" aria-label="Target dotnet command experience">
                   <div className="command-card__bar">
-                    <span>Target developer experience</span>
+                    <span>0.1 alpha target experience</span>
                     <Tooltip content={copied ? 'Copied' : 'Copy commands'} relationship="label">
                       <Button appearance="subtle" size="small" onClick={copyCommand}>{copied ? 'Copied ✓' : 'Copy'}</Button>
                     </Tooltip>
@@ -204,18 +204,18 @@ export function App() {
           <div className="container">
             <div className="row g-5 align-items-center">
               <div className="col-12 col-lg-6">
-                <p className="eyebrow">The first proof</p>
-                <h2 id="milestone-heading">One trustworthy vertical slice.</h2>
-                <p>The first meaningful milestone is deliberately small: a real `.rsproj`, built and run through `dotnet`, producing a valid .NET assembly whose Rust code calls `System.Console.WriteLine` through the CLR.</p>
-                <div className="proof-flow" aria-label="First proof compilation flow">
-                  {['Rust source', '.rsproj', 'dotnet build / run', 'CIL + metadata', 'CLR', 'System.Console.WriteLine'].map((step, index) => (
+                <p className="eyebrow">Certified R09 foundation</p>
+                <h2 id="milestone-heading">The compiler path is real. R10 makes it usable.</h2>
+                <p>R09 is promoted and re-certified on main: `.rsproj → FerrumWeave.Sdk → rustc → FerrumWeave CodegenBackend → CIL / metadata → CoreCLR` is source-causal on Linux and Windows. R10 now turns that certified foundation into an installable alpha developer experience.</p>
+                <div className="proof-flow" aria-label="Certified compilation flow">
+                  {['Rust source', '.rsproj', 'FerrumWeave.Sdk', 'rustc + FerrumWeave backend', 'CIL + metadata', 'CoreCLR'].map((step, index) => (
                     <div className="proof-step" key={step}><span>{index + 1}</span>{step}</div>
                   ))}
                 </div>
               </div>
               <div className="col-12 col-lg-6">
-                <CodeBlock>{`use dotnet::System::*;\n\nfn main() -> Result<()> {\n    Console::WriteLine("Hello from FerrumWeave")?;\n    Ok(())\n}`}</CodeBlock>
-                <p className="evidence-note">Until this contract works end-to-end, the site will not pretend FerrumWeave is a finished language implementation.</p>
+                <CodeBlock>{`dotnet new console -lang Rust -n HelloFerrum\ncd HelloFerrum\ndotnet run`}</CodeBlock>
+                <p className="evidence-note">These commands are R10 release contracts until the corresponding clean-install CI gates are GREEN. The site does not present them as released capability yet.</p>
               </div>
             </div>
           </div>
@@ -226,8 +226,8 @@ export function App() {
             <div className="join-card">
               <div>
                 <p className="eyebrow">Open source from day one</p>
-                <h2 id="join-heading">Help forge the first contract.</h2>
-                <p>FerrumWeave is starting with the problem, principles, and executable contracts before claiming breadth. Compiler, CLR, Rust, .NET SDK, tooling, documentation, and testing experience are all useful here.</p>
+                <h2 id="join-heading">Help certify the alpha contract.</h2>
+                <p>The causal compiler foundation is certified. R10 now focuses on packaging, .NET language templates, tooling, documentation, and the clean external workflows that turn that foundation into a usable alpha.</p>
               </div>
               <div className="d-flex flex-wrap gap-3">
                 <Button as="a" appearance="primary" size="large" href={repositoryUrl}>View repository</Button>

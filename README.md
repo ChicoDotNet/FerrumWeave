@@ -4,14 +4,14 @@
 
 **Bringing Rust into the .NET language ecosystem.**
 
-**Project resources:** [Repository layout](docs/architecture/repository-layout.md) · [Project website](https://chicodotnet.github.io/FerrumWeave/)
+**Project resources:** [Repository layout](docs/architecture/repository-layout.md) · [Template release plan](docs/roadmap/template-release-plan.md) · [Project website](https://chicodotnet.github.io/FerrumWeave/)
 
 FerrumWeave is an experimental open-source effort to make Rust a first-class language for the .NET platform: compiling Rust source code into .NET assemblies, participating in the Common Type System, consuming existing .NET libraries, and interoperating naturally with languages such as C#, F#, Visual Basic, and others built around the CLR.
 
 The long-term developer experience should feel unsurprising:
 
 ```bash
-dotnet new rust -n HelloFerrum
+dotnet new console -lang Rust -n HelloFerrum
 cd HelloFerrum
 dotnet run
 ```
@@ -628,7 +628,7 @@ The first meaningful milestone is deliberately small.
 Given:
 
 ```bash
-dotnet new rust -n HelloFerrum
+dotnet new console -lang Rust -n HelloFerrum
 cd HelloFerrum
 dotnet run
 ```
