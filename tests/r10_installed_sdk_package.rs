@@ -78,7 +78,10 @@ fn run_managed_consumer(root: &Path, project: &Path, artifact: &Path) -> String 
         .current_dir(&consumer)
         .output()
         .expect("managed consumer must execute for installed-package contract");
-    assert_success(&output, "run managed consumer of installed FerrumWeave artifact");
+    assert_success(
+        &output,
+        "run managed consumer of installed FerrumWeave artifact",
+    );
 
     String::from_utf8_lossy(&output.stdout)
         .trim()
@@ -174,7 +177,10 @@ fn installed_sdk_package_builds_external_console_causally() {
             &build,
             "external .rsproj must build through the installed FerrumWeave.Sdk package",
         );
-        assert!(artifact.is_file(), "installed SDK build must produce managed DLL");
+        assert!(
+            artifact.is_file(),
+            "installed SDK build must produce managed DLL"
+        );
 
         let bytes = fs::read(&artifact).expect("read installed-package managed artifact");
         assert!(bytes.starts_with(b"MZ") && bytes.windows(4).any(|window| window == b"BSJB"));
