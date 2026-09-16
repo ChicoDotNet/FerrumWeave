@@ -145,3 +145,58 @@ jobs:
           if ($projects.Count -ne 1) { throw "Expected exactly one generated consumer project, found $($projects.Count)" }
           dotnet test $projects[0].FullName --no-build --configuration Release --nologo
           if ($LASTEXITCODE -ne 0) { throw "dotnet test failed with exit code $LASTEXITCODE" }
+
+  visual-basic-frameworks:
+    name: "VB.NET / ${{ matrix.framework }} (${{ matrix.os }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        framework:
+          - xunit
+          - mstest
+          - nunit
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "10.0.400"
+      - name: Provision pinned Rust backend components
+        run: rustup component add --toolchain nightly-2025-10-14 rustc-dev rust-src llvm-tools-preview
+      - name: Generate official Visual Basic consumer
+        shell: pwsh
+        run: |
+          $consumerRoot = Join-Path $env:RUNNER_TEMP "ferrumweave-visual-basic-consumer"
+          ./eng/dotnet-consumers/New-VisualBasicConsumer.ps1 `
+            -Framework "${{ matrix.framework }}" `
+            -OutputRoot $consumerRoot `
+            -RepoRoot "$env:GITHUB_WORKSPACE"
+      - name: Restore
+        shell: pwsh
+        run: |
+          $consumerRoot = Join-Path $env:RUNNER_TEMP "ferrumweave-visual-basic-consumer"
+          $projects = @(Get-ChildItem -LiteralPath $consumerRoot -Filter "*.vbproj" -File -Recurse)
+          if ($projects.Count -ne 1) { throw "Expected exactly one generated consumer project, found $($projects.Count)" }
+          dotnet restore $projects[0].FullName
+          if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed with exit code $LASTEXITCODE" }
+      - name: Build
+        shell: pwsh
+        run: |
+          $consumerRoot = Join-Path $env:RUNNER_TEMP "ferrumweave-visual-basic-consumer"
+          $projects = @(Get-ChildItem -LiteralPath $consumerRoot -Filter "*.vbproj" -File -Recurse)
+          if ($projects.Count -ne 1) { throw "Expected exactly one generated consumer project, found $($projects.Count)" }
+          dotnet build $projects[0].FullName --no-restore --configuration Release --nologo
+          if ($LASTEXITCODE -ne 0) { throw "dotnet build failed with exit code $LASTEXITCODE" }
+      - name: Test
+        shell: pwsh
+        run: |
+          $consumerRoot = Join-Path $env:RUNNER_TEMP "ferrumweave-visual-basic-consumer"
+          $projects = @(Get-ChildItem -LiteralPath $consumerRoot -Filter "*.vbproj" -File -Recurse)
+          if ($projects.Count -ne 1) { throw "Expected exactly one generated consumer project, found $($projects.Count)" }
+          dotnet test $projects[0].FullName --no-build --configuration Release --nologo
+          if ($LASTEXITCODE -ne 0) { throw "dotnet test failed with exit code $LASTEXITCODE" }
