@@ -71,9 +71,8 @@ fn execute_from_csharp(
     label: &str,
     method_name: &str,
 ) {
-    let program = format!(
-        "System.Console.WriteLine(FerrumWeave.RustApi.{method_name}(137, 74));\n"
-    );
+    let program =
+        format!("System.Console.WriteLine(FerrumWeave.RustApi.{method_name}(137, 74));\n");
     let project = make_csharp_consumer(artifact, root, label, &program);
     let output = run_managed_consumer(
         &project,
