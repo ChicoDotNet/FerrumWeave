@@ -12,7 +12,6 @@
     <PackageType>Template</PackageType>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
-    <IncludeContentInPack>false</IncludeContentInPack>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <EnableDefaultItems>false</EnableDefaultItems>
     <NoDefaultExcludes>true</NoDefaultExcludes>
