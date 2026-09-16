@@ -130,11 +130,12 @@ fn assert_managed_target(artifact: &Path, managed_method: &str, export_method: &
 }
 
 fn run_consumer(artifact: &Path, root: &Path, name: &str, method_name: &str) -> i32 {
-    let program = format!(
-        "System.Console.WriteLine(FerrumWeave.RustApi.{method_name}());\n"
-    );
+    let program = format!("System.Console.WriteLine(FerrumWeave.RustApi.{method_name}());\n");
     let project = make_csharp_consumer(artifact, root, name, &program);
-    let output = run_managed_consumer(&project, &format!("managed static-call consumer for {name}"));
+    let output = run_managed_consumer(
+        &project,
+        &format!("managed static-call consumer for {name}"),
+    );
     assert_success(
         &output,
         &format!("managed static-call consumer should pass for {name}"),
