@@ -5,6 +5,10 @@ translation-of: docs/architecture/adr/0004-r10-rust-as-dotnet-template-language.
 source-revision: 0059e447c7b43940ac034f423b863d598f24b309
 -->
 
+<!-- ferrumweave-nav:start -->
+[← Documentação](../../README.pt-BR.md) · [README do projeto](../../../README.pt-BR.md)
+<!-- ferrumweave-nav:end -->
+
 # ADR 0004 — Registrar Rust como linguagem de templates .NET
 
 [English](0004-r10-rust-as-dotnet-template-language.md) · [Deutsch](0004-r10-rust-as-dotnet-template-language.de.md) · [Español](0004-r10-rust-as-dotnet-template-language.es.md) · [Français](0004-r10-rust-as-dotnet-template-language.fr.md) · [Italiano](0004-r10-rust-as-dotnet-template-language.it.md) · **Português (Brasil)** · [Русский](0004-r10-rust-as-dotnet-template-language.ru.md) · [简体中文](0004-r10-rust-as-dotnet-template-language.zh-Hans.md) · [日本語](0004-r10-rust-as-dotnet-template-language.ja.md)
@@ -111,3 +115,9 @@ dotnet new console -lang "F#"
 ```
 
 coexistem após a instalação de FerrumWeave e que o projeto Rust gerado usa causalmente o backend real do produto FerrumWeave, e não um emitter legacy nem uma substituição da linguagem fonte.
+
+<!-- ferrumweave-backlinks:start -->
+## O que aponta para cá
+
+- [Documentação do FerrumWeave](../../README.pt-BR.md)
+<!-- ferrumweave-backlinks:end -->

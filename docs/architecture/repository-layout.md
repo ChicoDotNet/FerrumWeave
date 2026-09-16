@@ -3,6 +3,10 @@ doc-id: architecture.repository-layout
 locale: en
 -->
 
+<!-- ferrumweave-nav:start -->
+[← Documentation](../README.md) · [Project README](../../README.md)
+<!-- ferrumweave-nav:end -->
+
 # Repository layout
 
 **English** · [Deutsch](repository-layout.de.md) · [Español](repository-layout.es.md) · [Français](repository-layout.fr.md) · [Italiano](repository-layout.it.md) · [Português (Brasil)](repository-layout.pt-BR.md) · [Русский](repository-layout.ru.md) · [简体中文](repository-layout.zh-Hans.md) · [日本語](repository-layout.ja.md)
@@ -184,3 +188,10 @@ dotnet build FerrumWeave.slnx
 ```
 
 Those commands should converge on the same product and the same interoperability contracts.
+
+<!-- ferrumweave-backlinks:start -->
+## What links here
+
+- [FerrumWeave](../../README.md)
+- [FerrumWeave documentation](../README.md)
+<!-- ferrumweave-backlinks:end -->

@@ -5,6 +5,10 @@ translation-of: docs/architecture/repository-layout.md
 source-revision: 2baacfc0c69ca60057c479a955c57dad2f808817
 -->
 
+<!-- ferrumweave-nav:start -->
+[← Documentation](../README.fr.md) · [README du projet](../../README.fr.md)
+<!-- ferrumweave-nav:end -->
+
 # Structure du dépôt
 
 [English](repository-layout.md) · [Deutsch](repository-layout.de.md) · [Español](repository-layout.es.md) · **Français** · [Italiano](repository-layout.it.md) · [Português (Brasil)](repository-layout.pt-BR.md) · [Русский](repository-layout.ru.md) · [简体中文](repository-layout.zh-Hans.md) · [日本語](repository-layout.ja.md)
@@ -186,3 +190,9 @@ dotnet build FerrumWeave.slnx
 ```
 
 Ces deux commandes doivent converger vers le même produit et les mêmes contrats d’interopérabilité.
+
+<!-- ferrumweave-backlinks:start -->
+## Pages liées ici
+
+- [Documentation FerrumWeave](../README.fr.md)
+<!-- ferrumweave-backlinks:end -->

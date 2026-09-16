@@ -5,6 +5,10 @@ translation-of: docs/architecture/adr/0004-r10-rust-as-dotnet-template-language.
 source-revision: 0059e447c7b43940ac034f423b863d598f24b309
 -->
 
+<!-- ferrumweave-nav:start -->
+[← 文档](../../README.zh-Hans.md) · [项目 README](../../../README.zh-Hans.md)
+<!-- ferrumweave-nav:end -->
+
 # ADR 0004 — 将 Rust 注册为 .NET 模板语言
 
 [English](0004-r10-rust-as-dotnet-template-language.md) · [Deutsch](0004-r10-rust-as-dotnet-template-language.de.md) · [Español](0004-r10-rust-as-dotnet-template-language.es.md) · [Français](0004-r10-rust-as-dotnet-template-language.fr.md) · [Italiano](0004-r10-rust-as-dotnet-template-language.it.md) · [Português (Brasil)](0004-r10-rust-as-dotnet-template-language.pt-BR.md) · [Русский](0004-r10-rust-as-dotnet-template-language.ru.md) · **简体中文** · [日本語](0004-r10-rust-as-dotnet-template-language.ja.md)
@@ -111,3 +115,9 @@ dotnet new console -lang "F#"
 ```
 
 同时还必须证明生成的 Rust 项目因果地使用真实 FerrumWeave product backend，而不是 legacy emitter 或源语言替代方案。
+
+<!-- ferrumweave-backlinks:start -->
+## 链入页面
+
+- [FerrumWeave 文档](../../README.zh-Hans.md)
+<!-- ferrumweave-backlinks:end -->

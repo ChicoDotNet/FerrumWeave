@@ -5,6 +5,10 @@ translation-of: docs/architecture/repository-layout.md
 source-revision: 2baacfc0c69ca60057c479a955c57dad2f808817
 -->
 
+<!-- ferrumweave-nav:start -->
+[← ドキュメント](../README.ja.md) · [プロジェクト README](../../README.ja.md)
+<!-- ferrumweave-nav:end -->
+
 # リポジトリ構成
 
 [English](repository-layout.md) · [Deutsch](repository-layout.de.md) · [Español](repository-layout.es.md) · [Français](repository-layout.fr.md) · [Italiano](repository-layout.it.md) · [Português (Brasil)](repository-layout.pt-BR.md) · [Русский](repository-layout.ru.md) · [简体中文](repository-layout.zh-Hans.md) · **日本語**
@@ -186,3 +190,9 @@ dotnet build FerrumWeave.slnx
 ```
 
 どちらも同じ製品と同じ interoperability contract に収束する必要があります。
+
+<!-- ferrumweave-backlinks:start -->
+## ここへのリンク
+
+- [FerrumWeave ドキュメント](../README.ja.md)
+<!-- ferrumweave-backlinks:end -->

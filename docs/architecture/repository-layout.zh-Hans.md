@@ -5,6 +5,10 @@ translation-of: docs/architecture/repository-layout.md
 source-revision: 2baacfc0c69ca60057c479a955c57dad2f808817
 -->
 
+<!-- ferrumweave-nav:start -->
+[← 文档](../README.zh-Hans.md) · [项目 README](../../README.zh-Hans.md)
+<!-- ferrumweave-nav:end -->
+
 # 仓库结构
 
 [English](repository-layout.md) · [Deutsch](repository-layout.de.md) · [Español](repository-layout.es.md) · [Français](repository-layout.fr.md) · [Italiano](repository-layout.it.md) · [Português (Brasil)](repository-layout.pt-BR.md) · [Русский](repository-layout.ru.md) · **简体中文** · [日本語](repository-layout.ja.md)
@@ -186,3 +190,9 @@ dotnet build FerrumWeave.slnx
 ```
 
 这两个命令都应最终指向同一个产品和同一组互操作契约。
+
+<!-- ferrumweave-backlinks:start -->
+## 链入页面
+
+- [FerrumWeave 文档](../README.zh-Hans.md)
+<!-- ferrumweave-backlinks:end -->
