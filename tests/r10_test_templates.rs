@@ -41,15 +41,7 @@ fn scaffold_rust_test_template(
     assert_success(&install, &format!("install {short_name} Rust template"));
 
     let create = Command::new("dotnet")
-        .args([
-            "new",
-            short_name,
-            "-lang",
-            "Rust",
-            "-n",
-            project_name,
-            "-o",
-        ])
+        .args(["new", short_name, "-lang", "Rust", "-n", project_name, "-o"])
         .arg(&project_dir)
         .output()
         .expect("dotnet new test template must execute");
@@ -59,13 +51,11 @@ fn scaffold_rust_test_template(
         .arg(&template_dir)
         .output();
 
-    assert_success(
-        &create,
-        &format!("dotnet new {short_name} -lang Rust"),
-    );
+    assert_success(&create, &format!("dotnet new {short_name} -lang Rust"));
 
     let project_path = project_dir.join(format!("{project_name}.rsproj"));
-    let project = fs::read_to_string(&project_path).expect("test template must generate an .rsproj");
+    let project =
+        fs::read_to_string(&project_path).expect("test template must generate an .rsproj");
     assert!(project.contains("<Project Sdk=\"FerrumWeave.Sdk\">"));
     assert!(project.contains("<TargetFramework>net10.0</TargetFramework>"));
     assert!(project.contains("<OutputType>Library</OutputType>"));
