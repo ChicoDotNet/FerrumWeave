@@ -171,8 +171,11 @@ if ($projectText.Contains($RepoRoot, [System.StringComparison]::OrdinalIgnoreCas
     throw "Generated project leaked a repository-relative path."
 }
 
-# FW-R10-DIST-001 requires explicit Rust-source causality 137 -> 211.
+# FW-R10-DIST-001 requires explicit Rust-source causality 137 -> 211 while
+# preserving a real Rust executable entry point.
 Write-Utf8NoBom -Path $rustSource -Content @'
+fn main() {}
+
 #[no_mangle]
 pub extern "C" fn answer() -> i32 {
     137
@@ -246,6 +249,8 @@ Invoke-CoreClrProbe -ProbeProject $probeProject -AssemblyPath $assemblyPath -Exp
 
 Write-Host "[FW-R10-DIST-001] Mutate only Rust source 137 -> 211 and rebuild"
 Write-Utf8NoBom -Path $rustSource -Content @'
+fn main() {}
+
 #[no_mangle]
 pub extern "C" fn answer() -> i32 {
     211
