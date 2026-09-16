@@ -10,7 +10,7 @@ This is an R09 interoperability follow-up, not evidence for the separate R10 ins
 
 Consumer projects are generated during certification with the official .NET SDK templates instead of hand-maintaining copies of their package graphs.
 
-The first incremental row is C#:
+The certified C# row uses:
 
 ```console
 dotnet new xunit  -lang C# -f net10.0
@@ -18,13 +18,23 @@ dotnet new mstest -lang C# -f net10.0
 dotnet new nunit  -lang C# -f net10.0
 ```
 
-`New-CSharpConsumer.ps1` then performs only normal consumer customization:
+The F# row uses the same official framework templates with the language changed at generation time:
+
+```console
+dotnet new xunit  -lang F# -f net10.0
+dotnet new mstest -lang F# -f net10.0
+dotnet new nunit  -lang F# -f net10.0
+```
+
+Each generator performs only normal consumer customization:
 
 1. adds a `ProjectReference` to the canonical `RiskEngine.rsproj`;
-2. replaces the template starter test with one framework-idiomatic assertion;
+2. replaces the template starter test with one framework- and language-idiomatic assertion;
 3. leaves restore, build, and test as ordinary `dotnet` commands.
 
-No manual DLL copying, generated C# substitute, special assembly loading, or framework-specific FerrumWeave shim is allowed.
+For F#, the generated test source is overwritten **in place** instead of deleting and recreating `.fs` files. This preserves the explicit compile ordering emitted by the official F# project template.
+
+No manual DLL copying, generated managed substitute, special assembly loading, or framework-specific FerrumWeave shim is allowed.
 
 ## Local certification
 
@@ -45,6 +55,17 @@ foreach ($framework in @("xunit", "mstest", "nunit")) {
     dotnet build $project --no-restore --configuration Release --nologo
     dotnet test $project --no-build --configuration Release --nologo
 }
+
+foreach ($framework in @("xunit", "mstest", "nunit")) {
+    $project = ./eng/dotnet-consumers/New-FSharpConsumer.ps1 `
+        -Framework $framework `
+        -OutputRoot $root `
+        -RepoRoot $PWD
+
+    dotnet restore $project
+    dotnet build $project --no-restore --configuration Release --nologo
+    dotnet test $project --no-build --configuration Release --nologo
+}
 ```
 
-The dedicated `.NET consumer interoperability` workflow executes the same row on Ubuntu and Windows. F# and Visual Basic rows are intentionally left for subsequent small iterations.
+The dedicated `.NET consumer interoperability` workflow executes both rows on Ubuntu and Windows. Visual Basic remains intentionally separate for the next small iteration.
