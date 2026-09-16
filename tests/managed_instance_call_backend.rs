@@ -55,8 +55,14 @@ fn managed_instance_call_is_source_causal_through_the_ferrumweave_backend() {
     );
     assert_instance_target(&renamed, &["System", "Object"], "ComputeResult");
 
-    assert_eq!(run_consumer(&object_137, &work, "object_137", "Answer"), 137);
-    assert_eq!(run_consumer(&object_211, &work, "object_211", "Answer"), 211);
+    assert_eq!(
+        run_consumer(&object_137, &work, "object_137", "Answer"),
+        137
+    );
+    assert_eq!(
+        run_consumer(&object_211, &work, "object_211", "Answer"),
+        211
+    );
     assert_eq!(
         run_consumer(&string_builder_137, &work, "string_builder_137", "Answer"),
         137
@@ -90,8 +96,7 @@ fn managed_instance_call_is_source_causal_through_the_ferrumweave_backend() {
 fn rust_source(marker: &str, value: i32, export_name: &str) -> String {
     assert!(matches!(
         marker,
-        "ferrumweave_system_object_to_string"
-            | "ferrumweave_system_text_string_builder_to_string"
+        "ferrumweave_system_object_to_string" | "ferrumweave_system_text_string_builder_to_string"
     ));
     format!(
         "#[inline(never)]\nfn ferrumweave_system_object_to_string(value: i32) -> i32 {{ value }}\n\n#[inline(never)]\nfn ferrumweave_system_text_string_builder_to_string(value: i32) -> i32 {{ value }}\n\n#[no_mangle]\npub extern \"C\" fn {export_name}() -> i32 {{ {marker}({value}) }}\n"
