@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use support::{
-    ASSEMBLY_FILE, assert_success, build_codegen_backend, compile_rust_source, create_work_dir,
-    remove_work_dir, run_managed_consumer,
+    assert_success, build_codegen_backend, compile_rust_source, create_work_dir,
+    make_csharp_consumer, remove_work_dir, run_managed_consumer,
 };
 
 const EXTERNAL_ASSEMBLY: &str = "External.Managed.dll";
@@ -154,26 +154,21 @@ fn run_external_consumer(
     label: &str,
     method_name: &str,
 ) -> i32 {
-    let consumer = root.join(format!("consumer_{label}"));
-    fs::create_dir(&consumer).expect("external-managed consumer directory should be created");
-    fs::copy(artifact, consumer.join(ASSEMBLY_FILE))
-        .expect("FerrumWeave artifact should be copied into the consumer");
+    let program = format!(
+        "using System.Reflection;\nvar method = typeof(FerrumWeave.RustApi).GetMethod(\"{method_name}\", BindingFlags.Public | BindingFlags.Static)!;\nvar il = method.GetMethodBody()!.GetILAsByteArray()!;\nif (System.Array.IndexOf(il, (byte)0x28) < 0) throw new Exception(\"{method_name} must contain a managed call opcode\");\nConsole.WriteLine(FerrumWeave.RustApi.{method_name}());\n"
+    );
+    let project = make_csharp_consumer(artifact, root, label, &program);
+    let consumer = project
+        .parent()
+        .expect("generated consumer project should have a parent directory");
     fs::copy(dependency, consumer.join(EXTERNAL_ASSEMBLY))
         .expect("external dependency should be copied into the consumer");
     fs::write(
-        consumer.join("Consumer.csproj"),
+        &project,
         "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>\n  <ItemGroup>\n    <Reference Include=\"FerrumWeave.Generated\"><HintPath>FerrumWeave.Generated.dll</HintPath><Private>true</Private></Reference>\n    <Reference Include=\"External.Managed\"><HintPath>External.Managed.dll</HintPath><Private>true</Private></Reference>\n  </ItemGroup>\n</Project>\n",
     )
-    .expect("external-managed consumer project should be written");
-    fs::write(
-        consumer.join("Program.cs"),
-        format!(
-            "using System.Reflection;\nvar method = typeof(FerrumWeave.RustApi).GetMethod(\"{method_name}\", BindingFlags.Public | BindingFlags.Static)!;\nvar il = method.GetMethodBody()!.GetILAsByteArray()!;\nif (System.Array.IndexOf(il, (byte)0x28) < 0) throw new Exception(\"{method_name} must contain a managed call opcode\");\nConsole.WriteLine(FerrumWeave.RustApi.{method_name}());\n"
-        ),
-    )
-    .expect("external-managed consumer source should be written");
+    .expect("external-managed consumer project should include the external dependency");
 
-    let project = consumer.join("Consumer.csproj");
     let output = run_managed_consumer(&project, &format!("external-managed consumer for {label}"));
     assert_success(
         &output,
