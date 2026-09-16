@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f7f7f5" />
+    <title>404 — The Ox went to rest · FerrumWeave</title>
+    <style>
+      :root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #20201e; background: #f7f7f5; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 2rem; }
+      main { width: min(820px, 100%); text-align: center; }
+      .mark { font-size: clamp(1.35rem, 3vw, 2rem); font-weight: 750; margin-bottom: 1rem; }
+      .mark span { font-weight: 400; }
+      .scene { width: min(500px, 90vw); margin: 0 auto .6rem; color: #4c4a43; }
+      h1 { font-size: clamp(2.2rem, 7vw, 4.75rem); line-height: .98; margin: .2rem 0 .9rem; }
+      .messages { display: grid; gap: .28rem; max-width: 680px; margin: 0 auto; color: #5c5a54; line-height: 1.35; }
+      .messages p { margin: 0; }
+      .messages p:first-child { font-size: 1.18rem; color: #20201e; font-weight: 700; }
+      .aside { margin: 1.15rem auto 0; color: #77736b; }
+      a { display: inline-block; margin-top: 1.3rem; padding: .72rem 1.08rem; border: 1px solid #20201e; border-radius: .6rem; color: inherit; text-decoration: none; font-weight: 650; }
+      a:hover { background: #20201e; color: #f7f7f5; }
+      svg { width: 100%; height: auto; }
+      .soil { stroke: currentColor; stroke-width: 3; stroke-linecap: round; opacity: .42; }
+      .plow { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .empty-yoke { fill: none; stroke: currentColor; stroke-width: 3; stroke-dasharray: 7 8; opacity: .55; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark">Ferrum<span>Weave</span></div>
+      <div class="scene" aria-hidden="true">
+        <svg viewBox="0 0 640 270">
+          <path class="soil" d="M55 222c85-14 175-5 258 2 91 7 175 12 275-4" />
+          <path class="soil" d="M76 240c120-13 236 10 354 7 65-2 111-8 151-16" />
+          <path class="plow" d="M198 186 341 114l38 15-128 75-53-18Z" />
+          <path class="plow" d="M341 114 430 50" />
+          <path class="plow" d="m251 204-11 35 76-12 19-42" />
+          <path class="plow" d="M427 51c22-11 39-11 58-2" />
+          <path class="empty-yoke" d="M485 49c45-15 83 0 103 31" />
+          <path class="empty-yoke" d="M486 49c43 21 72 43 91 74" />
+          <circle cx="590" cy="80" r="5" fill="currentColor" opacity=".45" />
+        </svg>
+      </div>
+      <h1>404</h1>
+      <div class="messages" aria-label="Page not found message in supported languages">
+        <p>Looks like the Ox went to rest.</p>
+        <p lang="de">Der Ochse macht wohl gerade Pause.</p>
+        <p lang="es">Parece que el buey se fue a descansar.</p>
+        <p lang="fr">On dirait que le bœuf est parti se reposer.</p>
+        <p lang="it">Sembra che il bue sia andato a riposarsi.</p>
+        <p lang="pt-BR">Parece que o boi foi descansar.</p>
+        <p lang="ru">Похоже, вол ушёл отдохнуть.</p>
+        <p lang="zh-Hans">看来牛去休息了。</p>
+        <p lang="ja">どうやら牛は休みに行ったようです。</p>
+      </div>
+      <p class="aside">Returning to FerrumWeave in <span id="countdown">5</span> seconds.</p>
+      <a id="home" href="/">Return now</a>
+    </main>
+    <script>
+      (() => {
+        const locales = ['de', 'es', 'fr', 'it', 'pt-BR', 'ru', 'zh-Hans', 'ja'];
+        const segments = window.location.pathname.split('/').filter(Boolean);
+        const onGitHubPages = window.location.hostname.endsWith('.github.io');
+        const base = onGitHubPages && segments.length > 0 ? `/${segments[0]}/` : '/';
+        const routeSegments = onGitHubPages ? segments.slice(1) : segments;
+        const locale = routeSegments.length === 1 && locales.includes(routeSegments[0]) ? routeSegments[0] : null;
+
+        if (locale) {
+          window.location.replace(`${base}?route=${encodeURIComponent(locale)}`);
+          return;
+        }
+
+        const home = document.getElementById('home');
+        home.href = base;
+        let remaining = 5;
+        const countdown = document.getElementById('countdown');
+        const timer = window.setInterval(() => {
+          remaining -= 1;
+          countdown.textContent = String(remaining);
+          if (remaining <= 0) {
+            window.clearInterval(timer);
+            window.location.replace(base);
+          }
+        }, 1000);
+      })();
+    </script>
+  </body>
+</html>

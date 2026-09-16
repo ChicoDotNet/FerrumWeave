@@ -11,4 +11,12 @@ export default defineConfig({
   plugins: [react()],
   base,
   publicDir: resolve(siteDirectory, '../../assets/brand'),
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(siteDirectory, 'index.html'),
+        fallback404: resolve(siteDirectory, '404.html'),
+      },
+    },
+  },
 });

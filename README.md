@@ -2,9 +2,13 @@
 
 # FerrumWeave
 
+**English** · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru.md) · [简体中文](README.zh-Hans.md) · [日本語](README.ja.md)
+
 **Bringing Rust into the .NET language ecosystem.**
 
 **Project resources:** [Repository layout](docs/architecture/repository-layout.md) · [Template release plan](docs/roadmap/template-release-plan.md) · [Project website](https://chicodotnet.github.io/FerrumWeave/)
+
+**Documentation is maintained in multiple languages because interoperability is about people, too.** English remains the canonical source when a translation temporarily lags behind. See the [internationalization convention](docs/i18n.md).
 
 FerrumWeave is an experimental open-source effort to make Rust a first-class language for the .NET platform: compiling Rust source code into .NET assemblies, participating in the Common Type System, consuming existing .NET libraries, and interoperating naturally with languages such as C#, F#, Visual Basic, and others built around the CLR.
 

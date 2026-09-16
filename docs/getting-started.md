@@ -1,5 +1,7 @@
 # FerrumWeave 0.1 alpha — getting started
 
+**English** · [Deutsch](getting-started.de.md) · [Español](getting-started.es.md) · [Français](getting-started.fr.md) · [Italiano](getting-started.it.md) · [Português (Brasil)](getting-started.pt-BR.md) · [Русский](getting-started.ru.md) · [简体中文](getting-started.zh-Hans.md) · [日本語](getting-started.ja.md)
+
 > **R10 working contract:** this document describes the external experience FerrumWeave 0.1 alpha must certify before release. Commands that are not yet green in CI are product targets, not claims of released capability.
 
 FerrumWeave is intended to extend normal .NET project templates with **Rust as a language choice**. The primary user experience is therefore `dotnet new <template> -lang Rust`, not a FerrumWeave-specific `dotnet new rust` project type.
