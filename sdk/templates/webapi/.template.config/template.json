@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/template",
+  "author": "FerrumWeave contributors",
+  "classifications": ["Rust", ".NET", "Web", "Web API", "API", "Service"],
+  "identity": "FerrumWeave.Templates.Rust.WebApi",
+  "groupIdentity": "Microsoft.Web.WebApi",
+  "name": "ASP.NET Core Web API",
+  "description": "A Rust language variant of the standard ASP.NET Core Web API template for FerrumWeave.",
+  "shortName": "webapi",
+  "sourceName": "RustWebApi",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "Rust",
+    "type": "project"
+  }
+}
