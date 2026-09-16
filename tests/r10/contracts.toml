@@ -21,7 +21,19 @@ proof = "GREEN. eng/r10/Test-FerrumWeaveSdkDistribution.ps1 and the R10 installe
 id = "FW-R10-DX-003"
 family = "installed alpha registers Rust as a .NET console-template language"
 implemented = false
-proof = "RED / pending. From a clean external environment with the supported .NET SDK and FerrumWeave installed through its distributable package boundary, 'dotnet new console -lang Rust -n HelloFerrum' must generate an SDK-style .rsproj and src/main.rs; dotnet build/run must reach .rsproj -> FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend -> managed CIL/metadata -> CoreCLR with a Rust-source-causal observable. Installation must coexist with ordinary console, VB, and F# template variants. Repository-local template installation, 'dotnet new rust', generated C#, legacy emitters, native sidecars, and rustc_codegen_clr are not valid proof of this contract."
+proof = "RED / pending. From a clean external environment with the supported .NET SDK and FerrumWeave installed through its distributable package boundary, 'dotnet new console -lang Rust -n HelloFerrum' must generate an SDK-style .rsproj and src/main.rs; dotnet build/run must reach .rsproj -> FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend -> managed CIL/metadata -> CoreCLR with a Rust-source-causal observable. Installation must coexist with ordinary console, VB, and F# template variants. Direct execution additionally depends on FW-R10-CLR-ENTRY-001: ordinary Rust main must project to a valid managed static Program.Main plus the CLI entry-point MethodDef rather than promoting an unrelated export. Repository-local template installation, 'dotnet new rust', generated C#, legacy emitters, native sidecars, and rustc_codegen_clr are not valid proof of this contract."
+
+[[contracts]]
+id = "FW-R10-CLR-ENTRY-001"
+family = "ordinary Rust main projects to a real managed .NET executable entry point"
+implemented = false
+proof = "RED / pending. ADR 0005 defines the source/CLR identity boundary. Rust source remains ordinary Rust and keeps fn main; FerrumWeave must project executable .rsproj output to a managed <RootNamespace>.Program.Main adapter that is static and whose MethodDef is designated as the PE/CLI entry point. The portable managed artifact remains <AssemblyName>.dll; a normal SDK/apphost may additionally produce HelloFerrum.exe on Windows or HelloFerrum on Unix. dotnet run must execute Rust-source-causal main behavior on Linux and Windows with no generated C#, native sidecar, legacy emitter, or upstream oracle substitution. Exact Result/error and args semantics remain separate explicit contracts."
+
+[[contracts]]
+id = "FW-R10-CLR-SURFACE-001"
+family = "Rust modules and exported items project to stable namespace-qualified CLR identities"
+implemented = false
+proof = "RED / pending. ADR 0005 defines the general projection rule. Project/root identity must deterministically provide AssemblyName and RootNamespace; semantic Rust module paths project to CLR namespace segments; CLR-exportable public Rust types project under those namespaces; supported Rust members project to normal CLR members with deterministic .NET-facing names while Rust source naming and rustc semantics remain unchanged. Acceptance must include at least one nested module and multiple projected types (for example HelloFerrum.Controllers.ApiDeClima, ServicioDeClima, RepositorioDeClima, and ContextoDbDeClima) discovered and consumed from an independent .NET project. A long-term application surface consisting only of synthetic FerrumWeave.RustApi exports is not sufficient proof."
 
 [[contracts]]
 id = "FW-R10-WEB-HOST-001"
