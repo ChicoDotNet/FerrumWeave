@@ -10,6 +10,7 @@ FerrumWeave documentation is organized around the path a reader is trying to fol
 
 ## Start here
 
+- [R10 Agent Handoff](roadmap/r10-agent-handoff.md) — operational starting point for a fresh contributor or autonomous agent working on the active R10 / 0.1-alpha frontier.
 - [Getting Started](getting-started.md) — target installation and first-project experience for the active R10 / 0.1-alpha milestone.
 - [Template Release Plan](roadmap/template-release-plan.md) — which standard .NET template families FerrumWeave intends to support and what “supported” means.
 - [Project README](../README.md) — project vision, architecture direction, current status, and community entry point.
@@ -17,7 +18,7 @@ FerrumWeave documentation is organized around the path a reader is trying to fol
 
 ## Architecture
 
-- [Repository layout](architecture/repository-layout.md) — ownership boundaries, repository structure, and where compiler/SDK/site work belongs.
+- [Repository layout](architecture/repository-layout.md) — ownership boundaries, repository structure, and where compiler/SDK/site work belongs. For active R10 template work, the R10 Agent Handoff and ADR 0004 define the current public template-language boundary when historical layout/prototype paths differ.
 - [ADR 0004 — Rust as a .NET template language](architecture/adr/0004-r10-rust-as-dotnet-template-language.md) — why the public template contract is `dotnet new <template> -lang Rust` rather than `dotnet new rust`.
 - [Architecture Decision Records](architecture/adr/) — historical decisions and their rationale.
 
@@ -27,10 +28,11 @@ FerrumWeave documentation is organized around the path a reader is trying to fol
 - [Compatibility](compatibility/README.md) — compatibility claims and their evidence boundaries.
 - [CTS scalar mappings](compatibility/r04-cts-scalar-mappings.md) — documented Rust ↔ CLR scalar mapping surface.
 - [Coverage policy](quality/coverage-policy.md) — code and functional coverage expectations.
+- [R09 Python → Rust verification inventory](quality/r09-python-to-rust-inventory.md) — authority state and migration order for the remaining Python verification surface.
 
 ## Community and project policy
 
-- [Contributing](../CONTRIBUTING.md) — contribution workflow, evidence expectations, and Rust/.NET design principles.
+- [Contributing](../CONTRIBUTING.md) — contribution workflow, evidence expectations, active-milestone entry point, and Rust/.NET design principles.
 - [Governance](../GOVERNANCE.md) — how decisions are made and how stewardship can evolve.
 - [Support](../SUPPORT.md) — where to ask questions and report ordinary problems.
 - [Security](../SECURITY.md) — private vulnerability-reporting guidance.
