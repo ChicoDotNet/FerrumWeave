@@ -11,11 +11,13 @@ The release sequence and the definition of template support are documented in [`
 From an environment with the documented .NET and Rust prerequisites, install the FerrumWeave alpha distribution and create a normal .NET console project using Rust:
 
 ```console
-dotnet new install FerrumWeave.Templates::0.1.0-alpha.1
+dotnet new install FerrumWeave.Sdk::0.1.0-alpha.1
 dotnet new console -lang Rust -n HelloFerrum
 cd HelloFerrum
 dotnet run
 ```
+
+`FerrumWeave.Sdk` is the current package identity for the MSBuild SDK and project templates; the release must not require a second unpublished template package unless a later ADR explicitly changes that packaging decision.
 
 The acceptance result is a Rust-authored project that builds through the normal .NET SDK workflow and reaches the causal product path:
 
@@ -63,7 +65,7 @@ Restore uses normal .NET/NuGet resolution:
 dotnet restore
 ```
 
-The SDK package contains the FerrumWeave `Sdk.props` and `Sdk.targets`; consumers must not copy those files manually into their projects.
+The SDK package contains the FerrumWeave `Sdk.props`, `Sdk.targets`, and project-template content; consumers must not copy those files manually into their projects.
 
 ## Testing locally packed prereleases
 
