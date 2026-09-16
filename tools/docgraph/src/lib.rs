@@ -100,7 +100,10 @@ pub fn resolve_markdown_link(source: &Path, target: &str) -> Option<PathBuf> {
     let joined = if let Some(stripped) = target.strip_prefix('/') {
         PathBuf::from(stripped)
     } else {
-        source.parent().unwrap_or_else(|| Path::new("")).join(target)
+        source
+            .parent()
+            .unwrap_or_else(|| Path::new(""))
+            .join(target)
     };
 
     Some(normalize_path(&joined))
@@ -138,7 +141,10 @@ pub fn process_repository(root: &Path, mode: Mode) -> Result<Vec<PathBuf>, Strin
         .collect();
 
     let mut stale = Vec::new();
-    for document in documents.iter().filter(|document| document.metadata.is_some()) {
+    for document in documents
+        .iter()
+        .filter(|document| document.metadata.is_some())
+    {
         let metadata = document.metadata.as_ref().expect("filtered metadata");
         let sources = incoming.get(&document.path).cloned().unwrap_or_default();
         let rendered = render_managed_document(document, metadata, &sources, &titles);
@@ -148,9 +154,8 @@ pub fn process_repository(root: &Path, mode: Mode) -> Result<Vec<PathBuf>, Strin
 
         stale.push(document.path.clone());
         if mode == Mode::Render {
-            fs::write(root.join(&document.path), rendered).map_err(|error| {
-                format!("failed to write {}: {error}", document.path.display())
-            })?;
+            fs::write(root.join(&document.path), rendered)
+                .map_err(|error| format!("failed to write {}: {error}", document.path.display()))?;
         }
     }
 
@@ -159,7 +164,10 @@ pub fn process_repository(root: &Path, mode: Mode) -> Result<Vec<PathBuf>, Strin
 
 fn validate_managed_documents(documents: &[Document]) -> Result<(), String> {
     let mut identities = BTreeSet::new();
-    for document in documents.iter().filter(|document| document.metadata.is_some()) {
+    for document in documents
+        .iter()
+        .filter(|document| document.metadata.is_some())
+    {
         let metadata = document.metadata.as_ref().expect("filtered metadata");
         if !LOCALES.contains(&metadata.locale.as_str()) {
             return Err(format!(
@@ -179,7 +187,10 @@ fn validate_managed_documents(documents: &[Document]) -> Result<(), String> {
 }
 
 fn incoming_links(documents: &[Document]) -> BTreeMap<PathBuf, Vec<PathBuf>> {
-    let known: BTreeSet<PathBuf> = documents.iter().map(|document| document.path.clone()).collect();
+    let known: BTreeSet<PathBuf> = documents
+        .iter()
+        .map(|document| document.path.clone())
+        .collect();
     let mut incoming: BTreeMap<PathBuf, BTreeSet<PathBuf>> = BTreeMap::new();
 
     for source in documents {
@@ -193,7 +204,10 @@ fn incoming_links(documents: &[Document]) -> BTreeMap<PathBuf, Vec<PathBuf>> {
                     continue;
                 };
                 if resolved != source.path && known.contains(&resolved) {
-                    incoming.entry(resolved).or_default().insert(source.path.clone());
+                    incoming
+                        .entry(resolved)
+                        .or_default()
+                        .insert(source.path.clone());
                 }
             }
         }
@@ -220,12 +234,7 @@ fn render_managed_document(
         .iter()
         .filter(|source| infer_locale_from_path(source) == metadata.locale)
         .collect();
-    let backlinks = backlinks_block(
-        &document.path,
-        &metadata.locale,
-        &backlink_sources,
-        titles,
-    );
+    let backlinks = backlinks_block(&document.path, &metadata.locale, &backlink_sources, titles);
 
     while base.ends_with("\n\n") {
         base.pop();
@@ -350,9 +359,11 @@ fn collect_markdown_paths_inner(
 }
 
 fn first_heading(markdown: &str) -> Option<String> {
-    markdown
-        .lines()
-        .find_map(|line| line.strip_prefix("# ").map(str::trim).map(ToString::to_string))
+    markdown.lines().find_map(|line| {
+        line.strip_prefix("# ")
+            .map(str::trim)
+            .map(ToString::to_string)
+    })
 }
 
 fn markdown_links(line: &str) -> Vec<&str> {
@@ -374,10 +385,20 @@ fn markdown_links(line: &str) -> Vec<&str> {
 }
 
 fn is_language_selector_line(line: &str) -> bool {
-    let matches = ["English", "Deutsch", "Español", "Français", "Italiano", "Português", "Русский", "简体中文", "日本語"]
-        .iter()
-        .filter(|name| line.contains(*name))
-        .count();
+    let matches = [
+        "English",
+        "Deutsch",
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "简体中文",
+        "日本語",
+    ]
+    .iter()
+    .filter(|name| line.contains(*name))
+    .count();
     matches >= 4
 }
 
@@ -451,15 +472,60 @@ struct Labels {
 
 fn labels(locale: &str) -> Labels {
     match locale {
-        "de" => Labels { documentation: "Dokumentation", project_readme: "Projekt-README", what_links_here: "Was hierher verlinkt", no_backlinks: "Noch keine dokumentierten eingehenden Links." },
-        "es" => Labels { documentation: "Documentación", project_readme: "README del proyecto", what_links_here: "Qué enlaza aquí", no_backlinks: "Todavía no hay enlaces documentales entrantes." },
-        "fr" => Labels { documentation: "Documentation", project_readme: "README du projet", what_links_here: "Pages liées ici", no_backlinks: "Aucun lien documentaire entrant pour le moment." },
-        "it" => Labels { documentation: "Documentazione", project_readme: "README del progetto", what_links_here: "Cosa punta qui", no_backlinks: "Nessun collegamento documentale in entrata per ora." },
-        "pt-BR" => Labels { documentation: "Documentação", project_readme: "README do projeto", what_links_here: "O que aponta para cá", no_backlinks: "Ainda não há links de documentação apontando para cá." },
-        "ru" => Labels { documentation: "Документация", project_readme: "README проекта", what_links_here: "Что ссылается сюда", no_backlinks: "Пока нет входящих ссылок из документации." },
-        "zh-Hans" => Labels { documentation: "文档", project_readme: "项目 README", what_links_here: "链入页面", no_backlinks: "目前还没有文档链接到这里。" },
-        "ja" => Labels { documentation: "ドキュメント", project_readme: "プロジェクト README", what_links_here: "ここへのリンク", no_backlinks: "現在、このページへのドキュメント内リンクはありません。" },
-        _ => Labels { documentation: "Documentation", project_readme: "Project README", what_links_here: "What links here", no_backlinks: "No incoming documentation links yet." },
+        "de" => Labels {
+            documentation: "Dokumentation",
+            project_readme: "Projekt-README",
+            what_links_here: "Was hierher verlinkt",
+            no_backlinks: "Noch keine dokumentierten eingehenden Links.",
+        },
+        "es" => Labels {
+            documentation: "Documentación",
+            project_readme: "README del proyecto",
+            what_links_here: "Qué enlaza aquí",
+            no_backlinks: "Todavía no hay enlaces documentales entrantes.",
+        },
+        "fr" => Labels {
+            documentation: "Documentation",
+            project_readme: "README du projet",
+            what_links_here: "Pages liées ici",
+            no_backlinks: "Aucun lien documentaire entrant pour le moment.",
+        },
+        "it" => Labels {
+            documentation: "Documentazione",
+            project_readme: "README del progetto",
+            what_links_here: "Cosa punta qui",
+            no_backlinks: "Nessun collegamento documentale in entrata per ora.",
+        },
+        "pt-BR" => Labels {
+            documentation: "Documentação",
+            project_readme: "README do projeto",
+            what_links_here: "O que aponta para cá",
+            no_backlinks: "Ainda não há links de documentação apontando para cá.",
+        },
+        "ru" => Labels {
+            documentation: "Документация",
+            project_readme: "README проекта",
+            what_links_here: "Что ссылается сюда",
+            no_backlinks: "Пока нет входящих ссылок из документации.",
+        },
+        "zh-Hans" => Labels {
+            documentation: "文档",
+            project_readme: "项目 README",
+            what_links_here: "链入页面",
+            no_backlinks: "目前还没有文档链接到这里。",
+        },
+        "ja" => Labels {
+            documentation: "ドキュメント",
+            project_readme: "プロジェクト README",
+            what_links_here: "ここへのリンク",
+            no_backlinks: "現在、このページへのドキュメント内リンクはありません。",
+        },
+        _ => Labels {
+            documentation: "Documentation",
+            project_readme: "Project README",
+            what_links_here: "What links here",
+            no_backlinks: "No incoming documentation links yet.",
+        },
     }
 }
 
@@ -497,7 +563,10 @@ mod tests {
             resolve_markdown_link(source, "../../roadmap/template-release-plan.es.md#gate"),
             Some(PathBuf::from("docs/roadmap/template-release-plan.es.md"))
         );
-        assert_eq!(resolve_markdown_link(source, "https://example.com/x.md"), None);
+        assert_eq!(
+            resolve_markdown_link(source, "https://example.com/x.md"),
+            None
+        );
         assert_eq!(resolve_markdown_link(source, "#local-anchor"), None);
     }
 

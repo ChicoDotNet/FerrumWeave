@@ -9,7 +9,9 @@ fn main() {
         Some("check") => Mode::Check,
         Some("render") => Mode::Render,
         Some(other) => {
-            eprintln!("unknown command: {other}\nusage: ferrumweave-docgraph <check|render> [repository-root]");
+            eprintln!(
+                "unknown command: {other}\nusage: ferrumweave-docgraph <check|render> [repository-root]"
+            );
             std::process::exit(2);
         }
         None => {
@@ -18,9 +20,14 @@ fn main() {
         }
     };
 
-    let root = args.next().map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
+    let root = args
+        .next()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
     if args.next().is_some() {
-        eprintln!("too many arguments\nusage: ferrumweave-docgraph <check|render> [repository-root]");
+        eprintln!(
+            "too many arguments\nusage: ferrumweave-docgraph <check|render> [repository-root]"
+        );
         std::process::exit(2);
     }
 
