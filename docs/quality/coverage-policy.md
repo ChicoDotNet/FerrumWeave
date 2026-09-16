@@ -8,9 +8,11 @@ Line coverage is the initial code-coverage metric.
 
 - **Hard CI floor:** 80%.
 - **Preferred operating band:** 80%–96%.
-- **Above 96%:** allowed and reported as above the preferred band, not failed.
+- **Above 96%:** allowed; it is not a failure condition.
 
 The upper edge is intentionally not a failure gate. Very small components can reach 100% naturally, and FerrumWeave will not introduce untested code or low-value tests merely to force a percentage downward.
+
+The hard floor is enforced directly by the pinned `cargo-llvm-cov` invocation in Rust CI with `--fail-under-lines 80`; the same job prints the coverage summary. No separate policy parser is required.
 
 As the workspace grows, the floor should be evaluated per materially testable crate or component where tooling can report that boundary independently. A high aggregate percentage must not hide a weak component.
 
