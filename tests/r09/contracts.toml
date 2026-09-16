@@ -5,6 +5,10 @@ target_percent_when_done = 100.0
 
 # R09 proves that FerrumWeave participates in a real mixed-language .NET solution.
 # The denominator is declared from the roadmap DoD before implementation begins.
+# 2026-09 backend-convergence audit: historical solution/project/reference/NuGet evidence
+# remains valid at its declared scope, but product-path closure additionally requires a
+# Rust-only mutation to propagate through .slnx -> .rsproj -> rustc -> FerrumWeave
+# CodegenBackend -> managed dependency -> CoreCLR. rustc_codegen_clr is not PASS evidence.
 
 [[contracts]]
 id = "FW-R09-SLNX-001"
@@ -22,7 +26,7 @@ proof = "tests/r09_build.rs executes the real normal workflow 'dotnet build Ente
 id = "FW-R09-SLNX-003"
 family = "an end-to-end business-style call path crosses existing .NET code to Rust to a managed .NET dependency and returns successfully"
 implemented = true
-proof = "tests/r09_call_path.rs executes the canonical Domain C# entrypoint, requires the observable result risk-score=42, inspects the emitted RiskEngine.dll, and proves FerrumWeave.RustApi.Answer calls the managed System.Math.Abs dependency instead of returning a baked constant. Exact SHA 2d1b55d9a250f9baeab1f9e2c62e1cf86588f254 completed GREEN in Rust CI #305, including fmt/clippy, functional coverage, code coverage, and build + integration on Ubuntu and Windows; the parallel R04 CLR CTS Reflection certification also completed GREEN on the same SHA."
+proof = "tests/r09_call_path.rs executes the canonical Domain C# entrypoint, requires the observable result risk-score=42, inspects the emitted RiskEngine.dll, and proves FerrumWeave.RustApi.Answer calls the managed System.Math.Abs dependency instead of returning a baked constant. Exact SHA 2d1b55d9a250f9baeab1f9e2c62e1cf86588f254 completed GREEN in Rust CI #305, including fmt/clippy, functional coverage, code coverage, and build + integration on Ubuntu and Windows; the parallel R04 CLR CTS Reflection certification also completed GREEN on the same SHA. This remains historical artifact/call-shape evidence; FW-R09-SLNX-010 is the stronger source-causal product gate."
 
 [[contracts]]
 id = "FW-R09-SLNX-004"
@@ -58,4 +62,10 @@ proof = "The same R09 executable contract suite runs unchanged in the Rust CI op
 id = "FW-R09-SLNX-009"
 family = "functional contracts observe the language crossings rather than merely checking compilation"
 implemented = true
-proof = "R09 executable contracts observe crossings directly: tests/r09_call_path.rs requires C# -> FerrumWeave Rust -> System.Math.Abs and risk-score=42; tests/r09_vb_call_path.rs requires vb-risk-score=42; tests/r09_fsharp_call_path.rs requires fs-risk-score=42; tests/r09_nuget_call_path.rs requires restored Newtonsoft.Json consumption and the Rust-derived score; tests/r09_project_reference.rs proves MSBuild graph delivery without manual copying. The complete suite passed unchanged on Ubuntu and Windows at exact SHA c6b74128e60f6dac7aa86d773559a79d6e5b054b."
+proof = "R09 executable contracts observe crossings directly: tests/r09_call_path.rs requires C# -> FerrumWeave Rust -> System.Math.Abs and risk-score=42; tests/r09_vb_call_path.rs requires vb-risk-score=42; tests/r09_fsharp_call_path.rs requires fs-risk-score=42; tests/r09_nuget_call_path.rs requires restored Newtonsoft.Json consumption and the Rust-derived score; tests/r09_project_reference.rs proves MSBuild graph delivery without manual copying. Historical suite passed unchanged on Ubuntu and Windows at exact SHA c6b74128e60f6dac7aa86d773559a79d6e5b054b; FW-R09-SLNX-010 now owns source-causal falsification of the business path."
+
+[[contracts]]
+id = "FW-R09-SLNX-010"
+family = "the mixed-solution business path is source-causal through the FerrumWeave rustc CodegenBackend"
+implemented = true
+proof = "tests/r09_source_causality.rs creates an isolated replay of the canonical Enterprise.slnx graph, changes only RiskEngine/src/main.rs from 42 to 73 between builds, and requires RiskEngine.dll bytes plus the existing Domain C# CoreCLR observable to follow that mutation while the Rust-emitted method retains its CLR call to System.Math.Abs. The build contains no ferrumweave_emit trace. Exact SHA 5d02490e8f4ac71383f915464e47199b4badfb6a completed GREEN in Rust CI #569 on Ubuntu and Windows, FerrumWeave codegen backend convergence #206, R02 #245, R03 #272 and R04 #421. rustc_codegen_clr is not product PASS evidence."

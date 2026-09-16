@@ -1,4 +1,4 @@
-name: R02 Rust to CLR
+name: R02 Oracle Characterization — Rust to CLR
 
 on:
   push:
@@ -36,8 +36,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  rust-to-clr:
-    name: real Rust → CLR (${{ matrix.os }})
+  oracle-characterization:
+    name: "oracle characterization: real Rust → CLR (${{ matrix.os }})"
     strategy:
       fail-fast: false
       matrix:
@@ -98,7 +98,7 @@ jobs:
             --manifest-path .r02/rustc_codegen_clr/cilly/Cargo.toml \
             --bin linker
 
-      - name: Certify R02 contracts
+      - name: characterize upstream Rust to CLR
         shell: bash
         run: |
           set -euo pipefail

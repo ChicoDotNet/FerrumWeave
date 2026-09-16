@@ -11,64 +11,75 @@ target_percent_when_done = 100.0
 id = "FW-R03-SEM-001"
 family = "primitive integer and boolean values"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-002"
 family = "local variables and assignment"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-003"
 family = "arithmetic and comparison"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-004"
 family = "function definitions, calls, arguments, and returns"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-005"
 family = "conditional control flow"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-006"
 family = "loops and MIR branching"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-007"
 family = "tuples and structs"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-008"
 family = "field reads and writes"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-009"
 family = "shared references"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-SEM-010"
 family = "mutable references"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "semantics_s01.rs"
 
 [[contracts]]
 id = "FW-R03-NEG-001"
 family = "negative safe-Rust semantic rejection"
 implemented = true
+evidence_level = "oracle-proven"
 fixture = "borrow_invalid.rs"

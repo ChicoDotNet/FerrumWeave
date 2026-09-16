@@ -1,6 +1,6 @@
 # Compatibility status
 
-This document records **implemented and certified capability**, not roadmap intent.
+This document records **implemented and evidenced capability**, with evidence ownership stated explicitly. Historical oracle characterization is preserved, but it is not interchangeable with FerrumWeave product implementation evidence.
 
 ## R00 — Native Rust bootstrap
 
@@ -15,76 +15,71 @@ R00 does not claim managed CLR code generation.
 
 ## R01 — CLR artifact probe
 
-**Status: Certified in CI — 5/5 functional contracts, 96.21% Rust line coverage.**
+**Status: Certified artifact-level foundation.**
 
-R01's compatibility contract is intentionally small:
+R01 proves that FerrumWeave-owned stable-Rust infrastructure can emit a deterministic IL-only PE/CLI assembly, expose valid CLR metadata and a managed entry point, and execute it directly on CoreCLR on Linux and Windows. It does not claim Rust-language lowering.
 
-| Capability | Linux | Windows | Certified R01 proof |
-| --- | --- | --- | --- |
-| Emit one deterministic PE/CLI assembly | ✅ | ✅ | Same Rust emitter and same artifact format |
-| CLR recognizes managed metadata | ✅ | ✅ | CLI header + metadata root + MethodDef entry point |
-| Execute probe with CoreCLR | ✅ | ✅ | `dotnet FerrumWeave.Probe.dll` |
-| Output | ✅ | ✅ | `Hello FerrumWeave` |
-| Platform-specific native executable required | No | No | IL-only managed artifact |
-| Native/PInvoke implementation | No | No | Explicitly excluded |
+## Evidence lifecycle
 
-The CI runtime baseline for the R01 certification is .NET 10 LTS, currently installed from SDK `10.0.400` (runtime 10.0.11).
+R02/R03 historical evidence is `oracle-proven`. Those milestones remain useful bootstrap history and differential characterization through the pinned `rustc_codegen_clr` backend, but they do not establish FerrumWeave ownership of the product backend.
+
+Current product capability requires `FerrumWeave-backend-proven` evidence. Where a claim begins with Rust source, the required causal path is:
+
+```text
+.rsproj -> rustc -> FerrumWeave `rustc` CodegenBackend
+        -> FerrumWeave MIR lowering
+        -> FerrumWeave CIL / metadata
+        -> managed assembly
+        -> CoreCLR
+```
+
+The upstream oracle may support differential verification, but it is not a FerrumWeave runtime, SDK, or product dependency and cannot be the primary PASS evidence for current product capability.
 
 ## R02 — Rust → CLR vertical slice
 
-**Status: Certified in CI — 5/5 functional contracts across Linux and Windows.**
+**Status: Done as historical bootstrap / oracle characterization.**
 
-R02 proves the first real Rust-language path into the CLR:
+The pinned R02 lane demonstrates that real `.rs` source can enter the real `rustc` frontend, pass through borrow checking and MIR, reach CLR-oriented code generation, produce an IL-only PE/CLI artifact, and execute on CoreCLR on Linux and Windows. The lane pins `FractalFir/rustc_codegen_clr@a9aa553b136fce00eceb41fba30758830500a63f` with `nightly-2025-10-14`.
 
-| Capability | Linux | Windows | Certified R02 proof |
-| --- | --- | --- | --- |
-| Real `.rs` source enters `rustc` | ✅ | ✅ | Direct `rustc` invocation with the pinned CLR codegen backend |
-| Rust frontend / MIR path participates | ✅ | ✅ | `rustc_codegen_clr` is loaded as the codegen backend |
-| Borrow checker remains authoritative | ✅ | ✅ | Deliberately invalid source is rejected with `E0502` |
-| Managed PE/CLI output | ✅ | ✅ | PE + CLI header + CLR metadata + MethodDef entry point + ILONLY |
-| Execute generated program with CoreCLR | ✅ | ✅ | `dotnet FerrumWeave.R02.exe` |
-| Output | ✅ | ✅ | `Hello FerrumWeave` |
-| Substitute C#/VB/F#/C/C++ implementation | No | No | Fixture and verifier explicitly reject source-language substitution |
-| Native Rust launcher as implementation | No | No | Managed artifact is executed directly by CoreCLR |
-
-The R02 compatibility lane pins `FractalFir/rustc_codegen_clr@a9aa553b136fce00eceb41fba30758830500a63f` and `nightly-2025-10-14`. FerrumWeave's normal repository toolchain remains stable; nightly compiler internals are isolated to this compatibility lane. CLR execution for R02 is certified against .NET 10 LTS using SDK `10.0.400` and a `net10.0` runtime configuration.
-
-R02 is deliberately a **vertical slice**, not broad Rust support. The certified positive program is intentionally tiny so the milestone proves the compiler/runtime path without pretending broad language coverage already exists.
+That evidence remains reproducible and valuable, but its ownership level is `oracle-proven`. It characterizes expected Rust → CLR behavior; it does not certify that FerrumWeave itself implements that backend path.
 
 ## R03 — Core Rust semantics
 
-**Status: Certified in CI — 11/11 functional contracts across Linux and Windows.**
+**Status: Done as historical differential / oracle characterization.**
 
-R03 moves FerrumWeave from the ceremonial R02 slice to a deliberately small, coherent safe-Rust subset. Positive contracts compile the same Rust source through native `rustc` and the pinned CLR backend, then compare observable behavior exactly. The negative contract proves that source-language safety still gates code generation.
+The R03 lane preserves a small safe-Rust characterization set across Linux and Windows: primitive values, locals, arithmetic, calls/returns, conditionals, loops, tuples/structs, field access, shared/mutable references, and an invalid-borrowing negative case. Positive cases compare native Rust behavior against the pinned CLR oracle; the negative case preserves the expected Rust compiler rejection.
 
-| Certified semantic family | Linux | Windows | R03 proof |
-| --- | --- | --- | --- |
-| Primitive integers and booleans | ✅ | ✅ | Native/CLR differential execution |
-| Locals and assignment | ✅ | ✅ | Native/CLR differential execution |
-| Arithmetic and comparison | ✅ | ✅ | Native/CLR differential execution |
-| Functions, arguments, calls, and returns | ✅ | ✅ | Native/CLR differential execution |
-| Conditional control flow | ✅ | ✅ | Native/CLR differential execution |
-| Loops and MIR branching | ✅ | ✅ | Native/CLR differential execution |
-| Tuples and structs | ✅ | ✅ | Native/CLR differential execution |
-| Field reads and writes | ✅ | ✅ | Native/CLR differential execution |
-| Shared references | ✅ | ✅ | Native/CLR differential execution |
-| Mutable references | ✅ | ✅ | Native/CLR differential execution |
-| Invalid safe-Rust borrowing | ✅ | ✅ | Compilation must fail with `E0502`; no executable artifact may be produced |
+These families remain `oracle-proven` historical evidence. They are useful as differential expectations while FerrumWeave expands its own MIR lowering, but they do not substitute for FerrumWeave backend certification of the same family.
 
-The cumulative positive semantic fixture has an explicit observable oracle of `42`; the native result must satisfy that oracle and the managed result must match native output byte-for-byte. The R03 lane keeps the R02 toolchain pins: `FractalFir/rustc_codegen_clr@a9aa553b136fce00eceb41fba30758830500a63f`, `nightly-2025-10-14`, and .NET 10 LTS / SDK `10.0.400`.
+## R04 — CLR / CTS foundation
 
-R03 certifies these semantic families only. It does **not** claim general Rust or `std` compatibility.
+**Status: Done — re-audited at artifact/type-system scope.**
 
-## Not implemented by R03
+R04 preserves FerrumWeave-owned CTS/projection and CLR reflection evidence. It establishes the declared type-system/artifact boundary; it does not by itself claim Rust-source consumption of managed APIs.
 
-These remain future work unless and until their roadmap milestones are certified:
+## R05-R09 — Current FerrumWeave product path
 
-- broad `std` support or a general `println!` story;
-- broad Rust language coverage beyond the enumerated R03 subset;
-- Rust ↔ CTS type mappings;
-- consuming .NET APIs from Rust;
-- consuming Rust APIs from C#/VB/F#;
-- `.rsproj` / MSBuild / .NET template language integration through `dotnet new <template> -lang Rust`;
-- NuGet and ProjectReference integration.
+**Status: Done — FerrumWeave backend re-certified on the declared portable claims.**
 
-Those claims advance only when their roadmap milestones meet their Definition of Done.
+R05-R09 carry current product evidence through the FerrumWeave-owned backend rather than the oracle. The certified path includes Rust-source causal managed calls and interop families, managed consumption of FerrumWeave-produced assemblies, `.rsproj` / MSBuild integration, and the mixed `.slnx` proof.
+
+At the declared contract scope, the product evidence demonstrates:
+
+- FerrumWeave's own `rustc` CodegenBackend is loaded through `rustc -Z codegen-backend=<FerrumWeave>`;
+- real MIR-derived values and control flow reach FerrumWeave-owned CIL/metadata emission;
+- managed static calls, construction, instance access, properties, and external managed assembly use are source-causally certified through FerrumWeave;
+- Rust-produced managed assemblies are consumed from .NET without a native ABI substitute;
+- `FerrumWeave.Sdk` drives `.rsproj -> rustc -> FerrumWeave` directly;
+- the canonical mixed `.slnx` path preserves Rust-source causality into the final CoreCLR-observed business result;
+- mutation/falsification checks reject hardcoded substitute behavior;
+- Linux and Windows evidence is required where the claim is portable.
+
+This does **not** imply general Rust or `std` compatibility, complete CTS coverage, general NuGet semantics, debugger completeness, or production readiness beyond the explicit contracts.
+
+## R10
+
+R10 remains paused pending explicit post-convergence replay and governance. Draft developer-experience work is preserved but is not being extended while backend ownership and evidence boundaries are converged.
+
+## Evidence rule
+
+Compatibility claims advance only when the implementation that owns the capability is in the causal path. For current product capability, successful `rustc_codegen_clr` execution may be secondary oracle evidence, never primary FerrumWeave PASS evidence.

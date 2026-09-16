@@ -21,7 +21,7 @@ FerrumWeave/
 │       ├── icons/
 │       └── merch/
 ├── compiler/
-│   ├── codegen-clr/
+│   ├── codegen-backend/
 │   ├── cil/
 │   └── driver/
 ├── projection/
@@ -91,6 +91,12 @@ Top-level product folders describe responsibilities: `compiler`, `projection`, `
 
 Within a capability, use the conventions native to the ecosystem implementing it. Rust crates use idiomatic `Cargo.toml` + `src/`; .NET components use SDK-style projects and normal .NET naming.
 
+### Keep the rustc backend boundary owned by FerrumWeave
+
+`compiler/codegen-backend/` is the product boundary loaded by `rustc`. It owns the FerrumWeave implementation of `CodegenBackend` and routes rustc MIR into FerrumWeave lowering, CIL emission, metadata, and projection infrastructure.
+
+The stable workspace remains independent from compiler-private APIs. Nightly/rustc-dev requirements belong to the isolated backend lane rather than leaking into ordinary crates.
+
 ### Keep `projection/` independent
 
 CLR metadata projection is a shared contract, not an implementation detail of code generation. The compiler, code analysis, project references, NuGet integration, IntelliSense, and eventually debugging may all depend on the same model of .NET-visible symbols.
@@ -114,11 +120,11 @@ The canonical samples progress vertically:
 
 A sample is only added when the behavior it demonstrates is executable.
 
-### Keep upstream divergence visible and temporary
+### Keep product upstream divergence visible and temporary
 
-FerrumWeave should integrate before reinventing. Any local divergence from `rustc`, `rust-analyzer`, `rustc_codegen_clr`, the .NET SDK, or related upstreams should be recorded under `docs/upstream/` with the upstream revision, local requirement, issue/PR link, and exit condition.
+FerrumWeave should integrate before reinventing when a dependency is genuinely part of the product path. Local divergence from `rustc`, `rust-analyzer`, the .NET SDK, or another product upstream should be recorded under `docs/upstream/` with the upstream revision, local requirement, issue/PR link, and exit condition.
 
-The preferred lifecycle is:
+The preferred lifecycle for real product upstreams is:
 
 ```text
 consume upstream
@@ -129,6 +135,20 @@ submit upstream
       ↓
 remove local divergence
 ```
+
+`rustc_codegen_clr` is different: it is a pinned **characterization oracle / differential oracle**, not a runtime, SDK, or product backend dependency. Its lifecycle is therefore evidence-oriented:
+
+```text
+pin oracle revision
+      ↓
+characterize observable behavior
+      ↓
+reproduce the required behavior through FerrumWeave
+      ↓
+retain only when differential value remains, otherwise remove
+```
+
+Oracle provenance and pins still belong under `docs/upstream/`, but FerrumWeave does not patch or consume that backend as the product implementation.
 
 ### Do not pre-create the future
 

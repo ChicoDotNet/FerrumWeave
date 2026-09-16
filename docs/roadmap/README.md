@@ -6,23 +6,29 @@ A milestone is complete only when it changes a technical fact about the project 
 
 > **Executable evidence outranks diagrams, estimates, and aspirations.**
 
-The prerelease project-template sequence from `0.1-alpha` through `1.0` is defined in [Template release plan](template-release-plan.md). ADR 0004 records the decision that Rust participates as a .NET **language choice** through `dotnet new <template> -lang Rust`, rather than as a standalone project type named `rust`.
-
 ## Current status
 
 | Milestone | Status | New technical truth |
 | --- | --- | --- |
 | R00 — Repository baseline | **Done** | FerrumWeave has a reproducible Rust bootstrap, CI, quality gates, community foundations, branding, Pages, and dependency maintenance. |
 | R01 — CLR artifact probe | **Done** | FerrumWeave can produce and execute a valid managed .NET assembly. |
-| R02 — Rust → CLR vertical slice | **Done** | Real Rust source passes through `rustc` and executes as managed code on CoreCLR. |
-| R03 — Core Rust semantics | **Done** | 11/11 declared safe-Rust semantic and negative contracts are certified on Linux and Windows with native/CLR differential evidence. |
-| R04 — CLR / CTS foundation | **Done** | 11/11 declared CTS contracts are certified, including independent emitted-signature reflection on Linux and Windows. |
-| R05 — Rust consumes .NET | **Next** | Rust can consume existing managed assemblies and .NET APIs. |
-| R06 — .NET consumes Rust | Planned | C# and Visual Basic can consume public managed APIs implemented in Rust. |
-| R07 — Semantic interoperability | Planned | Ownership, GC, errors, nullability, resources, and other cross-runtime semantics have principled contracts. |
-| R08 — `.rsproj` and FerrumWeave SDK | Planned | Rust becomes a first-class SDK-style project in the `dotnet` toolchain. |
-| R09 — Mixed `.slnx` proof | Planned | C#, Visual Basic, F#, Rust, ProjectReference, and NuGet participate in one real .NET solution. |
-| R10 — Developer experience / 0.1 alpha | Planned | An external developer can install, edit, diagnose, build, debug, and run FerrumWeave without understanding its internals. |
+| R02 — Rust → CLR vertical slice | **Done — historical oracle characterization** | Bootstrap evidence proved that real Rust can pass through `rustc` and execute as managed code on CoreCLR; that historical evidence is not FerrumWeave-backend product evidence. |
+| R03 — Core Rust semantics | **Done — historical oracle characterization** | The declared safe-Rust semantic and negative families remain useful differential characterization; product claims require FerrumWeave-owned backend evidence. |
+| R04 — CLR / CTS foundation | **Done — re-audited** | CTS mapping/reflection evidence remains valid at its declared artifact/type-system scope; it does not claim managed API consumption from Rust source. |
+| R05 — Rust consumes .NET | **Done — FerrumWeave backend re-certified** | Required managed-call families are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; upstream remains oracle-only. |
+| R06 — .NET consumes Rust | **Done — FerrumWeave backend re-certified** | C#/VB consumers, reflection and no-native-ABI contracts consume Rust-source-causal assemblies emitted through the FerrumWeave `rustc` CodegenBackend on Linux and Windows. |
+| R07 — Semantic interoperability | **Done — FerrumWeave backend re-certified** | All declared semantic-interoperability contracts are source-causally certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows; unsupported crossings fail diagnostically before CLR emission. |
+| R08 — `.rsproj` and FerrumWeave SDK | **Done — FerrumWeave backend re-certified** | Normal `.rsproj` build now follows `FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend`; Rust-only mutation changes the managed artifact and CoreCLR observable on Linux and Windows without `ferrumweave_emit` in the product path. |
+| R09 — Mixed `.slnx` proof | **Done — FerrumWeave backend re-certified** | The canonical mixed-language `.slnx` is source-causal through `.rsproj -> rustc -> FerrumWeave`; a Rust-only `42 -> 73` mutation changes `RiskEngine.dll` and the C# CoreCLR business observable on Linux and Windows while preserving the managed dependency call. |
+| R10 — Developer experience / 0.1 alpha | **Paused pending explicit post-convergence replay** | Draft DX work is preserved. R05-R09 causal convergence is complete, but R10 remains paused until the current convergence PR is certified and governance explicitly resumes the release milestone. |
+
+### Evidence lifecycle after the convergence audit
+
+R02/R03 historical evidence is `oracle-proven`. Those milestones remain valuable bootstrap history and differential characterization, but their upstream-backed runs do not establish implementation ownership by FerrumWeave.
+
+`rustc_codegen_clr` is not a FerrumWeave runtime, SDK, or product dependency; its pin is retained only in optional oracle/test/dev characterization lanes so historical behavior can be replayed and compared without occupying the product-backend slot.
+
+For current product capability, product capability claims require `FerrumWeave-backend-proven` evidence and, where source semantics are claimed, source-causal certification from Rust source through the FerrumWeave `rustc` CodegenBackend. Oracle evidence may support characterization but cannot substitute for that causal path.
 
 ---
 
@@ -106,7 +112,6 @@ It includes:
 - dual MIT / Apache-2.0 licensing;
 - contribution, governance, security, support, DCO, and Code of Conduct foundations;
 - FerrumWeave branding and GitHub Pages;
-- repository-layout guidance;
 - a minimal native Rust `Hello FerrumWeave` executable;
 - Windows and Linux CI;
 - unit tests and functional-contract tracking;
@@ -137,7 +142,7 @@ Given FerrumWeave's R01 emitter, when it produces the probe artifact, then the r
 
 ### `FW-R01-CLR-002` — CLR execution
 
-Given the generated probe assembly, when it is executed with `dotnet`, then it exits successfully and prints exactly:
+Given the generated managed assembly, when it is executed with `dotnet`, then it exits successfully and prints exactly:
 
 ```text
 Hello FerrumWeave
@@ -168,15 +173,13 @@ R01 is Done when:
 
 # R02 — Rust → CLR vertical slice
 
-**Status: Done. Certified in CI — 5/5 R02 contracts across Linux and Windows.**
+**Status: Done as historical bootstrap/oracle characterization. Current product evidence is owned by the FerrumWeave backend convergence lane.**
 
 ## Goal
 
-Prove the central FerrumWeave proposition:
+Preserve the bootstrap proof that real Rust source is accepted by the real Rust compiler frontend, borrow checking participates, and the resulting program can execute as managed CLR code. The historical R02 run used the pinned upstream backend and is therefore characterization evidence, not proof that FerrumWeave implements the backend.
 
-> Real Rust source is accepted by the real Rust compiler frontend, borrow checking participates, and the resulting program executes as managed CLR code.
-
-Conceptually:
+Conceptually, the product architecture now owns this slot:
 
 ```text
 Rust source
@@ -185,9 +188,11 @@ rustc frontend
     ↓
 HIR / MIR
     ↓
-FerrumWeave CLR codegen
+FerrumWeave rustc CodegenBackend
     ↓
-CIL + metadata
+FerrumWeave MIR lowering
+    ↓
+FerrumWeave CIL + metadata
     ↓
 managed .NET assembly
     ↓
@@ -220,33 +225,27 @@ FerrumWeave must not translate the source into C# or another .NET language as th
 
 ## DoD
 
-R02 is Done when:
+The historical bootstrap satisfied these R02 observations. Their current evidence level is `oracle-proven`; they are not promoted into a FerrumWeave product claim without the FerrumWeave backend causal path.
 
-- all transversal and R01 guarantees remain green;
-- `rustc` parsing, type checking, borrow checking, and MIR are part of the actual path;
+- `rustc` parsing, type checking, borrow checking, and MIR participate in the observed compiler path;
 - valid Rust reaches CLR execution on both Linux and Windows;
-- invalid Rust demonstrates that Rust semantics still gate code generation;
+- invalid Rust demonstrates that Rust semantics gate code generation;
 - the output is managed CIL/metadata rather than a native Rust binary hosted beside .NET;
-- the integration strategy with `rustc` / `rustc_codegen_clr` is documented with upstream-first intent;
-- the public project status can truthfully say **"FerrumWeave has executed real Rust as managed CLR code"** while still stating the very small supported subset.
-
-R02 is the first milestone that should be considered unmistakably FerrumWeave rather than repository or CLR scaffolding.
+- the upstream-first strategy is preserved as history and differential characterization rather than rewritten as an error.
 
 ---
 
 # R03 — Core Rust semantics
 
-**Status: Done. Certified in CI — 11/11 R03 contracts across Linux and Windows.**
+**Status: Done as historical bootstrap/oracle characterization. Current product semantic claims require FerrumWeave backend evidence.**
 
 ## Goal
 
-Move from a ceremonial vertical slice to a small but coherent safe-Rust execution subset.
-
-The exact compatibility matrix will evolve with evidence, but R03 should cover enough MIR behavior to write small programs without special-casing Hello World.
+Retain a small coherent safe-Rust characterization set as a differential oracle while FerrumWeave owns the product backend implementation.
 
 ## Certified conformance families
 
-The completed R03 ledger certifies:
+The historical R03 ledger characterizes:
 
 - primitive integer and boolean values;
 - local variables and assignment;
@@ -260,27 +259,19 @@ The completed R03 ledger certifies:
 - mutable references;
 - negative safe-Rust borrowing rejection with `E0502` and no emitted executable artifact.
 
-Positive semantics are observed differentially: the same cumulative Rust fixture is compiled natively and through the pinned CLR backend, the native result must satisfy the explicit `42` oracle, and the managed result must match native output byte-for-byte. Linux and Windows certify the same contract set.
+Positive semantics remain useful differentially: the same cumulative Rust fixture can be compiled natively and through the pinned oracle backend, with native behavior serving as an explicit comparison point. The R02/R03 oracle workflows preserve that reproducible history on Linux and Windows, but do not certify FerrumWeave implementation ownership.
 
 ## DoD
 
-R03 is Done when:
+The historical R03 characterization remains valid at `oracle-proven` evidence level. Product statements about these semantic families require replay through the FerrumWeave `rustc` CodegenBackend and the relevant source-causal/backend certifiers.
 
-- the supported subset is enumerated in a compatibility matrix;
-- every claimed construct has positive conformance tests;
-- relevant invalid programs have negative compiler contracts;
-- behavior that has an equivalent native-Rust observation is compared against native `rustc` where useful;
-- implementation does not contain Hello-World-specific opcode or source-pattern shortcuts;
-- Linux and Windows execute the same supported semantic families;
-- unsupported language features fail explicitly rather than silently producing incorrect IL.
-
-All of these conditions are satisfied by the certified R03 milestone. Broader Rust language and standard-library coverage remains outside R03 and must not be inferred from this status.
+Broader Rust language and standard-library coverage remains outside R03 and must not be inferred from this status.
 
 ---
 
 # R04 — CLR / CTS foundation
 
-**Status: Done. Certified in CI — 11/11 R04 contracts with independent CLR reflection across Linux and Windows.**
+**Status: Done. Prior certification remains valid at the declared CTS/artifact scope after causal re-audit.**
 
 ## Goal
 
@@ -313,6 +304,8 @@ All of these conditions are satisfied by the certified R04 milestone. The mappin
 
 # R05 — Rust consumes .NET
 
+**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend.**
+
 ## Goal
 
 Allow Rust to consume APIs that already exist in managed assemblies.
@@ -330,13 +323,18 @@ R05 is Done when Rust can, through managed metadata:
 - use at least one `System.*` API;
 - consume a user-defined C# assembly compiled independently from FerrumWeave tests;
 - perform all of the above on Linux and Windows;
-- do so without P/Invoke/FFI being the implementation of managed interoperability.
+- do so without P/Invoke/FFI being the implementation of managed interoperability;
+- demonstrate that the managed call is causally produced from real Rust source compiled through `rustc`/the CLR codegen path rather than injected by an emitter or fixture.
+
+The re-certification closes that causal gate using FerrumWeave-owned codegen rather than `rustc_codegen_clr`: real Rust source reaches FerrumWeave `codegen_crate`, MIR selects each managed-call family, FerrumWeave emits the CIL/metadata, and CoreCLR executes the result. Static call, construction, instance call, property access, and independently compiled external managed assembly consumption each have source-only falsification. Exact implementation baseline `60756627ca1617b517fbcbbb0654b1c2c23cb71b` passed FerrumWeave codegen backend convergence #106 and Rust CI #469, including fmt, clippy, coverage, and Linux/Windows integration. `rustc_codegen_clr` is retained only as historical/differential oracle evidence.
 
 The first projection should favor **CLR-shaped, mechanically predictable semantics** over prematurely clever Rust wrappers. More idiomatic abstractions can be layered later without obscuring the underlying CLR contract.
 
 ---
 
 # R06 — .NET consumes Rust
+
+**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows.**
 
 ## Goal
 
@@ -361,9 +359,13 @@ R06 is Done when:
 - at least static and instance-call shapes are represented in the contract suite;
 - Linux and Windows are green for the supported consumer scenarios.
 
+The causal replay is complete: static and instance Rust-defined APIs are built by `FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend`, consumed independently from C# and Visual Basic, reflected as coherent CLR metadata and verified to contain no P/Invoke/native ABI substitute. Rust-only mutations change both artifact bytes and managed observables. The exact supporting SHAs and portable CI runs are recorded in `tests/r06/contracts.toml`; `rustc_codegen_clr` and the legacy R06 emitter are not in the product causal path.
+
 ---
 
 # R07 — Semantic interoperability
+
+**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows.**
 
 ## Goal
 
@@ -390,6 +392,8 @@ R07 is Done when:
 - unsupported combinations fail explicitly;
 - the compatibility documentation explains what is safe, what is managed, and what remains unsupported.
 
+The backend-convergence audit closes the causal gap: all declared R07 contracts now execute or reject through the FerrumWeave `rustc` CodegenBackend rather than relying on projection/emitter-only evidence. Exact aggregate SHA `6e86017e4b46526eec76a3f862a7bc922af14487` passed Rust CI #561 on Ubuntu and Windows, FerrumWeave codegen backend convergence #198, R02 #237, R03 #264 and R04 #413. `rustc_codegen_clr` remains oracle-only.
+
 ## `unsafe` policy
 
 C# **does** support explicitly unsafe code, including pointer operations and `fixed` contexts. Therefore `unsafe` cannot be dismissed merely because FerrumWeave targets .NET.
@@ -408,6 +412,8 @@ Evidence may cause the dedicated unsafe milestone to move earlier, but support m
 
 # R08 — `.rsproj` and FerrumWeave SDK
 
+**Status: Done — re-certified through `.rsproj -> FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend` on Linux and Windows.**
+
 ## Goal
 
 Make a Rust project feel native to the .NET SDK experience after the compiler/interoperability core is real enough to deserve that shell.
@@ -415,30 +421,32 @@ Make a Rust project feel native to the .NET SDK experience after the compiler/in
 Target experience:
 
 ```bash
-dotnet new console -lang Rust -n HelloFerrum
+dotnet new rust -n HelloFerrum
 cd HelloFerrum
 dotnet run
 ```
-
-Rust is a **language choice** for a .NET project family, not a project type named `rust`. The template-resolution decision and coexistence requirements are recorded in [ADR 0004](../architecture/adr/0004-r10-rust-as-dotnet-template-language.md).
 
 ## DoD
 
 R08 is Done when, from a clean machine/environment with documented prerequisites:
 
-- `dotnet new console -lang Rust` creates a valid Rust/.NET console project;
+- `dotnet new rust` creates a valid Rust/.NET project;
 - `.rsproj` is an SDK-style project owned by `FerrumWeave.Sdk`;
 - `dotnet restore` performs the supported restore responsibilities;
-- `dotnet build` produces the managed FerrumWeave assembly;
+- `dotnet build` produces the managed FerrumWeave assembly through the real supported Rust compiler/codegen path;
 - `dotnet run` executes it;
 - `dotnet clean` behaves predictably;
 - supported testing hooks have a documented `dotnet test` story or an explicitly documented limitation;
 - no bespoke manual build script is required outside the SDK contract;
 - the SDK uses the current supported stable/LTS .NET line rather than an obsolete target by default.
 
+Exact product-path replay SHA `9b08fa42e0a0c5ad12700b544a670aabc045569c` passed Rust CI #565 on Ubuntu and Windows, FerrumWeave codegen backend convergence #202, R02 #241, R03 #268 and R04 #417. `tests/sdk_backend_path.rs` proves malformed Rust is rejected by real `rustc`, rejects `ferrumweave_emit` from the product path, and proves a Rust-only `137 -> 211` mutation changes both managed assembly bytes and an independent CoreCLR consumer observable.
+
 ---
 
 # R09 — Mixed `.slnx` proof
+
+**Status: Done — re-certified through the FerrumWeave `rustc` CodegenBackend on Linux and Windows.**
 
 ## Goal
 
@@ -478,12 +486,15 @@ R09 is Done when:
 - one `.slnx` contains the four project-language families above;
 - a single normal .NET build workflow can build the supported solution graph;
 - at least one end-to-end business-style call path crosses existing .NET code → Rust → managed .NET dependency and returns successfully;
+- changing only the relevant Rust source changes the .NET-observed business result without changing the emitter, consumer, fixture, or expected-value logic;
 - Visual Basic can participate in the path without migration to C#;
 - F# compiles and interoperates as part of the certified solution, not as a screenshot/demo-only project;
 - a real NuGet package is restored and consumed;
 - project references resolve without manual copying of assemblies;
 - the solution works on Linux and Windows where all chosen project types support the scenario;
 - functional contracts prove the language crossings rather than merely checking that projects compile.
+
+The source-causal closure is certified at exact SHA `5d02490e8f4ac71383f915464e47199b4badfb6a`: Rust CI #569, FerrumWeave backend convergence #206, R02 #245, R03 #272 and R04 #421 all completed GREEN. `tests/r09_source_causality.rs` replays the canonical mixed solution and changes only `RiskEngine/src/main.rs` from `42` to `73`; `RiskEngine.dll` bytes and the independent C# CoreCLR observable both change while the emitted method retains its CLR call to `System.Math.Abs` and no `ferrumweave_emit` trace is permitted.
 
 This is the canonical **0.1 proof moment**:
 
@@ -493,6 +504,8 @@ This is the canonical **0.1 proof moment**:
 
 # R10 — Developer experience / 0.1 alpha
 
+**Status: Paused pending explicit post-convergence replay. R05-R09 are now causally re-certified, but existing R10 draft work remains preserved and subordinate until governance explicitly resumes this release milestone.**
+
 ## Goal
 
 Turn the proven compiler and solution capability into something an external developer can realistically try.
@@ -501,7 +514,6 @@ Expected areas include:
 
 - installation and versioned packaging;
 - FerrumWeave SDK distribution;
-- Rust-as-language template integration through `dotnet new <template> -lang Rust`;
 - rust-analyzer integration/awareness of projected CLR symbols;
 - diagnostics that preserve useful Rust source locations;
 - initial source mapping / PDB / debugger experience;
@@ -509,29 +521,15 @@ Expected areas include:
 - compatibility and limitation documentation;
 - reproducible release artifacts.
 
-The `0.1-alpha` template surface is:
-
-```text
-console
-classlib
-xunit
-nunit
-mstest
-web
-webapi
-```
-
-The full prerelease sequence and per-template evidence requirements are defined in [Template release plan](template-release-plan.md).
-
 ## DoD
 
 R10 is Done when an external contributor, following only published documentation, can:
 
 1. install the alpha toolchain;
-2. create each supported 0.1 project family with `dotnet new <template> -lang Rust`;
+2. create a FerrumWeave project;
 3. edit Rust with useful Rust diagnostics;
 4. consume a supported .NET API/NuGet dependency;
-5. build and run/test through normal `dotnet` commands as appropriate to the project family;
+5. build and run through normal `dotnet` commands;
 6. build the canonical mixed `.slnx` example;
 7. perform at least basic source-level debugging for the supported scenario;
 8. understand from the compatibility matrix what is and is not implemented.
@@ -540,28 +538,9 @@ Additionally:
 
 - release artifacts are reproducible and versioned;
 - the alpha packaging path includes NuGet where appropriate for the SDK/tooling model;
-- no documented getting-started step depends on unpublished maintainer knowledge or a FerrumWeave source checkout;
-- installing FerrumWeave does not break existing C#, F#, or Visual Basic template variants;
+- no documented getting-started step depends on unpublished maintainer knowledge;
 - public status is still explicitly alpha and limitations remain visible.
 
 When these conditions are met, FerrumWeave may reasonably publish its first **0.1 alpha** rather than tagging a release merely because some CIL exists.
 
 ---
-
-# Prerelease template sequence and stable gate
-
-The agreed project-family sequence is:
-
-| Release | Stage | Template families |
-| --- | --- | --- |
-| `0.1` | Alpha | `console`, `classlib`, `xunit`, `nunit`, `mstest`, `web`, `webapi` |
-| `0.2` | Alpha | `mvc`, `winforms` |
-| `0.3` | Beta | `worker` |
-| `0.4` | Beta | `wpf` |
-| `0.5` | Beta | `grpc` |
-| `0.6` | Beta | `blazor` |
-| `1.0` | Stable | Every committed template family is certified and has at least one real FerrumWeave project |
-
-A template is not supported merely because scaffolding succeeds. It must satisfy the runnable/testable contract for that project family through the real FerrumWeave backend.
-
-FerrumWeave reaches `1.0.0` only after **every template family above has survived at least one real project**. Compiler fixtures, template smoke tests, documentation samples, and synthetic conformance projects do not satisfy that stable-release gate. The real project must have a genuine application/library purpose and reproducible evidence appropriate to the template family.
