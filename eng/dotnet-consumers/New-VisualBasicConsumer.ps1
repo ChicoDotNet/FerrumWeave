@@ -13,6 +13,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "ConsumerProject.ps1")
 
 $projectNames = @{
     xunit  = "FerrumWeave.Interop.VisualBasic.Xunit"
@@ -20,36 +21,15 @@ $projectNames = @{
     nunit  = "FerrumWeave.Interop.VisualBasic.NUnit"
 }
 
-$projectName = $projectNames[$Framework]
-$projectDirectory = Join-Path $OutputRoot $projectName
-$riskEngineProject = Join-Path $RepoRoot "tests/fixtures/r09/RiskEngine/RiskEngine.rsproj"
+$projectPath = New-FerrumWeaveInteropProject `
+    -Framework $Framework `
+    -Language "VB" `
+    -ProjectName $projectNames[$Framework] `
+    -ProjectExtension "vbproj" `
+    -OutputRoot $OutputRoot `
+    -RepoRoot $RepoRoot
 
-if (-not (Test-Path -LiteralPath $riskEngineProject)) {
-    throw "Canonical R09 RiskEngine project was not found at $riskEngineProject"
-}
-
-if (Test-Path -LiteralPath $projectDirectory) {
-    Remove-Item -LiteralPath $projectDirectory -Recurse -Force
-}
-
-New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
-
-& dotnet new $Framework -lang "VB" -f net10.0 -n $projectName -o $projectDirectory --no-restore
-if ($LASTEXITCODE -ne 0) {
-    throw "dotnet new $Framework -lang VB failed with exit code $LASTEXITCODE"
-}
-
-$projects = @(Get-ChildItem -LiteralPath $projectDirectory -Filter "*.vbproj" -File)
-if ($projects.Count -ne 1) {
-    throw "Expected exactly one generated Visual Basic project, found $($projects.Count) in $projectDirectory"
-}
-
-$project = $projects[0]
-& dotnet add $project.FullName reference $riskEngineProject
-if ($LASTEXITCODE -ne 0) {
-    throw "dotnet add reference failed with exit code $LASTEXITCODE"
-}
-
+$projectDirectory = Split-Path -Parent $projectPath
 Get-ChildItem -LiteralPath $projectDirectory -Filter "*.vb" -File | Remove-Item -Force
 
 $testSource = switch ($Framework) {
@@ -93,11 +73,8 @@ End Class
     }
 }
 
-$testPath = Join-Path $projectDirectory "RustApiInteropTests.vb"
-[System.IO.File]::WriteAllText(
-    $testPath,
-    $testSource,
-    [System.Text.UTF8Encoding]::new($false)
-)
+Write-Utf8NoBom `
+    -Path (Join-Path $projectDirectory "RustApiInteropTests.vb") `
+    -Content $testSource
 
-Write-Output $project.FullName
+Write-Output $projectPath

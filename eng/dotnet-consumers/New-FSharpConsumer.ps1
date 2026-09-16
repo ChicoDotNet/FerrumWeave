@@ -13,6 +13,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "ConsumerProject.ps1")
 
 $projectNames = @{
     xunit  = "FerrumWeave.Interop.FSharp.Xunit"
@@ -20,36 +21,15 @@ $projectNames = @{
     nunit  = "FerrumWeave.Interop.FSharp.NUnit"
 }
 
-$projectName = $projectNames[$Framework]
-$projectDirectory = Join-Path $OutputRoot $projectName
-$riskEngineProject = Join-Path $RepoRoot "tests/fixtures/r09/RiskEngine/RiskEngine.rsproj"
+$projectPath = New-FerrumWeaveInteropProject `
+    -Framework $Framework `
+    -Language "F#" `
+    -ProjectName $projectNames[$Framework] `
+    -ProjectExtension "fsproj" `
+    -OutputRoot $OutputRoot `
+    -RepoRoot $RepoRoot
 
-if (-not (Test-Path -LiteralPath $riskEngineProject)) {
-    throw "Canonical R09 RiskEngine project was not found at $riskEngineProject"
-}
-
-if (Test-Path -LiteralPath $projectDirectory) {
-    Remove-Item -LiteralPath $projectDirectory -Recurse -Force
-}
-
-New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
-
-& dotnet new $Framework -lang "F#" -f net10.0 -n $projectName -o $projectDirectory --no-restore
-if ($LASTEXITCODE -ne 0) {
-    throw "dotnet new $Framework -lang F# failed with exit code $LASTEXITCODE"
-}
-
-$projects = @(Get-ChildItem -LiteralPath $projectDirectory -Filter "*.fsproj" -File)
-if ($projects.Count -ne 1) {
-    throw "Expected exactly one generated F# project, found $($projects.Count) in $projectDirectory"
-}
-
-$project = $projects[0]
-& dotnet add $project.FullName reference $riskEngineProject
-if ($LASTEXITCODE -ne 0) {
-    throw "dotnet add reference failed with exit code $LASTEXITCODE"
-}
-
+$projectDirectory = Split-Path -Parent $projectPath
 $testMarker = switch ($Framework) {
     "xunit"  { "[<Fact>]" }
     "mstest" { "[<TestMethod>]" }
@@ -111,10 +91,8 @@ type RustApiInteropTests() =
     }
 }
 
-[System.IO.File]::WriteAllText(
-    $testFiles[0].FullName,
-    $testSource,
-    [System.Text.UTF8Encoding]::new($false)
-)
+Write-Utf8NoBom `
+    -Path $testFiles[0].FullName `
+    -Content $testSource
 
-Write-Output $project.FullName
+Write-Output $projectPath
