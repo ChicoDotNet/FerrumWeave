@@ -1,7 +1,7 @@
 <!--
 translation-of: docs/README.md
 locale: zh-Hans
-source-revision: 22aef36588bd35a433ff9564ab947703afd39c4f
+source-revision: d50e9029e372521bd00a7b6c8cbc29e234c80009
 -->
 
 # FerrumWeave 文档
@@ -23,11 +23,9 @@ FerrumWeave 文档按照读者实际会走的路径来组织。没有 locale 后
 
 ## 架构
 
-以下页面目前仍使用规范英文版本：
-
-- [Repository layout](architecture/repository-layout.md) — ownership 边界与仓库结构。
-- [ADR 0004 — Rust as a .NET template language](architecture/adr/0004-r10-rust-as-dotnet-template-language.md) — 为什么公开契约是 `dotnet new <template> -lang Rust`。
-- [Architecture Decision Records](architecture/adr/) — 历史架构决策及其理由。
+- [仓库结构](architecture/repository-layout.zh-Hans.md) — ownership 边界与仓库结构。
+- [ADR 0004 — 将 Rust 注册为 .NET 模板语言](architecture/adr/0004-r10-rust-as-dotnet-template-language.zh-Hans.md) — 为什么公开契约是 `dotnet new <template> -lang Rust`。
+- [Architecture Decision Records](architecture/adr/) — 历史架构决策及其理由。*（英文）*
 
 ## 能力与兼容性
 
@@ -63,4 +61,4 @@ FerrumWeave 文档按照读者实际会走的路径来组织。没有 locale 后
     → 分区 / 文档
 ```
 
-本地化文档应返回同一语言的文档首页。后续的 docgraph 增量会自动生成并验证“哪些页面链接到这里”，而不是手工维护 backlinks。
+带有 `doc-id` metadata 的文档会自动获得返回同一 locale 文档首页与项目 README 的链接。`ferrumweave-docgraph` 还会根据人工编写的 Markdown 链接生成并验证本地化的“链入页面” backlinks；生成区域会提交到仓库，并由 Documentation graph CI 检查是否保持最新。
