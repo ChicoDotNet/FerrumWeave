@@ -143,11 +143,24 @@ Coverage policy is not optional: line coverage remains at least 80%, functional 
 ## Branch and promotion discipline
 
 - short-lived work branches target `dev`;
-- `dev` preserves detailed causal/TDD/fix history;
-- `main` records milestone/release promotions;
-- promotions from `dev` to `main` use a clean selective/squash promotion rather than importing hundreds of detailed-history commits;
+- topic/increment PRs merge normally into `dev`, preserving detailed causal/TDD/fix history there;
+- `main` records milestone/release promotions only;
+- promotion is a **direct `dev -> main` pull request**; do not create a synthetic promotion branch from `main` merely to compress history;
+- merge `dev -> main` with **squash**, yielding one clean promotion commit on `main` while detailed history remains on `dev`;
+- because squash does not preserve ancestry, immediately reconcile the resulting `main` commit back into `dev` with a content-preserving merge: the reconciliation tree must remain identical to `dev`, and its purpose is only to make the promoted `main` commit an ancestor of `dev`;
+- before opening or merging the next `dev -> main` PR, verify the merge base is the current promoted `main`; unexpectedly reappearing already-promoted files or a huge stale diff means ancestry reconciliation is missing;
 - do not force-update shared branches unless a maintainer explicitly authorizes repository surgery;
 - before merging or promoting, fresh-read the destination branch and certify the exact head SHA being merged.
+
+This preserves both desired histories simultaneously:
+
+```text
+topic branches --normal merge--> dev   # detailed engineering history
+                                |
+                                +--squash--> main   # clean promotion history
+                                      |
+                                      +--content-preserving ancestry merge--> dev
+```
 
 ## Stop conditions
 
