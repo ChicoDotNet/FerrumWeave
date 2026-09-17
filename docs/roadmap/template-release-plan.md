@@ -75,6 +75,8 @@ The release should prove at least:
 - normal restore, build, run/test, ProjectReference, and NuGet behavior appropriate to the template;
 - installation and use from a clean external directory with no FerrumWeave source checkout.
 
+The complete CLR/OOP senior-engineer examination is **not** a 0.1 blocker. R10 activates only the object-model slices causally required by these seven template workflows; see [`CLR object-model conformance plan`](clr-object-model-conformance-plan.md) and [`R10 CLR object-model scope handoff`](r10-clr-object-model-scope-handoff.md).
+
 ## 0.2 alpha — application frameworks
 
 Adds:
@@ -122,7 +124,7 @@ Adds the supported Blazor template surface for the .NET SDK version targeted by 
 
 The beta contract must prove a real rendered component path and the Razor/Blazor build integration required by that template family.
 
-## 1.0 stable gate — evidence from real projects
+## 1.0 stable gate — evidence from real projects and a predictable CLR object model
 
 FerrumWeave does not reach 1.0 merely because all template conformance suites are green.
 
@@ -139,6 +141,10 @@ For this gate, a real project:
 
 The projects may be open source or privately evidenced, but the project must have enough reproducible evidence to justify the compatibility claim.
 
+Stable also requires the baseline [`CLR/OOP senior-engineer examination`](../quality/clr-oop-senior-engineer-exam.md) to contain no remaining `DEFINED-BUT-RED` or `UNDEFINED` question. Every Q01-Q40 baseline question must either be `CERTIFIED` for its accepted semantics or contain only an explicitly `UNSUPPORTED-BY-DESIGN` subcase whose rejection is itself executable and diagnostic. The dependency order and prerelease slicing are defined in [`CLR object-model conformance plan`](clr-object-model-conformance-plan.md).
+
+This does not require FerrumWeave to imitate every C# keyword. It requires a senior CLR engineer to be able to predict the resulting metadata, dispatch, accessibility, type-kind, lifetime, exception, generic, async, delegate/event, and reflection behavior without guessing.
+
 The stable-release question is therefore not only:
 
 > Can FerrumWeave scaffold and certify every promised project family?
@@ -147,7 +153,11 @@ It is also:
 
 > Has every promised project family survived contact with at least one real application?
 
-Only when both answers are yes does FerrumWeave cross the `1.0.0` gate.
+and:
+
+> Is the accepted CLR object model fully certified or explicitly, diagnostically unsupported where the baseline says so?
+
+Only when all three answers are yes does FerrumWeave cross the `1.0.0` gate.
 
 ## Compatibility rule
 
