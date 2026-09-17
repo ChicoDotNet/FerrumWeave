@@ -8,6 +8,12 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <OutputType>Exe</OutputType>
-    <FerrumWeaveRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../..'))</FerrumWeaveRepoRoot>
+
+    <FerrumWeaveSdkPackageRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))</FerrumWeaveSdkPackageRoot>
+    <FerrumWeavePackagedBackendManifest>$([System.IO.Path]::GetFullPath('$(FerrumWeaveSdkPackageRoot)/tools/compiler/codegen-backend/Cargo.toml'))</FerrumWeavePackagedBackendManifest>
+    <FerrumWeavePackageMode Condition="Exists('$(FerrumWeavePackagedBackendManifest)')">true</FerrumWeavePackageMode>
+
+    <!-- Checkout fallback retained for repository tests and contributor workflows. -->
+    <FerrumWeaveRepoRoot Condition="'$(FerrumWeavePackageMode)' != 'true' and '$(FerrumWeaveRepoRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../..'))</FerrumWeaveRepoRoot>
   </PropertyGroup>
 </Project>

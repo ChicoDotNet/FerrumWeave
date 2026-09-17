@@ -32,6 +32,7 @@ For a template to be listed as supported in a FerrumWeave prerelease:
 4. The resulting behavior must flow causally through `rustc -> FerrumWeave CodegenBackend -> CIL/metadata -> CoreCLR`; legacy source-pattern emitters or generated C#/VB/F# substitutes do not satisfy the contract.
 5. The template must have Windows and Linux certification when the underlying .NET project family is cross-platform. Platform-specific templates such as WinForms and WPF are certified on supported Windows environments and must not imply Linux execution.
 6. Known limitations must be documented explicitly.
+7. Any CLR/object-model feature newly crossed by the template must include the applicable adversarial evidence from [`CLR adversarial certification policy`](../quality/clr-adversarial-certification-policy.md): authorized and unauthorized paths, exact metadata, runtime behavior, source causality, and threat-model characterization where relevant.
 
 Samples and conformance fixtures may prove a prerelease contract, but they do not satisfy the final 1.0 real-project gate described below.
 
@@ -45,7 +46,7 @@ Samples and conformance fixtures may prove a prerelease contract, but they do no
 | `0.4` | Beta | `wpf` |
 | `0.5` | Beta | `grpc` |
 | `0.6` | Beta | `blazor` |
-| `1.0` | Stable | All committed template families have both certified contracts and at least one real project using FerrumWeave successfully |
+| `1.0` | Stable | All committed template families have certified contracts, adversarial CLR QA closure, and at least one real project using FerrumWeave successfully |
 
 Version labels may include normal prerelease suffixes such as `0.1.0-alpha.1` or `0.5.0-beta.1`; the table above defines the capability boundary, not the exact number of patch-level prereleases required to reach it.
 
@@ -74,6 +75,8 @@ The release should prove at least:
 - a minimal HTTP request/response path for `web` and `webapi`;
 - normal restore, build, run/test, ProjectReference, and NuGet behavior appropriate to the template;
 - installation and use from a clean external directory with no FerrumWeave source checkout.
+
+The complete CLR/OOP senior-engineer examination and automation/security-QA examination are **not** 0.1 blockers. R10 activates only the semantic and adversarial slices causally required by these seven template workflows; see [`CLR object-model conformance plan`](clr-object-model-conformance-plan.md), [`R10 CLR object-model scope handoff`](r10-clr-object-model-scope-handoff.md), and [`CLR adversarial certification policy`](../quality/clr-adversarial-certification-policy.md).
 
 ## 0.2 alpha — application frameworks
 
@@ -122,7 +125,7 @@ Adds the supported Blazor template surface for the .NET SDK version targeted by 
 
 The beta contract must prove a real rendered component path and the Razor/Blazor build integration required by that template family.
 
-## 1.0 stable gate — evidence from real projects
+## 1.0 stable gate — real projects, predictable CLR semantics, and adversarial certification
 
 FerrumWeave does not reach 1.0 merely because all template conformance suites are green.
 
@@ -139,15 +142,23 @@ For this gate, a real project:
 
 The projects may be open source or privately evidenced, but the project must have enough reproducible evidence to justify the compatibility claim.
 
-The stable-release question is therefore not only:
+Stable also requires the baseline [`CLR/OOP senior-engineer examination`](../quality/clr-oop-senior-engineer-exam.md) to contain no remaining `DEFINED-BUT-RED` or `UNDEFINED` question. Every Q01-Q40 baseline question must either be `CERTIFIED` for its accepted semantics or contain only an explicitly `UNSUPPORTED-BY-DESIGN` subcase whose rejection is itself executable and diagnostic. The dependency order and prerelease slicing are defined in [`CLR object-model conformance plan`](clr-object-model-conformance-plan.md).
+
+Stable additionally requires the baseline [`CLR automation/security-QA senior examination`](../quality/clr-automation-security-qa-exam.md) to contain no remaining `DEFINED-BUT-RED` or `UNDEFINED` question. Every S01-S40 baseline question must either be `CERTIFIED` through its applicable positive, negative, metadata, cross-language/cross-assembly, runtime, source-causality, and threat-model dimensions, or be an explicitly `UNSUPPORTED-BY-DESIGN` crossing whose rejection is executable and diagnostic.
+
+This does not require FerrumWeave to imitate every C# keyword or claim that CLR accessibility is a sandbox. It requires a senior CLR engineer to predict the resulting metadata and runtime semantics, and a senior automation/security-QA engineer to falsify materially incorrect, widened, bypassed, substituted, or unsafe variants without relying on a false threat model.
+
+The stable-release questions are therefore:
 
 > Can FerrumWeave scaffold and certify every promised project family?
 
-It is also:
-
 > Has every promised project family survived contact with at least one real application?
 
-Only when both answers are yes does FerrumWeave cross the `1.0.0` gate.
+> Is the accepted CLR object model fully certified or explicitly, diagnostically unsupported where the baseline says so?
+
+> Can the accepted object model survive its committed adversarial QA matrix, with accessibility treated honestly as access control/encapsulation rather than in-process secrecy?
+
+Only when all four answers are yes does FerrumWeave cross the `1.0.0` gate.
 
 ## Compatibility rule
 

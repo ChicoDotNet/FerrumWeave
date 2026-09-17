@@ -10,13 +10,14 @@ Read these repository paths in this order:
 
 1. `docs/roadmap/r10-agent-handoff.md` — this execution boundary.
 2. `docs/architecture/adr/0004-r10-rust-as-dotnet-template-language.md` — accepted public template-language decision.
-3. `docs/roadmap/template-release-plan.md` — release sequence and the meaning of supported.
-4. `docs/getting-started.md` — target installed-package experience and packaging boundary.
-5. `docs/roadmap/README.md` — milestone status and transversal Definition of Done.
-6. `docs/quality/r09-python-to-rust-inventory.md` — remaining Python/Rust verification authority and migration order.
-7. `docs/quality/r09-rust-authority-cutover.md` — evidence required before a Python witness can be retired.
-8. `tests/r08/contracts.toml` — historical SDK contracts that R10 must preserve, explicitly supersede, or retire through certified migration.
-9. `tests/r10/contracts.toml` — active R10 contract ledger.
+3. `docs/architecture/adr/0005-r10-rust-to-clr-identity-projection.md` — accepted Rust-source / CLR-identity projection decision for entry points, namespaces, types, and members.
+4. `docs/roadmap/template-release-plan.md` — release sequence and the meaning of supported.
+5. `docs/getting-started.md` — target installed-package experience and packaging boundary.
+6. `docs/roadmap/README.md` — milestone status and transversal Definition of Done.
+7. `docs/quality/r09-python-to-rust-inventory.md` — remaining Python/Rust verification authority and migration order.
+8. `docs/quality/r09-rust-authority-cutover.md` — evidence required before a Python witness can be retired.
+9. `tests/r08/contracts.toml` — historical SDK contracts that R10 must preserve, explicitly supersede, or retire through certified migration.
+10. `tests/r10/contracts.toml` — active R10 contract ledger.
 
 Before every mutation, fresh-read `dev`, the working branch, and any open PR that may overlap. Do not assume a remembered SHA is still current.
 
@@ -37,6 +38,12 @@ dotnet new rust
 ```
 
 is historical R08 behavior, not the R10 public target. Historical paths such as `sdk/templates/rust/` may remain in an integration tree until an explicit migration retires them.
+
+Rust source must remain valid Rust. Do not add C#-style source syntax such as `namespace`, do not require the user to rename Rust `main` to CLR `Main`, and do not satisfy CLR ergonomics by translating the project to generated C#.
+
+FerrumWeave owns the CLR projection boundary. For executable projects, ordinary Rust `fn main` must project through the FerrumWeave backend to a static managed `<RootNamespace>.Program.Main` adapter (or an explicitly superseding accepted identity) whose `MethodDef` is the CLI entry point. For broader application surfaces, semantic Rust module paths provide namespace organization and CLR-exportable types/members receive stable namespace-qualified .NET identities. See ADR 0005 and contracts `FW-R10-CLR-ENTRY-001` and `FW-R10-CLR-SURFACE-001`.
+
+The portable managed artifact remains the `.dll`; normal SDK/apphost output may additionally produce a platform host such as `.exe` on Windows. Do not confuse the apphost with the managed assembly contract.
 
 Do not infer evidence authority from a filename alone. During R10, an older R08/R09-named test or fixture may itself be under `COPY`, `TRANSFORM`, `ADAPT`, retirement, or reclassification. Read the active branch diff, contract ledgers, and authority-cutover evidence before restoring, deleting, or classifying it.
 
@@ -70,6 +77,7 @@ dotnet run
 - restore/build/run work from outside the FerrumWeave repository;
 - compilation reaches the real product path `.rsproj -> FerrumWeave.Sdk -> rustc -> FerrumWeave CodegenBackend -> CIL/metadata -> CoreCLR`;
 - the observed output is causally owned by Rust source;
+- ordinary Rust `fn main` reaches the managed executable entry point through the ADR 0005 projection instead of promoting an unrelated exported method;
 - no generated C#, source parser, legacy emitter, native sidecar, or upstream oracle substitutes for the product backend.
 
 ### Required falsifiers
@@ -90,8 +98,8 @@ R10 may advance in parallel where the dependency graph allows it. A fresh agent 
 
 The expected lanes are:
 
-1. **Distribution / console certification** — drives `FW-R10-DX-003` through package installation, external build/run causality, C#/VB/F# falsifiers, and Windows/Linux certification.
-2. **0.1-alpha template families** — may independently advance `classlib`, `xunit`, `nunit`, `mstest`, `web`, and `webapi` through their own T0/T1/T2 evidence.
+1. **Distribution / console certification** — drives `FW-R10-CLR-ENTRY-001` and `FW-R10-DX-003` through managed entry-point projection, package installation, external build/run causality, C#/VB/F# falsifiers, and Windows/Linux certification.
+2. **0.1-alpha template families** — may independently advance `classlib`, `xunit`, `nunit`, `mstest`, `web`, and `webapi` through their own T0/T1/T2 evidence. Shared CLR surface work should reuse `FW-R10-CLR-SURFACE-001` rather than inventing family-local namespace/export conventions.
 3. **Verification-authority cleanup** — may remove Python or differential/oracle witnesses only after the documented authority cutover for their observable contracts.
 
 Before editing a family, inspect overlapping PRs. Do not overwrite another active family lane just to make one branch look self-contained.
@@ -110,15 +118,28 @@ Prerelease support requires at least T1. Repository-local template installation 
 
 ### Distribution / console lane
 
-Drive `FW-R10-DX-003` RED -> GREEN without waiting for every other template family:
+Drive the installed console boundary RED -> GREEN without waiting for every other template family:
 
-1. add an R10 integration test that installs the package/template payload into an isolated environment;
-2. prove the current packaging boundary fails the canonical external contract for the expected reason;
-3. adapt package/template metadata so the standard `console` family resolves Rust without requiring the source repository;
-4. build and run the generated project through the real FerrumWeave backend;
-5. mutate Rust-only source and prove managed artifact/observable causality;
-6. execute the C#/VB/F# falsifiers;
-7. certify on Linux and Windows.
+1. preserve the already-GREEN `FW-R10-DIST-001` package/install/build evidence;
+2. reproduce the current `FW-R10-DX-003` `MissingMethodException` from the installed package on Linux and Windows;
+3. RED `FW-R10-CLR-ENTRY-001` with metadata/reflection assertions for ordinary Rust `fn main` -> static `<RootNamespace>.Program.Main` plus the correct CLI entry-point `MethodDef`;
+4. implement the smallest backend/CIL projection that satisfies that entry-point contract without generated C# or an arbitrary-export shortcut;
+5. make direct `dotnet run` expose a Rust-source-causal observable;
+6. mutate Rust-only source and prove both managed artifact and direct execution observable change;
+7. execute the C#/VB/F# template coexistence falsifiers;
+8. certify the exact candidate on Linux and Windows.
+
+### CLR surface lane
+
+Treat `FW-R10-CLR-SURFACE-001` as a reusable interoperability capability, not a template-specific naming hack:
+
+1. establish deterministic `AssemblyName` / `RootNamespace` inputs at the `.rsproj` boundary;
+2. RED one nested Rust module -> CLR namespace projection;
+3. RED multiple CLR-exportable Rust types under that namespace;
+4. project supported public members with deterministic .NET-facing names while retaining Rust source naming and rustc semantics;
+5. consume the resulting identities from an independent .NET project (Visual Basic, C#, or F# as appropriate to the evidence slice);
+6. preserve the existing CTS/ownership contracts rather than inferring class/value/interface semantics from names alone;
+7. add explicit naming override semantics later only when a real compatibility contract requires them.
 
 ### Template-family lane
 
@@ -205,6 +226,8 @@ Do not claim R10 progress as certified when any of these are true:
 - the release claim relies on repository-local installation instead of the distributable package boundary;
 - `dotnet new rust` is used as proof of the R10 public contract;
 - the generated project needs the FerrumWeave source checkout to build;
+- `fn main` is replaced in source by a non-Rust `Main`/`namespace` syntax solely to satisfy CLR conventions;
+- direct execution is made green by promoting an unrelated arbitrary export instead of projecting the Rust entry point through the accepted CLR entry contract;
 - output can be explained by generated C#, a legacy emitter, native FFI, or an upstream oracle;
 - a family-local T0 scaffold is presented as supported framework behavior;
 - only one operating system passed for a cross-platform claim;
@@ -220,7 +243,8 @@ The next agent should be able to answer all of these from the repository alone:
 2. Which exact SHA was certified?
 3. Which Windows and Linux CI runs certify it?
 4. What observable changed because Rust source changed?
-5. Which legacy evidence remains intentionally present, migrated, or retired and why?
-6. Which parallel lane owns the next smallest contract?
+5. Which Rust source identity projected to which CLR assembly/namespace/type/member identity for the active slice?
+6. Which legacy evidence remains intentionally present, migrated, or retired and why?
+7. Which parallel lane owns the next smallest contract?
 
 If those answers are not recorded, the iteration is not yet ready to hand off.

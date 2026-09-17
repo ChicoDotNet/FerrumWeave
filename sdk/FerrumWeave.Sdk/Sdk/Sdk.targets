@@ -3,21 +3,42 @@
 
   <PropertyGroup>
     <FerrumWeaveRustToolchain Condition="'$(FerrumWeaveRustToolchain)' == ''">nightly-2025-10-14</FerrumWeaveRustToolchain>
+    <FerrumWeaveRustCrateType Condition="'$(FerrumWeaveRustCrateType)' == ''">lib</FerrumWeaveRustCrateType>
     <FerrumWeaveCodegenBackendFileName Condition="'$(OS)' == 'Windows_NT'">ferrumweave_codegen_backend.dll</FerrumWeaveCodegenBackendFileName>
     <FerrumWeaveCodegenBackendFileName Condition="'$(FerrumWeaveCodegenBackendFileName)' == ''">libferrumweave_codegen_backend.so</FerrumWeaveCodegenBackendFileName>
-    <FerrumWeaveCodegenBackendPath Condition="'$(FerrumWeaveCodegenBackendPath)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveRepoRoot)/compiler/codegen-backend/target/release/$(FerrumWeaveCodegenBackendFileName)'))</FerrumWeaveCodegenBackendPath>
+
+    <FerrumWeaveStagedSourceRoot Condition="'$(FerrumWeavePackageMode)' == 'true'">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(BaseIntermediateOutputPath)ferrumweave/source'))</FerrumWeaveStagedSourceRoot>
+    <FerrumWeaveCodegenBackendManifest Condition="'$(FerrumWeavePackageMode)' == 'true'">$([System.IO.Path]::GetFullPath('$(FerrumWeaveStagedSourceRoot)/compiler/codegen-backend/Cargo.toml'))</FerrumWeaveCodegenBackendManifest>
+    <FerrumWeaveCodegenBackendManifest Condition="'$(FerrumWeaveCodegenBackendManifest)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveRepoRoot)/compiler/codegen-backend/Cargo.toml'))</FerrumWeaveCodegenBackendManifest>
+
+    <FerrumWeaveCargoTargetDir Condition="'$(FerrumWeavePackageMode)' == 'true' and '$(FerrumWeaveCargoTargetDir)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(BaseIntermediateOutputPath)ferrumweave/backend'))</FerrumWeaveCargoTargetDir>
+    <FerrumWeaveCargoTargetDir Condition="'$(FerrumWeaveCargoTargetDir)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveRepoRoot)/compiler/codegen-backend/target'))</FerrumWeaveCargoTargetDir>
+    <FerrumWeaveCodegenBackendPath Condition="'$(FerrumWeaveCodegenBackendPath)' == ''">$([System.IO.Path]::GetFullPath('$(FerrumWeaveCargoTargetDir)/release/$(FerrumWeaveCodegenBackendFileName)'))</FerrumWeaveCodegenBackendPath>
   </PropertyGroup>
 
   <Target Name="CreateManifestResourceNames" />
 
-  <Target Name="BuildFerrumWeaveCodegenBackend" BeforeTargets="CoreCompile">
-    <Exec Command="cargo +$(FerrumWeaveRustToolchain) build --ignore-rust-version --release --manifest-path &quot;$(FerrumWeaveRepoRoot)/compiler/codegen-backend/Cargo.toml&quot;" />
+  <Target Name="StageFerrumWeavePackagedBackend" Condition="'$(FerrumWeavePackageMode)' == 'true'">
+    <ItemGroup>
+      <_FerrumWeavePackagedBackendSource Include="$(FerrumWeaveSdkPackageRoot)/tools/**/*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(FerrumWeaveStagedSourceRoot)" />
+    <MakeDir Directories="$(FerrumWeaveStagedSourceRoot)" />
+    <Copy
+      SourceFiles="@(_FerrumWeavePackagedBackendSource)"
+      DestinationFiles="@(_FerrumWeavePackagedBackendSource->'$(FerrumWeaveStagedSourceRoot)/%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <Target Name="BuildFerrumWeaveCodegenBackend" BeforeTargets="CoreCompile" DependsOnTargets="StageFerrumWeavePackagedBackend">
+    <Error Condition="!Exists('$(FerrumWeaveCodegenBackendManifest)')" Text="FerrumWeave CodegenBackend manifest was not found at $(FerrumWeaveCodegenBackendManifest)." />
+    <MakeDir Directories="$(FerrumWeaveCargoTargetDir)" />
+    <Exec Command="cargo +$(FerrumWeaveRustToolchain) build --ignore-rust-version --release --target-dir &quot;$(FerrumWeaveCargoTargetDir)&quot; --manifest-path &quot;$(FerrumWeaveCodegenBackendManifest)&quot;" />
     <Error Condition="!Exists('$(FerrumWeaveCodegenBackendPath)')" Text="FerrumWeave CodegenBackend was not produced at $(FerrumWeaveCodegenBackendPath)." />
   </Target>
 
   <Target Name="CoreCompile" DependsOnTargets="BuildFerrumWeaveCodegenBackend">
     <MakeDir Directories="$(IntermediateOutputPath)" />
-    <Exec Command="rustc +$(FerrumWeaveRustToolchain) -Z codegen-backend=&quot;$(FerrumWeaveCodegenBackendPath)&quot; --edition 2021 --crate-type lib --crate-name &quot;$(TargetName)&quot; &quot;$(MSBuildProjectDirectory)/src/main.rs&quot; -o &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot;" />
+    <Exec Command="rustc +$(FerrumWeaveRustToolchain) -Z codegen-backend=&quot;$(FerrumWeaveCodegenBackendPath)&quot; --edition 2021 --crate-type $(FerrumWeaveRustCrateType) --crate-name &quot;$(TargetName)&quot; &quot;$(MSBuildProjectDirectory)/src/main.rs&quot; -o &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot;" />
   </Target>
 
   <Target Name="VSTest">
