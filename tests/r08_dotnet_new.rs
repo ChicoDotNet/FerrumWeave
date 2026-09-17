@@ -85,7 +85,8 @@ fn rust_participates_in_the_standard_console_template_as_a_language() {
             .expect("Rust console language must generate Rust source");
         assert!(source.contains("#[no_mangle]"));
         assert!(source.contains("pub extern \"C\" fn answer() -> i32"));
-        assert!(source.contains("42"));
+        assert!(source.contains("fn main()"));
+        assert!(source.contains("std::process::exit(answer())"));
     }
 
     assert!(
