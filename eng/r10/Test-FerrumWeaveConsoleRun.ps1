@@ -140,3 +140,8 @@ if ($exitCode -ne 211) {
 }
 
 Write-Host "[FW-R10-DX-003] PASS: installed Rust console executed Program.Main and propagated Rust-source-causal exit code 211."
+
+# GitHub's pwsh runner propagates the last native-process exit code from a
+# dot-sourced step script. The expected console exit 211 is already captured
+# and asserted above, so normalize only the verifier process status after PASS.
+$global:LASTEXITCODE = 0
