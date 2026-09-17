@@ -107,8 +107,8 @@ fn build_metadata(
     pad_vec(&mut strings, 4);
 
     let guid = vec![
-        0x46, 0x57, 0x43, 0x4F, 0x4E, 0x53, 0x4F, 0x4C, 0x45, 0x45, 0x4E, 0x54, 0x52, 0x59,
-        0x30, 0x31,
+        0x46, 0x57, 0x43, 0x4F, 0x4E, 0x53, 0x4F, 0x4C, 0x45, 0x45, 0x4E, 0x54, 0x52, 0x59, 0x30,
+        0x31,
     ];
 
     let mut blobs = vec![0_u8];
@@ -385,11 +385,27 @@ mod tests {
             first,
             emit_console_i32_entry_assembly("HelloFerrum", "HelloFerrum", "Answer", 211)
         );
-        assert!(first.windows(b"HelloFerrum".len()).any(|window| window == b"HelloFerrum"));
-        assert!(first.windows(b"Program".len()).any(|window| window == b"Program"));
+        assert!(
+            first
+                .windows(b"HelloFerrum".len())
+                .any(|window| window == b"HelloFerrum")
+        );
+        assert!(
+            first
+                .windows(b"Program".len())
+                .any(|window| window == b"Program")
+        );
         assert!(first.windows(b"Main".len()).any(|window| window == b"Main"));
-        assert!(first.windows(b"RustApi".len()).any(|window| window == b"RustApi"));
-        assert!(first.windows(b"Answer".len()).any(|window| window == b"Answer"));
+        assert!(
+            first
+                .windows(b"RustApi".len())
+                .any(|window| window == b"RustApi")
+        );
+        assert!(
+            first
+                .windows(b"Answer".len())
+                .any(|window| window == b"Answer")
+        );
         assert_eq!(
             u32::from_le_bytes(
                 first[HEADERS_SIZE + 20..HEADERS_SIZE + 24]
