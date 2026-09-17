@@ -2,5 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
+    <FerrumWeaveRustCrateType>bin</FerrumWeaveRustCrateType>
   </PropertyGroup>
 </Project>

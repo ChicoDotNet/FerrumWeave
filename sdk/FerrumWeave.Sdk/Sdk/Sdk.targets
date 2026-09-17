@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <FerrumWeaveRustToolchain Condition="'$(FerrumWeaveRustToolchain)' == ''">nightly-2025-10-14</FerrumWeaveRustToolchain>
+    <FerrumWeaveRustCrateType Condition="'$(FerrumWeaveRustCrateType)' == ''">lib</FerrumWeaveRustCrateType>
     <FerrumWeaveCodegenBackendFileName Condition="'$(OS)' == 'Windows_NT'">ferrumweave_codegen_backend.dll</FerrumWeaveCodegenBackendFileName>
     <FerrumWeaveCodegenBackendFileName Condition="'$(FerrumWeaveCodegenBackendFileName)' == ''">libferrumweave_codegen_backend.so</FerrumWeaveCodegenBackendFileName>
 
@@ -37,7 +38,7 @@
 
   <Target Name="CoreCompile" DependsOnTargets="BuildFerrumWeaveCodegenBackend">
     <MakeDir Directories="$(IntermediateOutputPath)" />
-    <Exec Command="rustc +$(FerrumWeaveRustToolchain) -Z codegen-backend=&quot;$(FerrumWeaveCodegenBackendPath)&quot; --edition 2021 --crate-type lib --crate-name &quot;$(TargetName)&quot; &quot;$(MSBuildProjectDirectory)/src/main.rs&quot; -o &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot;" />
+    <Exec Command="rustc +$(FerrumWeaveRustToolchain) -Z codegen-backend=&quot;$(FerrumWeaveCodegenBackendPath)&quot; --edition 2021 --crate-type $(FerrumWeaveRustCrateType) --crate-name &quot;$(TargetName)&quot; &quot;$(MSBuildProjectDirectory)/src/main.rs&quot; -o &quot;$(IntermediateOutputPath)$(TargetName)$(TargetExt)&quot;" />
   </Target>
 
   <Target Name="VSTest">

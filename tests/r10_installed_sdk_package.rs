@@ -151,9 +151,17 @@ fn installed_sdk_package_builds_external_console_causally() {
     let generated_project = fs::read_to_string(project.join("HelloFerrum.rsproj"))
         .expect("installed package must generate HelloFerrum.rsproj");
     assert!(generated_project.contains("<Project Sdk=\"FerrumWeave.Sdk\">"));
+    assert!(generated_project.contains("<FerrumWeaveRustCrateType>bin</FerrumWeaveRustCrateType>"));
     assert!(
         !generated_project.contains(repo.to_string_lossy().as_ref()),
         "generated project must not embed repository-local paths",
+    );
+
+    let generated_source = fs::read_to_string(project.join("src/main.rs"))
+        .expect("installed package must generate Rust console source");
+    assert!(
+        generated_source.contains("fn main()"),
+        "installed Rust console template must preserve ordinary Rust main"
     );
 
     let global_json = fs::read_to_string(project.join("global.json"))
@@ -168,7 +176,9 @@ fn installed_sdk_package_builds_external_console_causally() {
     for value in [137, 211] {
         fs::write(
             &source,
-            format!("#[no_mangle]\npub extern \"C\" fn answer() -> i32 {{ {value} }}\n"),
+            format!(
+                "#[no_mangle]\npub extern \"C\" fn answer() -> i32 {{ {value} }}\n\nfn main() {{\n    std::process::exit(answer())\n}}\n"
+            ),
         )
         .expect("write Rust-only installed-package mutation");
 

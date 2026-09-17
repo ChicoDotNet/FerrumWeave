@@ -167,15 +167,27 @@ $projectText = Get-Content -LiteralPath $projectPath -Raw
 if ($projectText -notmatch '<Project\s+Sdk="FerrumWeave\.Sdk"') {
     throw "Generated .rsproj does not use FerrumWeave.Sdk."
 }
+if ($projectText -notmatch '<FerrumWeaveRustCrateType>bin</FerrumWeaveRustCrateType>') {
+    throw "Generated console .rsproj does not request Rust binary crate semantics."
+}
 if ($projectText.Contains($RepoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw "Generated project leaked a repository-relative path."
 }
+$templateSourceText = Get-Content -LiteralPath $rustSource -Raw
+if ($templateSourceText -notmatch '(?m)^fn main\(\)\s*\{') {
+    throw "Generated Rust console template must preserve ordinary fn main."
+}
 
-# FW-R10-DIST-001 requires explicit Rust-source causality 137 -> 211.
+# FW-R10-DIST-001 requires explicit Rust-source causality 137 -> 211 while
+# preserving the semantic Rust entry point required by FW-R10-CLR-ENTRY-001.
 Write-Utf8NoBom -Path $rustSource -Content @'
 #[no_mangle]
 pub extern "C" fn answer() -> i32 {
     137
+}
+
+fn main() {
+    std::process::exit(answer())
 }
 '@
 
@@ -249,6 +261,10 @@ Write-Utf8NoBom -Path $rustSource -Content @'
 #[no_mangle]
 pub extern "C" fn answer() -> i32 {
     211
+}
+
+fn main() {
+    std::process::exit(answer())
 }
 '@
 
