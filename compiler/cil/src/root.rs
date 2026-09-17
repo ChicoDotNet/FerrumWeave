@@ -7,6 +7,9 @@ pub use legacy::*;
 mod scalar_export;
 pub use scalar_export::*;
 
+mod console_entry;
+pub use console_entry::*;
+
 mod multi_scalar_export;
 pub use multi_scalar_export::*;
 

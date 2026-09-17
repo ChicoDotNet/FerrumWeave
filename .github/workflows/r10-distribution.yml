@@ -1,0 +1,62 @@
+name: R10 installed distribution
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "compiler/**"
+      - "projection/**"
+      - "sdk/**"
+      - "eng/r10/**"
+      - "tests/r10/**"
+      - "rust-toolchain.toml"
+      - ".github/workflows/r10-distribution.yml"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "compiler/**"
+      - "projection/**"
+      - "sdk/**"
+      - "eng/r10/**"
+      - "tests/r10/**"
+      - "rust-toolchain.toml"
+      - ".github/workflows/r10-distribution.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r10-installed-distribution-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  installed-console:
+    name: "FW-R10-DIST-001 (${{ matrix.os }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "10.0.400"
+      - name: Provision pinned Rust backend components
+        run: rustup component add --toolchain nightly-2025-10-14 rustc-dev rust-src llvm-tools-preview
+      - name: Exercise installed package boundary
+        shell: pwsh
+        run: |
+          ./eng/r10/Test-FerrumWeaveSdkDistribution.ps1 `
+            -RepoRoot "$env:GITHUB_WORKSPACE" `
+            -WorkRoot (Join-Path $env:RUNNER_TEMP "fw-r10-dist-001")

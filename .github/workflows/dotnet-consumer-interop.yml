@@ -1,0 +1,104 @@
+name: .NET consumer interoperability
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "compiler/**"
+      - "eng/dotnet-consumers/**"
+      - "sdk/**"
+      - "src/**"
+      - "tests/fixtures/r09/**"
+      - "rust-toolchain.toml"
+      - ".github/workflows/dotnet-consumer-interop.yml"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "compiler/**"
+      - "eng/dotnet-consumers/**"
+      - "sdk/**"
+      - "src/**"
+      - "tests/fixtures/r09/**"
+      - "rust-toolchain.toml"
+      - ".github/workflows/dotnet-consumer-interop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotnet-consumer-interop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  consumer-matrix:
+    name: "${{ matrix.language }} / ${{ matrix.framework }} (${{ matrix.os }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        language:
+          - "C#"
+          - "F#"
+          - "VB.NET"
+        framework:
+          - xunit
+          - mstest
+          - nunit
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "10.0.400"
+      - name: Provision pinned Rust backend components
+        run: rustup component add --toolchain nightly-2025-10-14 rustc-dev rust-src llvm-tools-preview
+      - name: Generate official consumer
+        shell: pwsh
+        run: |
+          $consumerRoot = Join-Path $env:RUNNER_TEMP "ferrumweave-consumer"
+          ./eng/dotnet-consumers/Invoke-DotNetConsumer.ps1 `
+            -Language "${{ matrix.language }}" `
+            -Framework "${{ matrix.framework }}" `
+            -Phase Generate `
+            -OutputRoot $consumerRoot `
+            -RepoRoot "$env:GITHUB_WORKSPACE"
+      - name: Restore
+        shell: pwsh
+        run: |
+          $consumerRoot = Join-Path $env:RUNNER_TEMP "ferrumweave-consumer"
+          ./eng/dotnet-consumers/Invoke-DotNetConsumer.ps1 `
+            -Language "${{ matrix.language }}" `
+            -Framework "${{ matrix.framework }}" `
+            -Phase Restore `
+            -OutputRoot $consumerRoot `
+            -RepoRoot "$env:GITHUB_WORKSPACE"
+      - name: Build
+        shell: pwsh
+        run: |
+          $consumerRoot = Join-Path $env:RUNNER_TEMP "ferrumweave-consumer"
+          ./eng/dotnet-consumers/Invoke-DotNetConsumer.ps1 `
+            -Language "${{ matrix.language }}" `
+            -Framework "${{ matrix.framework }}" `
+            -Phase Build `
+            -OutputRoot $consumerRoot `
+            -RepoRoot "$env:GITHUB_WORKSPACE"
+      - name: Test
+        shell: pwsh
+        run: |
+          $consumerRoot = Join-Path $env:RUNNER_TEMP "ferrumweave-consumer"
+          ./eng/dotnet-consumers/Invoke-DotNetConsumer.ps1 `
+            -Language "${{ matrix.language }}" `
+            -Framework "${{ matrix.framework }}" `
+            -Phase Test `
+            -OutputRoot $consumerRoot `
+            -RepoRoot "$env:GITHUB_WORKSPACE"
