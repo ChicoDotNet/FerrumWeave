@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fluentui/react-components": "9.74.7",
+    "@fluentui/react-components": "9.74.9",
     "bootstrap": "5.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0"
