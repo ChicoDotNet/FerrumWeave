@@ -1,8 +1,10 @@
+**English** · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru.md) · [简体中文](README.zh-Hans.md) · [日本語](README.ja.md)
+
+> FerrumWeave documentation is maintained in multiple languages ​​because interoperability is also about people. The English version without a suffix serves as the canonical source whenever a translation is temporarily out of date.
+
 <img src="assets/brand/hero/ferrumweave-readme-cover.png" alt="FerrumWeave — Bringing Rust into the .NET ecosystem" width="100%" />
 
 # FerrumWeave
-
-**English** · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru.md) · [简体中文](README.zh-Hans.md) · [日本語](README.ja.md)
 
 **Bringing Rust into the .NET language ecosystem.**
 
