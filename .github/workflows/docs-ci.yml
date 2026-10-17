@@ -54,7 +54,7 @@ jobs:
           git diff --exit-code
       - name: Upload rendered documentation diagnostic
         if: failure() && steps.generated_docs.outcome == 'failure'
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: docgraph-rendered-${{ github.run_id }}
           path: docs/architecture/**/*.md
